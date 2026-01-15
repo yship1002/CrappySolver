@@ -1,0 +1,8 @@
+[submodule "mcpp"]
+	path = mcpp
+	url = https://github.com/yship1002/mcpp.git
+	branch = master
+[submodule "cereal"]
+	path = cereal
+	url = https://github.com/USCiLab/cereal.git
+	branch = master
