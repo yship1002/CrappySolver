@@ -20,8 +20,10 @@ class BBHeuristic {
         double mu=1.0/6.0;  // percentage of bigger improvement to consider in pseudo cost update(0-1)
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX);
+        int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX);
         double getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX );
+        double getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX);
         void updateWeights(int idx_branched, double left_improve,double right_improv);
         double getPseudoCost(int idx_branched,int which_stage,mc::Interval stage_IX);
 

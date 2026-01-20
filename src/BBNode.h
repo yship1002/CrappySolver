@@ -22,6 +22,6 @@ class BBNode {
         int nodeIdx;
         double LBD;
         double UBD;
-        std::vector<BBNode> branch();
+
 };
 #endif // BBNODE_H

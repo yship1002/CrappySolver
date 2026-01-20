@@ -1,10 +1,22 @@
 #include "Algo.h"
-Algo::Algo(STModel model,BranchingStrategy strategy) {
+Algo::Algo(STModel& model,BranchingStrategy strategy) {
     this->model = model;
     this->best_solution = std::numeric_limits<double>::infinity();
-    this->root= BBNode(this->model.first_stage_IX,this->model.second_stage_IX,strategy);
-    this->activeNodes.push_back(this->root);
+    this->activeNodes.push_back(BBNode(this->model.first_stage_IX,this->model.second_stage_IX,strategy));
 
+}
+int Algo::getTotalSolverNodes() {
+    if (this->solver_iterations.size()==this->iterations) {
+        throw std::runtime_error("Solver iterations size matches Algo iterations");
+    }
+    int total_nodes = 0;
+
+    for (const auto& iter : this->solver_iterations) {
+        for (const auto& count : iter) {
+            total_nodes += count;
+        }
+    }
+    return total_nodes;
 }
 int Algo::getWorstNodeIdx() {
     double worstLBD = std::numeric_limits<double>::infinity();
@@ -17,16 +29,7 @@ int Algo::getWorstNodeIdx() {
     }
     return worstNodeIdx;
 }
-void Algo::branchNodeAtIdx(int idx) {
-    std::vector<BBNode> newNodes = this->activeNodes[idx].branch();
-    this->calculateLBD(newNodes[0]);
-    this->calculateLBD(newNodes[1]);
-    this->calculateUBD(newNodes[0]);
-    this->calculateUBD(newNodes[1]);
-    this->activeNodes.push_back(newNodes[0]);
-    this->activeNodes.push_back(newNodes[1]);
-    this->activeNodes.erase(this->activeNodes.begin() + idx);
-}
+
 
 double Algo::getBestUBD() {
     double bestUBD = std::numeric_limits<double>::infinity();
@@ -54,24 +57,41 @@ void Algo::fathomNodes(double UBD) {
                        [UBD](const BBNode& node) { return node.LBD >= UBD; }),
         this->activeNodes.end());
 }
+void Algo::branchNodeAtIdx(int idx,double tolerance) {
+    
+    int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX);
+    BBNode child1 = this->activeNodes[idx]; // Copy current node
+    BBNode child2 = this->activeNodes[idx]; // Copy current node
+    double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX);
 
+    child1.first_stage_IX[branch_idx] = mc::Interval(child1.first_stage_IX[branch_idx].l(), branch_point);
+    child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, child2.first_stage_IX[branch_idx].u());
+
+    
+    child1.LBD = this->calculateLBD(&child1, tolerance);
+    child2.LBD = this->calculateLBD(&child2, tolerance);
+    child1.UBD = this->activeNodes[idx].UBD;
+    child2.UBD = this->activeNodes[idx].UBD;
+    this->activeNodes.erase(this->activeNodes.begin() + idx);
+    this->activeNodes.push_back(child1);
+    this->activeNodes.push_back(child2);
+
+}
 double Algo::solve(double tolerance) {
-    // Placeholder implementation of the solve method
-    // In a real implementation, this would contain the algorithm to solve the STModel
-    // For now, we just set best_solution to a dummy value
-
-    double UBD= this->calculateUBD(this->root);
-    double LBD = this->calculateLBD(this->root);
-    double gap = std::abs(UBD - LBD); // Dummy gap calculation
+    auto start = std::chrono::high_resolution_clock::now();
+    double UBD= this->calculateUBD(&(this->activeNodes[0]), tolerance);
+    double LBD = this->calculateLBD(&(this->activeNodes[0]), tolerance);
+    double gap = (UBD - LBD)/std::abs(UBD); // abs gap calculation
+    this->iterations=0;
     while (gap > tolerance) {
         if (this->activeNodes.empty()) {
             break; // No more nodes to process
         }
         //get worst node idx
         int idx=this->getWorstNodeIdx();
-        
-        // branch worstnode and calculate new UBD and LBD for both children and delete worstnode
-        this->branchNodeAtIdx(idx);
+
+        //branch node at idx
+        this->branchNodeAtIdx(idx,tolerance);
 
         //update UBD of nodeList and fathom by inf or value dominance
         UBD= this->getBestUBD();
@@ -79,21 +99,116 @@ double Algo::solve(double tolerance) {
         LBD=this->getWorstLBD();
 
         // update gap
-        gap = std::abs(UBD - LBD);
-        
+        gap = (UBD - LBD)/std::abs(UBD); // relative gap
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+
+        std::cout<<"----------------------------------------"<<std::endl;
+        std::cout<<"Iteration "<<this->iterations<<std::endl;
+        std::cout<<"----------------------------------------"<<std::endl;
+        std::cout<<"Current UBD: "<<UBD<<", LBD: "<<LBD<<", Gap: "<<100*gap<<"%"<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+        std::cout<<"Current solver Nodes: "<<this->getTotalSolverNodes()<<std::endl;
+
+        this->iterations++;
     }
-    this->best_solution = UBD;
-    return this->best_solution;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout<<"========================================"<<std::endl;
+    std::cout<<"Algorithm terminated after "<<this->iterations<<" iterations."<<std::endl;
+    std::cout<<"Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout<<"Total solver Nodes: "<<this->getTotalSolverNodes()<<std::endl;
+    std::cout<<"Best Solution: " << UBD << std::endl;
+
+    return UBD;
 }
-double Algo::calculateLBD(BBNode node) {
-    // Placeholder implementation of LBD calculation
+double Algo::calculateLBD(BBNode* node,double tolerance) {
+    // this is the inner layer
     double totalLBD = 0.0;
-    // calculate scenario LBD by solving the LP relaxation with CPLEX
+    std::vector<int> temp;
     for (auto scenario_name : this->model.scenario_names) {
         this->model.scenario_name = scenario_name;
-        this->model.first_stage_IX = node.first_stage_IX;
-        this->model.second_stage_IX = node.second_stage_IX;
+        this->model.first_stage_IX = node->first_stage_IX;
+        this->model.second_stage_IX = node->second_stage_IX;
+        insideAlgo inneralgo(this->model,node->branchheuristic.strategy);
+        totalLBD += inneralgo.solve(tolerance*0.1);  // increase tolerance tightness for inner layer
+        temp.push_back(inneralgo.iterations);
+    }
+    this->solver_iterations.push_back(temp);
+    node->LBD = totalLBD;
+    return totalLBD;
 
+}
+double Algo::calculateUBD(BBNode* node,double tolerance) {
+
+    node->UBD = -1126.4218270121305;
+    return -1126.4218270121305;
+}
+insideAlgo::insideAlgo(STModel& model,BranchingStrategy strategy) : Algo(model,strategy) {
+
+}
+double insideAlgo::solve(double tolerance) {
+
+    double UBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
+    double LBD = this->calculateLBD(&(this->activeNodes[0]), tolerance);
+    double gap = (UBD - LBD)/std::abs(UBD);
+    this->iterations = 0;
+
+    while (gap > tolerance) {
+        if (this->activeNodes.empty()) {
+            break;
+        }
+        
+        int idx = this->getWorstNodeIdx();
+        this->branchNodeAtIdx(idx, tolerance);
+        
+        UBD = this->getBestUBD();
+
+        this->fathomNodes(UBD);
+        LBD = this->getWorstLBD();
+        
+
+        gap = (UBD - LBD) / std::abs(UBD);
+        this->iterations++;
+    }
+
+    return UBD;
+
+}
+void insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
+
+    int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX, this->activeNodes[idx].second_stage_IX);
+    BBNode child1 = this->activeNodes[idx]; // Copy current node
+    BBNode child2 = this->activeNodes[idx]; // Copy current node
+    double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX, this->activeNodes[idx].second_stage_IX);
+
+    if (branch_idx >= this->activeNodes[idx].first_stage_IX.size()) {
+        int second_stage_idx = branch_idx - this->activeNodes[idx].first_stage_IX.size();
+        child1.second_stage_IX[second_stage_idx] = mc::Interval(child1.second_stage_IX[second_stage_idx].l(), branch_point);
+        child2.second_stage_IX[second_stage_idx] = mc::Interval(branch_point, child2.second_stage_IX[second_stage_idx].u());
+    } else {
+        // Branching on first stage variable
+        child1.first_stage_IX[branch_idx] = mc::Interval(child1.first_stage_IX[branch_idx].l(), branch_point);
+        child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, child2.first_stage_IX[branch_idx].u());
+    }
+    
+    this->calculateLBD(&child1, tolerance);
+    this->calculateLBD(&child2, tolerance);
+    child1.UBD = this->activeNodes[idx].UBD;
+    child2.UBD = this->activeNodes[idx].UBD;
+
+    this->activeNodes.erase(this->activeNodes.begin() + idx);
+    this->activeNodes.push_back(child1);
+    this->activeNodes.push_back(child2);
+
+}
+
+
+double insideAlgo::calculateLBD(BBNode* node,double tolerance) {
+
+
+    this->model.first_stage_IX = node->first_stage_IX;
+    this->model.second_stage_IX = node->second_stage_IX;
+    try{
         ILOSTLBEGIN
         IloEnv env;
         env.setOut(env.getNullStream());
@@ -112,98 +227,37 @@ double Algo::calculateLBD(BBNode node) {
         cplex.setOut(env.getNullStream());
 
         cplex.solve();
-        totalLBD += cplex.getObjValue();
+        if (cplex.getStatus() == IloAlgorithm::Optimal) {
+            node->LBD= cplex.getObjValue();
+        }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+                node->LBD=INFINITY; // assign big number for infeasibility
+        }
+        env.end();
+    } catch (IloException& e) {
+        std::cerr << "CPLEX exception: " << e << "\n";
     }
-    return totalLBD;
+
+    return node->LBD;
+
 }
-double Algo::calculateUBD(BBNode node) {
+double insideAlgo::calculateUBD(BBNode* node,double tolerance) {
 
+    this->model.first_stage_IX = node->first_stage_IX;
+    this->model.second_stage_IX = node->second_stage_IX;
+    GRBEnv env = GRBEnv("genconstrnl_indexed.log");
+    env.set(GRB_IntParam_OutputFlag, 0);
 
-    /* Indexed-variable version of the nonlinear example:
+    GRBModel grbmodel = GRBModel(env);
+    this->model.generateMINLP(&grbmodel);
+    grbmodel.optimize();
+    int status = grbmodel.get(GRB_IntAttr_Status);
 
-        minimize    y[0] + y[1]
-        subject to  y[0] = x[1]^2
-                    y[1] = sin(2.5 * x[0]) + x[1]
-                    y free
-                    -1 <= x[i] <= 1
-    */
-
-
-//     GRBEnv env = GRBEnv("genconstrnl_indexed.log");
-
-//     // Create an empty model
-//     GRBModel model = GRBModel(env);
-
-//     const int n_first_stage = 2;
-//     const int n_second_stage = 2;
-
-//     // Create indexed variables
-//     vector<GRBVar> first_stage_vars(n_first_stage);
-//     vector<GRBVar> second_stage_vars(n_second_stage);
-    
-//     // x[i] in [-1, 1] with objective coefficient 0.0
-//     for (int i = 0; i < n_first_stage; ++i) {
-//       first_stage_vars[i] = model.addVar(-1.0, 1.0, 0.0, GRB_CONTINUOUS,
-//                           ("y[" + to_string(i) + "]"));
-//     }
-
-//     // y[i] are free and have objective coefficient 1.0
-//     for (int i = 0; i < n_second_stage; ++i) {
-//       second_stage_vars[i] = model.addVar(-GRB_INFINITY, GRB_INFINITY, 1.0, GRB_CONTINUOUS,
-//                           ("x[" + to_string(i) + "]"));
-//     }
-
-
-//     // --- Nonlinear constraint 1: y[0] = x[1]^2 ---
-//     // Expression tree for pow(variable, constant)
-//     //   pow
-//     //   ├─ variable(x[1])
-//     //   └─ constant(2.0)
-//     int    opcode1[3] = { GRB_OPCODE_POW, GRB_OPCODE_VARIABLE, GRB_OPCODE_CONSTANT };
-//     double data1[3]   = { -1.0, (double) x[1].index(), 2.0 };
-//     int    parent1[3] = { -1, 0, 0 };
-
-//     model.addGenConstrNL(y[0], 3, opcode1, data1, parent1);
-
-//     // --- Nonlinear constraint 2: y[1] = sin(2.5*x[0]) + x[1] ---
-//     // Expression tree:
-//     //   plus
-//     //   ├─ sin
-//     //   │  └─ multiply
-//     //   │     ├─ constant(2.5)
-//     //   │     └─ variable(x[0])
-//     //   └─ variable(x[1])
-//     int    opcode2[6] = { GRB_OPCODE_PLUS, GRB_OPCODE_SIN, GRB_OPCODE_MULTIPLY,
-//                           GRB_OPCODE_CONSTANT, GRB_OPCODE_VARIABLE, GRB_OPCODE_VARIABLE };
-//     double data2[6]   = { -1.0, -1.0, -1.0, 2.5, (double) x[0].index(), (double) x[1].index() };
-//     int    parent2[6] = { -1, 0, 1, 2, 2, 0 };
-
-//     model.addGenConstrNL(y[1], 6, opcode2, data2, parent2);
-
-//     // Optimize model
-//     model.optimize();
-
-//     // Print solution
-//     for (int i = 0; i < n; ++i) {
-//       cout << y[i].get(GRB_StringAttr_VarName) << " "
-//            << y[i].get(GRB_DoubleAttr_X) << "\n";
-//     }
-//     for (int i = 0; i < n; ++i) {
-//       cout << x[i].get(GRB_StringAttr_VarName) << " "
-//            << x[i].get(GRB_DoubleAttr_X) << "\n";
-//     }
-
-//     cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << "\n";
-
-//   } catch (GRBException& e) {
-//     cout << "Error code = " << e.getErrorCode() << "\n";
-//     cout << e.getMessage() << "\n";
-//   } catch (...) {
-//     cout << "Exception during optimization\n";
-//   }
-
-//   return 0;
-// }
-
-    return 0.0;
+    if (status == GRB_INF_OR_UNBD) {
+        std::cout << "Model is infeasible.\n";
+        node->UBD=INFINITY;
+        return INFINITY;
+    }
+    double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
+    node->UBD= objval;
+    return objval;
 }

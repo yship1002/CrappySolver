@@ -1,17 +1,3 @@
-/*  MC++ (FFGraph/FFVar)  ->  Gurobi GenConstrNL
-    Strategy A: one MC++ op -> one tiny Gurobi NL constraint, using aux GRBVars.
-
-    Usage:
-      - Build DAG + X[] + F[] in MC++ (NO eval needed)
-      - Create Gurobi vars gX[] for original X[]
-      - Call build_nl_for_one(model, DAG, Xvec, gX, F[k]) to get GRBVar gFk
-      - Add final constraint: model.addConstr(gFk <= 100.0);
-
-    Notes:
-      - This assumes MC++ headers provide: mc::FFGraph, mc::FFVar, mc::FFOp, mc::FFSubgraph
-        and FFOp::TYPE values like PLUS, TIMES, DIV, SIN, IPOW, DPOW, SHIFT, SCALE, NEG, SQR, etc.
-      - If your MC++ build uses slightly different enum names, adjust map_ffop_to_grb().
-*/
 #include <mcpp/include/interval.hpp>
 #include <mcpp/include/ffunc.hpp>
 #include <mcpp/include/polimage.hpp>
@@ -23,51 +9,10 @@
 #include <stdexcept>
 #include <iostream>
 
-int map_ffop_to_grb(int ffop_type) {
-    using T = mc::FFOp::TYPE;
-    switch ((T)ffop_type) {
-        case T::PLUS:   return GRB_OPCODE_PLUS;
-        case T::SHIFT:  return GRB_OPCODE_PLUS;        // x + c
-        case T::MINUS:  return GRB_OPCODE_MINUS;
-        case T::TIMES:  return GRB_OPCODE_MULTIPLY;
-        case T::SCALE:  return GRB_OPCODE_MULTIPLY;    // c * x
-        case T::DIV:    return GRB_OPCODE_DIVIDE;
-        case T::INV:    return GRB_OPCODE_DIVIDE;      // 1/x
-        case T::NEG:    return GRB_OPCODE_UMINUS;
-        case T::SIN:    return GRB_OPCODE_SIN;
-        case T::COS:    return GRB_OPCODE_COS;
-        case T::TAN:    return GRB_OPCODE_TAN;
-        case T::EXP:    return GRB_OPCODE_EXP;
-        case T::LOG:    return GRB_OPCODE_LOG;
-        case T::SQRT:   return GRB_OPCODE_SQRT;
-        case T::IPOW:   return GRB_OPCODE_POW;
-        case T::DPOW:   return GRB_OPCODE_POW;
-        case T::SQR:    return GRB_OPCODE_POW;
-        // Unsupported or require special handling
-        case T::CNST:
-        case T::VAR:
-        case T::PROD:
-        case T::CHEB:
-        case T::XLOG:
-        case T::ERF:
-        case T::FSTEP:
-        case T::MINF:
-        case T::MAXF:
-        case T::INTER:
-        case T::EXTERN:
-        default:
-            throw std::runtime_error("MC++ FFOp type not mapped to Gurobi NL opcode");
-    }
-}
+
 
 int main() {
-    std::vector<std::string> OPTYPE{
-        "CNST", "VAR",
-        "PLUS", "SHIFT", "NEG", "MINUS", "TIMES", "SCALE", "DIV", "INV",
-        "PROD", "IPOW", "DPOW", "CHEB", "SQR", "SQRT", "EXP", "LOG", "XLOG",
-        "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "COSH", "SINH", "TANH",
-        "ERF", "FABS", "FSTEP", "MINF", "MAXF", "INTER", "EXTERN"};
-    std::vector<std::string> VARTYPE {"VAR", "AUX", "CINT", "CREAL"};
+
     STModel model(BranchingStrategy::relwidth);
     int n_first_stage_vars = model.first_stage_IX.size();
     int n_second_stage_vars = model.second_stage_IX.size();
@@ -82,7 +27,7 @@ int main() {
     for (int i = 0; i < nvars; ++i) X[i].set(&DAG);
 
     // scenario perturbation
-
+    for (auto scenario_name : model.scenario_names){
         double p = model.perturb[scenario_name];
         //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
         // Constraints translated from the Pyomo example (indices assume:
@@ -125,9 +70,12 @@ int main() {
 
         mc::FFVar objective =0.333333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
         std::vector<mc::FFVar> F = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
+        
         GRBEnv env = GRBEnv("genconstrnl_indexed.log");
+        env.set(GRB_IntParam_OutputFlag, 0);
 
         GRBModel grbmodel = GRBModel(env);
+        grbmodel.set(GRB_DoubleParam_MIPGap, 0.00001);
 
         for (int i = 0; i < n_first_stage_vars; ++i) {
             grbmodel.addVar(model.first_stage_IX[i].l(), model.first_stage_IX[i].u(), 0.0, GRB_CONTINUOUS, ("x" + std::to_string(i)));

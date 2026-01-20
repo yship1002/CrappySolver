@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-w -g)
 
 # ---- Paths (edit if needed) ----
-set(PROJ_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(PROJ_ROOT ${CMAKE_CURRENT_SOURCE_DIR})  # e.g., /Users/username/Desktop/CrappySolver
 
 set(CPLEX_ROOT ${CPLEX_ROOT_DIR})  # e.g., /opt/ibm/ILOG/CPLEX_Studio2210
 set(GUROBI_ROOT ${GUROBI_ROOT_DIR}) # e.g., /opt/gurobi/gurobi2210/linux64
@@ -39,7 +39,7 @@ file(GLOB EXAMPLE_SOURCES
 )
 
 add_executable(test
-    "${PROJ_ROOT}/happy.cpp"
+    "${PROJ_ROOT}/test.cpp"
     ${src_SOURCES}
     ${EXAMPLE_SOURCES}
 )
