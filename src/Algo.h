@@ -12,7 +12,7 @@
 #include <example/STModel.h>
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
-
+#include <chrono>
 class Algo {
     public:
         Algo(STModel* model);
