@@ -94,7 +94,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     nc8 = -c8;
 
 
-    mc::FFVar objective =0.333333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    mc::FFVar objective =0.1*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
 
 
     // Evaluate constraints and objective
