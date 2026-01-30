@@ -2,20 +2,22 @@
 ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
-    this->scenario_names = {ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2, ScenarioNames::SCENARIO3};
+    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,
+     ScenarioNames::SCENARIO3,ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
+     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10};
     this->scenario_name = ScenarioNames::SCENARIO1; //default
     this->perturb = {
         {ScenarioNames::SCENARIO1, 1.0976270078546495},// orignal
         {ScenarioNames::SCENARIO2, 9.430378732744838},
-        {ScenarioNames::SCENARIO3, 6.6027633760716435}
+        {ScenarioNames::SCENARIO3, 6.6027633760716435},
 
-        // {ScenarioNames::SCENARIO4,1.3514894164800063},
-        // {ScenarioNames::SCENARIO5,4.236547993428394},
-        // {ScenarioNames::SCENARIO6,2.155994520336202},
-        // {ScenarioNames::SCENARIO7,5.0580836121681994},
-        // {ScenarioNames::SCENARIO8,2.0849789288240969},
-        // {ScenarioNames::SCENARIO9,5.6016775572644488},
-        // {ScenarioNames::SCENARIO10,4.3503766112257304}
+        {ScenarioNames::SCENARIO4,1.3514894164800063},
+        {ScenarioNames::SCENARIO5,4.236547993428394},
+        {ScenarioNames::SCENARIO6,2.155994520336202},
+        {ScenarioNames::SCENARIO7,5.0580836121681994},
+        {ScenarioNames::SCENARIO8,2.0849789288240969},
+        {ScenarioNames::SCENARIO9,5.6016775572644488},
+        {ScenarioNames::SCENARIO10,4.3503766112257304}
 
     };
     this->first_stage_IX = {

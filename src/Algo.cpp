@@ -1,9 +1,10 @@
 #include "Algo.h"
-Algo::Algo(STModel* model) {
+Algo::Algo(STModel* model,double provided_UBD) {
     this->model = model;
     this->best_solution = std::numeric_limits<double>::infinity();
     this->activeNodes.push_back(BBNode(this->model->first_stage_IX,this->model->second_stage_IX,this->model->branching_strategy));
     this->activeNodes[0].is_second_stage_BBnode = false;
+    this->provided_UBD = provided_UBD;
 }
 int Algo::getTotalSolverNodes() {
     if (this->solver_iterations.size()==this->iterations) {
@@ -260,9 +261,11 @@ double Algo::calculateLBD(BBNode* node,double tolerance) {
 
 }
 double Algo::calculateUBD(BBNode* node,double tolerance) {
-
-    node->UBD = -1126.4218270121305;
-    return -1126.4218270121305;
+    if (this->provided_UBD==INFINITY){
+        throw std::runtime_error("No provided UBD for outer layer UBD calculation");
+    }
+    node->UBD = this->provided_UBD;
+    return this->provided_UBD;
 }
 insideAlgo::insideAlgo(STModel* model) : Algo(model) {
     this->activeNodes[0].is_second_stage_BBnode = true;
@@ -350,7 +353,8 @@ double insideAlgo::calculateUBD(BBNode* node,double tolerance) {
 
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
-    GRBEnv env = GRBEnv("genconstrnl_indexed.log");
+    //GRBEnv env = GRBEnv("genconstrnl_indexed.log");
+    GRBEnv env = GRBEnv();
 
     env.set(GRB_IntParam_OutputFlag, 0);
     env.set(GRB_IntParam_LogToConsole, 0);
@@ -362,7 +366,7 @@ double insideAlgo::calculateUBD(BBNode* node,double tolerance) {
         grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
         grbmodel.optimize();
-        grbmodel.write("model.sol");
+        //grbmodel.write("model.sol");
         int status = grbmodel.get(GRB_IntAttr_Status);
 
         if (status == GRB_OPTIMAL) {

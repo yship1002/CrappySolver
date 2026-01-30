@@ -15,9 +15,10 @@
 #include <chrono>
 class Algo {
     public:
-        Algo(STModel* model);
+        Algo(STModel* model,double provided_UBD=INFINITY);
         Algo()=default; // default constructor
         Algo(const Algo& other)=default;
+        double provided_UBD;
         int iterations;
         double worstLBD;
         double bestUBD;

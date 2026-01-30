@@ -10,9 +10,9 @@
 
 int main() {
 
-    ProcessModel model(BranchingStrategy::pseudo);
+    ProcessModel model(BranchingStrategy::pseudo); //ubd=-1126.4218270121305(3) -1134.15(10)
 
-    Algo CZalgo(&model);
+    Algo CZalgo(&model,-1134.15); // provide UBD for outer layer
 
     CZalgo.solve(0.001); // 0.1% tolerance
 
