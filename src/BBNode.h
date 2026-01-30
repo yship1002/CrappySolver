@@ -22,6 +22,7 @@ class BBNode {
         int nodeIdx;
         double LBD;
         double UBD;
+        bool is_second_stage_BBnode;
 
 };
 #endif // BBNODE_H

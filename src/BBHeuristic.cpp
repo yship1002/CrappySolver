@@ -5,42 +5,88 @@ BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
     this->initial_first_stage_IX = initial_first_stage_IX;
     this->initial_second_stage_IX = initial_second_stage_IX;
     this->strategy = strategy;
+    this->weights.resize(initial_first_stage_IX.size() + initial_second_stage_IX.size());
     }
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX){
-    double largest_ratio=0;
     int max_idx = 0;
-    for (size_t i = 0; i < first_stage_IX.size(); ++i) {
 
-        double ratio = (first_stage_IX[i].u() - first_stage_IX[i].l()) / (this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
-        if (ratio > largest_ratio) {
-            largest_ratio = ratio;
-            max_idx = static_cast<int>(i);
+    std::vector<double> score_list;
+    if (this->strategy == BranchingStrategy::pseudo) {
+        // Pseudo cost branching logic can be implemented here
+        double largest_score=0;
+
+        for (size_t i = 0; i < first_stage_IX.size(); ++i) { // go through first stage to get scores
+            double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i,SCORE_FUNCTION::SUM);
+            score_list.push_back(pseudo_cost);
+            if (largest_score < pseudo_cost){
+                largest_score = pseudo_cost;
+                max_idx = i;
+            }
         }
 
-    }
-    for (size_t i = 0; i < second_stage_IX.size(); ++i) {
-
-        double ratio = (second_stage_IX[i].u() - second_stage_IX[i].l()) / (this->initial_second_stage_IX[i].u() - this->initial_second_stage_IX[i].l());
-        if (ratio > largest_ratio) {
-            largest_ratio = ratio;
-            max_idx = static_cast<int>(first_stage_IX.size() + i);
+        for (size_t i = 0; i < second_stage_IX.size(); ++i) { // go through second stage to get scores
+            double pseudo_cost = (second_stage_IX[i].u() - second_stage_IX[i].l())*this->getPseudoCost(i+first_stage_IX.size(),SCORE_FUNCTION::SUM);
+            score_list.push_back(pseudo_cost);
+            if (pseudo_cost > largest_score) {
+                largest_score = pseudo_cost;
+                max_idx = static_cast<int>(first_stage_IX.size() + i);
+            }
         }
 
+
+    }else if (this->strategy == BranchingStrategy::relwidth) {
+        // Relative width branching logic can be implemented here
+
+        double largest_ratio=0;
+        for (size_t i = 0; i < first_stage_IX.size(); ++i) {
+            double ratio = (first_stage_IX[i].u() - first_stage_IX[i].l()) / (this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
+            if (ratio > largest_ratio) {
+                largest_ratio = ratio;
+                max_idx = static_cast<int>(i);
+            }
+        }
+        for (size_t i = 0; i < second_stage_IX.size(); ++i) {
+            double ratio = (second_stage_IX[i].u() - second_stage_IX[i].l()) / (this->initial_second_stage_IX[i].u() - this->initial_second_stage_IX[i].l());
+            if (ratio > largest_ratio) {
+                largest_ratio = ratio;
+                max_idx = static_cast<int>(first_stage_IX.size() + i);
+            }
+        }
+    }else{
+        throw std::invalid_argument("Unknown Branching Strategy");
     }
+    //std::cout<<"Branching on variable index: "<<max_idx<<std::endl;
     return max_idx;
 };
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
-    double largest_ratio=0;
     int max_idx = 0;
-    for (size_t i = 0; i < first_stage_IX.size(); ++i) {
+    if (this->strategy == BranchingStrategy::pseudo) {
+        // Pseudo cost branching logic can be implemented here
+        double largest_score=0;
+        std::vector<double> score_list;
+        for (size_t i = 0; i < first_stage_IX.size(); ++i) {
+            double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i);
+            score_list.push_back(pseudo_cost);
+            if (largest_score < pseudo_cost){
+                largest_score = pseudo_cost;
+                max_idx = i;
+            }
+        }
+    }else if (this->strategy == BranchingStrategy::relwidth) {
+        // Relative width branching logic can be implemented here
 
-        double ratio = (first_stage_IX[i].u() - first_stage_IX[i].l()) / (this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
-        if (ratio > largest_ratio) {
-            largest_ratio = ratio;
-            max_idx = static_cast<int>(i);
+        double largest_ratio=0;
+        for (size_t i = 0; i < first_stage_IX.size(); ++i) {
+            double ratio = (first_stage_IX[i].u() - first_stage_IX[i].l()) / (this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
+            if (ratio > largest_ratio) {
+                largest_ratio = ratio;
+                max_idx = static_cast<int>(i);
+            }
         }
 
+    }else{
+        throw std::invalid_argument("Unknown Branching Strategy");
     }
     return max_idx;
 };
@@ -54,15 +100,30 @@ double BBHeuristic::getBranchingPoint(int idx,std::vector<mc::Interval> first_st
         return (second_stage_IX[second_stage_idx].l() + second_stage_IX[second_stage_idx].u()) / 2.0;
     }
 };
-double BBHeuristic::getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX){
 
-    return (first_stage_IX[idx].l() + first_stage_IX[idx].u()) / 2.0;
+void BBHeuristic::updateWeights(int idx_branched, double left_improve,double right_improve){
+
+    this->weights[idx_branched].push_back(std::make_pair(left_improve,right_improve));
+    
 };
 
-void BBHeuristic::updateWeights(int idx_branched, double left_improve,double right_improv){
+double BBHeuristic::getPseudoCost(int idx_branched,SCORE_FUNCTION score_function){
+    double left_sum = 0.0;
+    double right_sum = 0.0;
 
-};
+    for (const auto& p : this->weights[idx_branched]) {
+        left_sum += p.first;
+        right_sum += p.second;
+    }
+    left_sum/=this->weights[idx_branched].size();
+    right_sum/=this->weights[idx_branched].size();
 
-double BBHeuristic::getPseudoCost(int idx_branched,int which_stage,mc::Interval stage_IX){
-    return 0.0;
+
+    if (score_function == SCORE_FUNCTION::SUM){
+        return this->mu*std::max(left_sum, right_sum)+(1-this->mu)*std::min(left_sum, right_sum);
+    }else if (score_function == SCORE_FUNCTION::MULTIPLY){
+        return std::max(left_sum, 1E-3)* std::max(right_sum, 1E-3);
+    }else{
+        throw std::invalid_argument("Unknown SCORE_FUNCTION");
+    }
 };

@@ -3,6 +3,7 @@
 #include <mcpp/include/interval.hpp>
 #include <example/STModel.h>
 #include <vector>
+enum class SCORE_FUNCTION {SUM,MULTIPLY};
 class BBHeuristic {
     public:
         BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
@@ -23,9 +24,10 @@ class BBHeuristic {
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX);
         double getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX );
-        double getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX);
         void updateWeights(int idx_branched, double left_improve,double right_improv);
-        double getPseudoCost(int idx_branched,int which_stage,mc::Interval stage_IX);
+        
+        double getPseudoCost(int idx_branched,SCORE_FUNCTION score_function=SCORE_FUNCTION::SUM);
+
 
 };
 #endif // BBHEURISTIC_H
