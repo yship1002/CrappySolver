@@ -6,12 +6,16 @@ class ProcessModel:public STModel{
         ProcessModel(const ProcessModel& other)=default;
         ProcessModel()=default; // default constructor
         /// A vector of ScenarioNames
+        void convertToCentralizedModel();
         void generateMINLP(GRBModel* grbmodel) override;
         void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) override;
-
+        void generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
+                              IloRangeArray* cplex_constraints,
+                              IloObjective* cplex_obj,
+                              IloNumVarArray* cplex_x) override;
         /**
         * @brief tell cereal what data to save
         * @tparam Archive 

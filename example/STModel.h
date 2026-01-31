@@ -46,6 +46,10 @@ class STModel{
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x)=0;
+        virtual void generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
+                              IloRangeArray* cplex_constraints,
+                              IloObjective* cplex_obj,
+                              IloNumVarArray* cplex_x)=0;
         void LFRR(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
