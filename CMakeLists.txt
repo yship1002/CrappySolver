@@ -62,15 +62,26 @@ target_link_directories(${EXECUTABLE_NAME} PRIVATE
 )
 
 # ---- Link libs (match your -l list) ----
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE
-    ilocplex
-    concert
-    cplex
-    m
-    pthread
-    gurobi_c++
-    gurobi130
-)
-
+if (IS_ARM64_OSX)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE
+        ilocplex
+        concert
+        cplex
+        m
+        pthread
+        gurobi_c++
+        gurobi130
+    )
+else()
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE
+        ilocplex
+        concert
+        cplex
+        m
+        pthread
+        gurobi_c++
+        gurobi120
+    )
+endif()
 # Optional: if your cluster needs it for static_pic objects
 # target_link_options(test PRIVATE -Wl,--no-as-needed)
