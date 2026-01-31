@@ -33,7 +33,7 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
         mc::Interval(1.2,4),
         mc::Interval(145,162)
     };
-    this->convertToCentralizedModel();
+    // this->convertToCentralizedModel();
 };
 void ProcessModel::convertToCentralizedModel(){
     std::vector<mc::Interval> new_second_stage_IX;
@@ -234,7 +234,7 @@ void ProcessModel::generateMINLP(GRBModel* grbmodel){
     nc8 = -c8;
 
 
-    mc::FFVar objective =0.333333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    mc::FFVar objective =0.1*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
     std::vector<mc::FFVar> F = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
     
 

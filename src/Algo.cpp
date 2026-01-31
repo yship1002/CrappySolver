@@ -306,7 +306,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD) / std::abs(this->bestUBD);
         
-        std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<100*gap<<"%"<<std::endl;
+        //std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<100*gap<<"%"<<std::endl;
 
         this->iterations++;
     }
@@ -327,7 +327,7 @@ double insideAlgo::calculateLBD(BBNode* node,double tolerance) {
         IloObjective obj (env);
         IloNumVarArray x(env);
 
-        this->model->generateFullLP(&env,&cplexmodel,&c,&obj,&x);
+        this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, tolerance);
@@ -350,52 +350,51 @@ double insideAlgo::calculateLBD(BBNode* node,double tolerance) {
 
 }
 double insideAlgo::calculateUBD(BBNode* node,double tolerance) {
-    node->UBD=-1134.15;
-    return node->UBD;
-    // this->model->first_stage_IX = node->first_stage_IX;
-    // this->model->second_stage_IX = node->second_stage_IX;
-    // //GRBEnv env = GRBEnv("genconstrnl_indexed.log");
-    // GRBEnv env = GRBEnv();
 
-    // env.set(GRB_IntParam_OutputFlag, 0);
-    // env.set(GRB_IntParam_LogToConsole, 0);
+    this->model->first_stage_IX = node->first_stage_IX;
+    this->model->second_stage_IX = node->second_stage_IX;
+    //GRBEnv env = GRBEnv("genconstrnl_indexed.log");
+    GRBEnv env = GRBEnv();
 
-    // try {
-    //     GRBModel grbmodel = GRBModel(env);
-    //     this->model->generateMINLP(&grbmodel);
+    env.set(GRB_IntParam_OutputFlag, 0);
+    env.set(GRB_IntParam_LogToConsole, 0);
 
-    //     grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
+    try {
+        GRBModel grbmodel = GRBModel(env);
+        this->model->generateMINLP(&grbmodel);
 
-    //     grbmodel.optimize();
-    //     //grbmodel.write("model.sol");
-    //     int status = grbmodel.get(GRB_IntAttr_Status);
+        grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
-    //     if (status == GRB_OPTIMAL) {
-    //         double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
-    //         node->UBD = objval;
-    //         // std::cout << "Optimized solution values: "<<objval<<std::endl;
-    //         // for (int i = 0; i <200; ++i) {
-    //         //     std::string auxName = "x" + std::to_string(i);
+        grbmodel.optimize();
+        //grbmodel.write("model.sol");
+        int status = grbmodel.get(GRB_IntAttr_Status);
+
+        if (status == GRB_OPTIMAL) {
+            double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
+            node->UBD = objval;
+            // std::cout << "Optimized solution values: "<<objval<<std::endl;
+            // for (int i = 0; i <200; ++i) {
+            //     std::string auxName = "x" + std::to_string(i);
                     
-    //         //         // 1. Get the variable object
-    //         //     GRBVar auxVar = grbmodel.getVarByName(auxName);
-    //         //     double value = auxVar.get(GRB_DoubleAttr_X);
-    //         //     std::cout << "Variable " << auxName << " = " << value << "\n";
-    //         // }
-    //         return objval;
-    //     }
+            //         // 1. Get the variable object
+            //     GRBVar auxVar = grbmodel.getVarByName(auxName);
+            //     double value = auxVar.get(GRB_DoubleAttr_X);
+            //     std::cout << "Variable " << auxName << " = " << value << "\n";
+            // }
+            return objval;
+        }
 
-    //     if (status == GRB_INFEASIBLE) {
-    //         std::cout << "Gurobi model infeasible (status=" << status << ").\n";
-    //     } else if (status == GRB_UNBOUNDED) {
-    //         std::cout << "Gurobi model unbounded (status=" << status << ").\n";
-    //     }else {
-    //         std::cout << "Gurobi optimization ended with status " << status << ".\n";
-    //     }
-    // } catch (GRBException& e) {
-    //     std::cerr << "Gurobi exception: code=" << e.getErrorCode() << " message=" << e.getMessage() << "\n";
-    // }
+        if (status == GRB_INFEASIBLE) {
+            std::cout << "Gurobi model infeasible (status=" << status << ").\n";
+        } else if (status == GRB_UNBOUNDED) {
+            std::cout << "Gurobi model unbounded (status=" << status << ").\n";
+        }else {
+            std::cout << "Gurobi optimization ended with status " << status << ".\n";
+        }
+    } catch (GRBException& e) {
+        std::cerr << "Gurobi exception: code=" << e.getErrorCode() << " message=" << e.getMessage() << "\n";
+    }
 
-    // node->UBD = INFINITY;
-    // return INFINITY;
+    node->UBD = INFINITY;
+    return INFINITY;
 }
