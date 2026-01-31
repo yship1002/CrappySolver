@@ -350,7 +350,7 @@ double insideAlgo::calculateLBD(BBNode* node,double tolerance) {
 
 }
 double insideAlgo::calculateUBD(BBNode* node,double tolerance) {
-    node->UBD=-1134.15;
+    node->UBD=-1126.4218270121305;
     return node->UBD;
     // this->model->first_stage_IX = node->first_stage_IX;
     // this->model->second_stage_IX = node->second_stage_IX;
