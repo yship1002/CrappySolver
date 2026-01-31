@@ -9,14 +9,14 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
     this->perturb = {
         {ScenarioNames::SCENARIO1, 1.0976270078546495},// orignal
         {ScenarioNames::SCENARIO2, 9.430378732744838},
-        {ScenarioNames::SCENARIO3, 6.6027633760716435}
-        // {ScenarioNames::SCENARIO4,1.3514894164800063},
-        // {ScenarioNames::SCENARIO5,4.236547993428394},
-        // {ScenarioNames::SCENARIO6,2.155994520336202},
-        // {ScenarioNames::SCENARIO7,5.0580836121681994},
-        // {ScenarioNames::SCENARIO8,2.0849789288240969},
-        // {ScenarioNames::SCENARIO9,5.6016775572644488},
-        // {ScenarioNames::SCENARIO10,4.3503766112257304}
+        {ScenarioNames::SCENARIO3, 6.6027633760716435},
+        {ScenarioNames::SCENARIO4,1.3514894164800063},
+        {ScenarioNames::SCENARIO5,4.236547993428394},
+        {ScenarioNames::SCENARIO6,2.155994520336202},
+        {ScenarioNames::SCENARIO7,5.0580836121681994},
+        {ScenarioNames::SCENARIO8,2.0849789288240969},
+        {ScenarioNames::SCENARIO9,5.6016775572644488},
+        {ScenarioNames::SCENARIO10,4.3503766112257304}
 
     };
     this->first_stage_IX = {
