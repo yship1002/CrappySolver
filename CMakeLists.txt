@@ -38,14 +38,14 @@ file(GLOB EXAMPLE_SOURCES
     "${PROJ_ROOT}/example/*.cpp"
 )
 
-add_executable(test
+add_executable(${EXECUTABLE_NAME}
     "${PROJ_ROOT}/test.cpp"
     ${src_SOURCES}
     ${EXAMPLE_SOURCES}
 )
 
 # ---- Include directories (match your -I list) ----
-target_include_directories(test PRIVATE
+target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${PROJ_ROOT}"
     "${PROJ_ROOT}/cereal/include"
     "${PROJ_ROOT}/mcpp/src/3rdparty/fadbad++"
@@ -55,14 +55,14 @@ target_include_directories(test PRIVATE
 )
 
 # ---- Library search paths (match your -L list) ----
-target_link_directories(test PRIVATE
+target_link_directories(${EXECUTABLE_NAME} PRIVATE
     "${CPLEX_LIB_CONCERT}"
     "${CPLEX_LIB_CPLEX}"
     "${GUROBI_LIB}"
 )
 
 # ---- Link libs (match your -l list) ----
-target_link_libraries(test PRIVATE
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE
     ilocplex
     concert
     cplex
