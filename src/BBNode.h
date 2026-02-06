@@ -11,18 +11,32 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
-class BBNode {
+class Node{
     public:
-        BBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX, BranchingStrategy strategy);
-        BBNode()=default; // default constructor
-        BBNode(const BBNode& other)=default;
+        Node(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX);
+        Node()=default; // default constructor
+        Node(const Node& other)=default;
+        BBHeuristic branchheuristic;
         std::vector<mc::Interval> first_stage_IX;
         std::vector<mc::Interval> second_stage_IX;
-        BBHeuristic branchheuristic;
-        int nodeIdx;
         double LBD;
         double UBD;
-        bool is_second_stage_BBnode;
+};
+class BBNode : public Node {
+    public:
+        BBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX,BranchingStrategy strategy);
+        BBNode()=default; // default constructor
+        BBNode(const BBNode& other)=default;
+
+
+};
+class xBBNode: public Node {
+    public:
+        xBBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX, 
+            BranchingStrategy strategy,ScenarioNames scenario_name);
+        xBBNode()=default; // default constructor
+        xBBNode(const xBBNode& other)=default;
+        ScenarioNames scenario_name;
 
 };
 #endif // BBNODE_H

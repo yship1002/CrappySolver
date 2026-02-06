@@ -7,12 +7,14 @@
 #include <cereal/types/map.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
-
+int insideAlgo::lbd_calculation_count=0;
+int insideAlgo::fathom_at_start_count=0;
 int main() {
 
     ProcessModel model(BranchingStrategy::pseudo); //ubd=-1126.4218270121305(3) -1134.15(10)
 
-    Algo CZalgo(&model,-1134.15); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,-1126.4218270121305); // provide UBD for outer layer
+    outsideAlgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(0.001); // 0.1% tolerance
 
     // {

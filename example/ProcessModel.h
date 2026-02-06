@@ -12,6 +12,7 @@ class ProcessModel:public STModel{
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) override;
+        // this is to solve centralzied model
         void generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,

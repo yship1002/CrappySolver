@@ -6,7 +6,13 @@ BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
     this->initial_second_stage_IX = initial_second_stage_IX;
     this->strategy = strategy;
     this->weights.resize(initial_first_stage_IX.size() + initial_second_stage_IX.size());
-    }
+}
+BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
+                    BranchingStrategy strategy){
+    this->initial_first_stage_IX = initial_first_stage_IX;
+    this->strategy = strategy;
+    this->weights.resize(initial_first_stage_IX.size());
+}
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX){
     int max_idx = 0;
@@ -101,9 +107,21 @@ double BBHeuristic::getBranchingPoint(int idx,std::vector<mc::Interval> first_st
     }
 };
 
-void BBHeuristic::updateWeights(int idx_branched, double left_improve,double right_improve){
+void BBHeuristic::updateWeights(int idx_branched, double left_improve,double right_improve,double range){
+    if (left_improve ==INFINITY || right_improve == INFINITY){
+        throw std::runtime_error("Improvement values should not be infinity");
+    }
+    if (left_improve < -1e-3 || right_improve < -1e-3){
+        throw std::runtime_error("Improvement values should be non-negative");
+    }
+    if (left_improve<0){
+        left_improve=0.0;
+    }
+    if (right_improve<0){
+        right_improve=0.0;
+    }
 
-    this->weights[idx_branched].push_back(std::make_pair(left_improve,right_improve));
+    this->weights[idx_branched].push_back(std::make_pair(left_improve/range,right_improve/range));
     
 };
 

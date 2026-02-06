@@ -9,6 +9,8 @@ class BBHeuristic {
         BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
                     std::vector<mc::Interval> initial_second_stage_IX,
                     BranchingStrategy strategy);
+        BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
+                    BranchingStrategy strategy);
         BBHeuristic(const BBHeuristic& other)=default;
         BBHeuristic()=default; // default constructor
         BranchingStrategy strategy;
@@ -16,7 +18,7 @@ class BBHeuristic {
         std::vector<mc::Interval> initial_first_stage_IX;
         std::vector<mc::Interval> initial_second_stage_IX;
 
-        std::vector<std::vector<std::pair<double,double>>> weights;
+        std::vector<std::vector<std::pair<double,double>>> weights;// combing first stage and second stage(if has)
 
         double mu=1.0/6.0;  // percentage of bigger improvement to consider in pseudo cost update(0-1)
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
@@ -24,7 +26,7 @@ class BBHeuristic {
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX);
         double getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX );
-        void updateWeights(int idx_branched, double left_improve,double right_improv);
+        void updateWeights(int idx_branched, double left_improve,double right_improv,double range);
         
         double getPseudoCost(int idx_branched,SCORE_FUNCTION score_function=SCORE_FUNCTION::SUM);
 

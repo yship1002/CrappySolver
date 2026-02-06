@@ -13,44 +13,51 @@
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
 #include <chrono>
+template<typename T>
 class Algo {
     public:
-        Algo(STModel* model,double provided_UBD=INFINITY);
+        Algo(STModel* model);
         Algo()=default; // default constructor
         Algo(const Algo& other)=default;
-        double provided_UBD;
-        int iterations;
         double worstLBD;
         double bestUBD;
         STModel* model;
-        std::vector<std::vector<int>> solver_iterations;
-        std::vector<BBNode> activeNodes;
-
+        std::vector<T> activeNodes;
         int getWorstNodeIdx();
-        int branchNodeAtIdx(int idx,double tolerance);
-        void strongbranching(BBNode* node,double tolerance);
         double getBestUBD();
         double getWorstLBD();   
         void fathomNodes(double UBD);
-        int getTotalSolverNodes();
-        double best_solution;
-        virtual double solve(double tolerance);
-        virtual double calculateLBD(BBNode* node,double tolerance);
-        virtual double calculateUBD(BBNode* node,double tolerance);
-        
-        // Cereal serialization support
+        bool bestUBDforInfinity=false;
 
-        template<class Archive>
-        void serialize(Archive& ar) {
-            ar(CEREAL_NVP(solver_iterations));
-        }
+        virtual int branchNodeAtIdx(int idx,double tolerance)=0;
+        virtual double solve(double tolerance)=0;
+        virtual double calculateLBD(T* node,double tolerance)=0;
+        virtual double calculateUBD(T* node,double tolerance)=0;
+        virtual void strongbranching(T* node,double tolerance)=0;
 };
-
-class insideAlgo:public Algo{
+class outsideAlgo:public Algo<BBNode>{
     public:
-        insideAlgo(STModel* model);
+        outsideAlgo(STModel* model,double provided_UBD);
+        outsideAlgo()=default; // default constructor
+        outsideAlgo(const outsideAlgo& other)=default;
+        double cheatstrongbranching(BBNode* node,double tolerance);
+        int branchNodeAtIdx(int idx,double tolerance) override;
         double solve(double tolerance) override;
         double calculateLBD(BBNode* node,double tolerance) override;
         double calculateUBD(BBNode* node,double tolerance) override;
+        void strongbranching(BBNode* node,double tolerance) override;
 };
+class insideAlgo:public Algo<xBBNode>{
+    public:
+        insideAlgo(STModel* model,ScenarioNames scenario_name);
+        ScenarioNames scenario_name;
+        static int lbd_calculation_count;
+        static int fathom_at_start_count;
+        double solve(double tolerance) override;
+        int branchNodeAtIdx(int idx,double tolerance) override;
+        void strongbranching(xBBNode* node,double tolerance) override;
+        double calculateLBD(xBBNode* node,double tolerance) override;
+        double calculateUBD(xBBNode* node,double tolerance) override;
+};
+#include "Algo.tpp" // Include the implementation file for template definitions
 #endif // ALGO_H
