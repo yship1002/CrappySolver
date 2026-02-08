@@ -27,6 +27,7 @@ class Algo {
         double getBestUBD();
         double getWorstLBD();   
         void fathomNodes(double UBD);
+
         bool bestUBDforInfinity=false;
 
         virtual int branchNodeAtIdx(int idx,double tolerance)=0;
@@ -40,12 +41,20 @@ class outsideAlgo:public Algo<BBNode>{
         outsideAlgo(STModel* model,double provided_UBD);
         outsideAlgo()=default; // default constructor
         outsideAlgo(const outsideAlgo& other)=default;
+        std::vector<int> LBD_calculation_records;
+        std::vector<std::vector<std::pair<double, double>>> first_stage_IX_record;
         double cheatstrongbranching(BBNode* node,double tolerance);
         int branchNodeAtIdx(int idx,double tolerance) override;
         double solve(double tolerance) override;
         double calculateLBD(BBNode* node,double tolerance) override;
         double calculateUBD(BBNode* node,double tolerance) override;
         void strongbranching(BBNode* node,double tolerance) override;
+        template<class Archive>
+        void serialize(Archive& ar) {
+            ar(
+               cereal::make_nvp("LBD_calculation_records", LBD_calculation_records),
+               cereal::make_nvp("first_stage_IX_record", first_stage_IX_record));
+        }
 };
 class insideAlgo:public Algo<xBBNode>{
     public:
