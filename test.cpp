@@ -7,19 +7,19 @@
 #include <cereal/types/map.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
-
+int insideAlgo::lbd_Calculation_count=0;
 int main() {
 
     ProcessModel model(BranchingStrategy::pseudo); //ubd=-1126.4218270121305(3) -1134.15(10)
 
-    Algo CZalgo(&model,-1134.15); // provide UBD for outer layer
+    Algo CZalgo(&model,-1126.4218270121305); // provide UBD for outer layer
     CZalgo.solve(0.001); // 0.1% tolerance
 
-    // {
-    //     std::ofstream os("/Users/jyang872/Desktop/CrappySolver/processl.json");
-    //     cereal::JSONOutputArchive oarchive(os);
-    //     oarchive(cereal::make_nvp("Algo", CZalgo));
-    // }
+    {
+        std::ofstream os("/Users/jyang872/Desktop/CrappySolver/process.json");
+        cereal::JSONOutputArchive oarchive(os);
+        oarchive(cereal::make_nvp("Algo", CZalgo));
+    }
 
     return 0;   
 }

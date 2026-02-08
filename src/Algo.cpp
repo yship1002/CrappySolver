@@ -211,10 +211,24 @@ int Algo::branchNodeAtIdx(int idx,double tolerance) {
         child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, child2.first_stage_IX[branch_idx].u());
     }
 
-    
+    int before_calculations=insideAlgo::lbd_Calculation_count;
     this->calculateLBD(&child1, tolerance);
+    int after_calculations=insideAlgo::lbd_Calculation_count-before_calculations;
+    this->lbd_calculation_record.push_back(after_calculations);
+    before_calculations=insideAlgo::lbd_Calculation_count;
     this->calculateLBD(&child2, tolerance);
-
+    after_calculations=insideAlgo::lbd_Calculation_count-before_calculations;
+    this->lbd_calculation_record.push_back(after_calculations);
+    std::vector<std::pair<double,double>> child1_first_Stage_IX;
+    for (int i = 0; i < child1.first_stage_IX.size(); ++i) {
+        child1_first_Stage_IX.push_back({child1.first_stage_IX[i].l(), child1.first_stage_IX[i].u()});
+    }
+    this->first_Stage_record.push_back(child1_first_Stage_IX);
+    std::vector<std::pair<double,double>> child2_first_Stage_IX;
+    for (int i = 0; i < child2.first_stage_IX.size(); ++i) {
+        child2_first_Stage_IX.push_back({child2.first_stage_IX[i].l(), child2.first_stage_IX[i].u()});
+    }
+    this->first_Stage_record.push_back(child2_first_Stage_IX);
     child1.UBD = this->activeNodes[idx].UBD; // pass parent UBD to children is valid for proof of concept
     child2.UBD = this->activeNodes[idx].UBD; // potentially do beeter if actual calculate
 
@@ -291,7 +305,7 @@ double insideAlgo::solve(double tolerance) {
 
     double gap = (this->bestUBD - this->worstLBD)/std::abs(this->bestUBD);
     this->iterations = 0;
- 
+
     while (gap > tolerance) {
         if (this->activeNodes.empty()) {
             break;
@@ -314,7 +328,7 @@ double insideAlgo::solve(double tolerance) {
 }
 
 double insideAlgo::calculateLBD(BBNode* node,double tolerance) {
-
+    insideAlgo::lbd_Calculation_count++;
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
     try{

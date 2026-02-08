@@ -25,7 +25,8 @@ class Algo {
         STModel* model;
         std::vector<std::vector<int>> solver_iterations;
         std::vector<BBNode> activeNodes;
-
+        std::vector<int> lbd_calculation_record;
+        std::vector<std::vector<std::pair<double,double>>> first_Stage_record; // record the left and right impact of each branching variable for each node
         int getWorstNodeIdx();
         int branchNodeAtIdx(int idx,double tolerance);
         void strongbranching(BBNode* node,double tolerance);
@@ -42,13 +43,14 @@ class Algo {
 
         template<class Archive>
         void serialize(Archive& ar) {
-            ar(CEREAL_NVP(solver_iterations));
+            ar(CEREAL_NVP(lbd_calculation_record), CEREAL_NVP(first_Stage_record));
         }
 };
 
 class insideAlgo:public Algo{
     public:
         insideAlgo(STModel* model);
+        static int lbd_Calculation_count;
         double solve(double tolerance) override;
         double calculateLBD(BBNode* node,double tolerance) override;
         double calculateUBD(BBNode* node,double tolerance) override;
