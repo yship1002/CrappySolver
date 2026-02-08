@@ -41,8 +41,8 @@ class outsideAlgo:public Algo<BBNode>{
         outsideAlgo(STModel* model,double provided_UBD);
         outsideAlgo()=default; // default constructor
         outsideAlgo(const outsideAlgo& other)=default;
-        std::map<int,int> LBD_calculation_records;
-        std::map<int,std::vector<std::pair<double, double>>> first_stage_IX_record;
+        std::vector<int> LBD_calculation_records;
+        std::vector<std::vector<std::pair<double, double>>> first_stage_IX_record;
         double cheatstrongbranching(BBNode* node,double tolerance);
         int branchNodeAtIdx(int idx,double tolerance) override;
         double solve(double tolerance) override;

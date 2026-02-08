@@ -15,7 +15,7 @@ int main() {
     ProcessModel model(BranchingStrategy::pseudo); //ubd=-1126.4218270121305(3) -1134.15(10)
 
     outsideAlgo CZalgo(&model,-1126.4218270121305); // provide UBD for outer layer
-    CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
+    CZalgo.bestUBDforInfinity=false; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(0.001); // 0.1% tolerance
 
     {
