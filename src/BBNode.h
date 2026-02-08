@@ -27,6 +27,8 @@ class BBNode : public Node {
         BBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX,BranchingStrategy strategy);
         BBNode()=default; // default constructor
         BBNode(const BBNode& other)=default;
+        static int node_idx;
+        int node_id;
 
 
 };
