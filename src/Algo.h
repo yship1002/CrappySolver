@@ -41,7 +41,9 @@ class outsideAlgo:public Algo<BBNode>{
         outsideAlgo(STModel* model,double provided_UBD);
         outsideAlgo()=default; // default constructor
         outsideAlgo(const outsideAlgo& other)=default;
+        std::vector<double> LBD_values_records;
         std::vector<int> LBD_calculation_records;
+        std::vector<double> LBD_calculation_time_records;
         std::vector<std::vector<std::pair<double, double>>> first_stage_IX_record;
         double cheatstrongbranching(BBNode* node,double tolerance);
         int branchNodeAtIdx(int idx,double tolerance) override;
@@ -53,7 +55,9 @@ class outsideAlgo:public Algo<BBNode>{
         void serialize(Archive& ar) {
             ar(
                cereal::make_nvp("LBD_calculation_records", LBD_calculation_records),
-               cereal::make_nvp("first_stage_IX_record", first_stage_IX_record));
+               cereal::make_nvp("first_stage_IX_record", first_stage_IX_record),
+               cereal::make_nvp("LBD_values_records", LBD_values_records),
+            cereal::make_nvp("LBD_calculation_time_records", LBD_calculation_time_records));
         }
 };
 class insideAlgo:public Algo<xBBNode>{
@@ -61,6 +65,7 @@ class insideAlgo:public Algo<xBBNode>{
         insideAlgo(STModel* model,ScenarioNames scenario_name);
         ScenarioNames scenario_name;
         static int lbd_calculation_count;
+        static double lbd_calculation_time;
         static int fathom_at_start_count;
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;
