@@ -6,7 +6,7 @@ class ProcessModel:public STModel{
         ProcessModel(const ProcessModel& other)=default;
         ProcessModel()=default; // default constructor
         /// A vector of ScenarioNames
-        void convertToCentralizedModel();
+
         void generateMINLP(GRBModel* grbmodel) override;
         void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,

@@ -62,16 +62,26 @@ class outsideAlgo:public Algo<BBNode>{
 };
 class insideAlgo:public Algo<xBBNode>{
     public:
-        insideAlgo(STModel* model,ScenarioNames scenario_name);
+        insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD=INFINITY,bool solvefullModel=false);
+        double provided_UBD;
+        bool solvefullModel;
         ScenarioNames scenario_name;
         static int lbd_calculation_count;
         static double lbd_calculation_time;
         static int fathom_at_start_count;
+        std::vector<double> LBD_values_records;
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;
         void strongbranching(xBBNode* node,double tolerance) override;
         double calculateLBD(xBBNode* node,double tolerance) override;
         double calculateUBD(xBBNode* node,double tolerance) override;
+        template<class Archive>
+        void serialize(Archive& ar) {
+            ar(
+               cereal::make_nvp("lbd_calculation_count", lbd_calculation_count),
+               cereal::make_nvp("lbd_calculation_time", lbd_calculation_time),
+               cereal::make_nvp("LBD_values_records", LBD_values_records));
+        }
 };
 #include "Algo.tpp" // Include the implementation file for template definitions
 #endif // ALGO_H

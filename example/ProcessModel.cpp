@@ -36,13 +36,7 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
     };
     // this->convertToCentralizedModel();
 };
-void ProcessModel::convertToCentralizedModel(){
-    std::vector<mc::Interval> new_second_stage_IX;
-    for (auto & scenario_name : this->scenario_names){
-        new_second_stage_IX.insert(new_second_stage_IX.end(), this->second_stage_IX.begin(), this->second_stage_IX.end());
-    };
-    this->second_stage_IX = new_second_stage_IX;
-}
+
 void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,

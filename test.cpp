@@ -16,8 +16,14 @@ int main(int argc, char* argv[]) {
     ProcessModel model(BranchingStrategy::pseudo); //ubd=-1126.4218270121305(3) -1134.15(10)
 
     outsideAlgo CZalgo(&model,-1126.4218270121305); // provide UBD for outer layer
+    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1, -1126.4218270121305,true); // provide UBD for outer layer
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(0.001); // 0.1% tolerance
+    // {
+    //     std::ofstream os(argv[1]);
+    //     cereal::JSONOutputArchive oarchive(os);
+    //     oarchive(cereal::make_nvp("outsideAlgo", CZalgo));
+    // }
     {
         std::ofstream os(argv[1]);
         cereal::JSONOutputArchive oarchive(os);
