@@ -4,5 +4,5 @@
 	branch = master
 [submodule "cereal"]
 	path = cereal
-	url = https://github.com/USCiLab/cereal.git
+	url = https://github.com/yship1002/cereal.git
 	branch = master
