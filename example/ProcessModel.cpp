@@ -35,6 +35,8 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
         mc::Interval(145,162)
     };
     // this->convertToCentralizedModel();
+
+    
 };
 
 void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
@@ -253,7 +255,7 @@ void ProcessModel::generateMINLP(GRBModel* grbmodel){
             if (op->varin.size()==0) continue;
             if (op->varout[0]->id().first == mc::FFVar::CINT || op->varout[0]->id().first == mc::FFVar::CREAL || op->varout[0]->id().first == mc::FFVar::VAR) continue;
             // now we have an aux variable as output
-            if (op->varout[0]->id().second == F[i].id().second) {
+            if (op->varout[0]->id().second == F[i].id().second) { //if either object or constraint
                 if (i == F.size()-1) { // objective
                     grbmodel->addVar(-GRB_INFINITY, GRB_INFINITY, 1.0, GRB_CONTINUOUS, "aux_"+std::to_string(op->varout[0]->id().second));
                 } else {
@@ -550,4 +552,284 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     cplexmodel->add(*cplex_x);
     cplexmodel->add(*cplex_constraints);
     cplexmodel->add(*cplex_obj);
+};
+ProcessModel_IPOPT::ProcessModel_IPOPT(BranchingStrategy branching_strategy):ProcessModel(branching_strategy),Ipopt::TNLP() {
+    int n_first_stage_vars = this->first_stage_IX.size();
+    int n_second_stage_vars = this->second_stage_IX.size();
+
+    // Loop over each scenario to build subproblem
+
+    const int nvars = n_first_stage_vars + n_second_stage_vars;
+
+    this->X.resize(nvars);
+
+    for (int i = 0; i < nvars; ++i) X[i].set(&(this->DAG));
+
+    // scenario perturbation
+    double p = this->perturb[this->scenario_name];
+
+
+    //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
+    // Constraints translated from the Pyomo example (indices assume:
+    // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
+    // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
+    // Constraints (mapped from the Pyomo model)
+    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
+    mc::FFVar nc1,nc4,nc5,nc6,nc7,nc8;
+
+    // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
+    c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
+    nc1 = -c1;
+
+    // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
+    c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
+
+    // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
+    c3 = X[0] - 1.22 * X[4] + X[3] - p;
+
+    // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
+    c4 = (-0.001 * X[4] * X[8] * X[5])/(98 - X[5])+X[2]-p;     // this is the problem
+    nc4 = -c4;
+
+    // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
+    c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
+    nc5 = -c5;
+
+    // e5: -(x2 + x5)/x1 + x8 == 0
+    c6 = (-(X[1] + X[3]) / X[0] + X[7]);
+    nc6 = -c6;
+
+    //e6: x9 + 0.222*x10 == 35.82
+    c7 = (X[8] + 0.222 * X[9]) - 35.82;
+    nc7 = -c7;
+
+    // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
+    c8 = (-3 * X[6] + X[9]) + 133;
+    nc8 = -c8;
+
+    mc::FFVar objective =0.333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    this->F = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
+
+};
+bool ProcessModel_IPOPT::get_nlp_info(
+            Ipopt::Index& n,
+            Ipopt::Index& m,
+            Ipopt::Index& nnz_jac_g,
+            Ipopt::Index& nnz_h_lag,
+            Ipopt::TNLP::IndexStyleEnum& index_style
+        )
+{   
+
+
+    // number of variables
+    n = this->first_stage_IX.size() + this->second_stage_IX.size();
+
+    // one equality constraint and one inequality constraint
+    m = this->F.size()-1; // w
+
+    // in this example the jacobian is dense and contains 8 nonzeros
+    nnz_jac_g = n*m;
+
+    // the Hessian is also dense and has 16 total nonzeros, but we
+    // only need the lower left corner (since it is symmetric)
+    nnz_h_lag = 0;
+
+    // use the C style indexing (0-based)
+    index_style = TNLP::C_STYLE;
+    return true;
+};
+bool ProcessModel_IPOPT::get_bounds_info(
+            Ipopt::Index   n,
+            Ipopt::Number* x_l,
+            Ipopt::Number* x_u,
+            Ipopt::Index   m,
+            Ipopt::Number* g_l,
+            Ipopt::Number* g_u
+        )
+{
+    assert(n == (Ipopt::Index)(this->first_stage_IX.size()+this->second_stage_IX.size()));
+    assert(m == (Ipopt::Index)(F.size()-1));
+    // the variables have lower bounds of 1
+    for( Ipopt::Index i = 0; i < this->first_stage_IX.size(); i++ )
+    {
+        x_l[i] = this->first_stage_IX[i].l(); // for first stage variables
+        x_u[i] = this->first_stage_IX[i].u();
+    }
+    for( Ipopt::Index i = 0; i < this->second_stage_IX.size(); i++ )
+    {
+        x_l[i + this->first_stage_IX.size()] = this->second_stage_IX[i].l(); // for second stage variables
+        x_u[i + this->first_stage_IX.size()] = this->second_stage_IX[i].u(); // for second stage variables
+    }
+    for (Ipopt::Index i = 0; i < m; ++i) {
+        g_l[i] = -2e19;
+        g_u[i] = 0.0;
+    }
+
+
+    return true;
+}
+
+bool ProcessModel_IPOPT::get_starting_point(
+            Ipopt::Index   n,
+            bool    init_x,
+            Ipopt::Number* x,
+            bool    init_z,
+            Ipopt::Number* z_L,
+            Ipopt::Number* z_U,
+            Ipopt::Index   m,
+            bool    init_lambda,
+            Ipopt::Number* lambda
+        ) 
+{
+
+    // initialize to the given starting point
+    for (Ipopt::Index i = 0; i < this->first_stage_IX.size(); ++i) {
+        x[i] =0.5*(this->first_stage_IX[i].l() + this->first_stage_IX[i].u()); // for first stage variables
+    }
+    for (Ipopt::Index i = 0; i < this->second_stage_IX.size(); ++i) {
+        x[i + this->first_stage_IX.size()] =0.5*(this->second_stage_IX[i].l() + this->second_stage_IX[i].u()); // for second stage variables
+    }
+
+    return true;
+};
+bool ProcessModel_IPOPT::eval_f(
+            Ipopt::Index         n,
+            const Ipopt::Number* x,
+            bool          new_x,
+            Ipopt::Number&       obj_value
+        )
+{
+
+
+    mc::FFSubgraph   op_f= this->DAG.subgraph(std::vector<mc::FFVar> {F[0]});
+    std::vector<double> dwk;
+    std::vector<mc::FFVar>  Fvar;
+
+    this->DAG.eval(op_f, dwk, 1, &(F[0]), &obj_value,
+             n,this->X.data(), x);
+
+    return true;
+};
+bool ProcessModel_IPOPT::eval_grad_f(
+            Ipopt::Index         n,
+            const Ipopt::Number* x,
+            bool          new_x,
+            Ipopt::Number*       grad_f
+        )
+{
+    std::vector<fadbad::B<double>> BXval(n);
+    fadbad::B<double>   BCval;
+    std::vector<fadbad::B<double>> Bwk;
+    mc::FFSubgraph   op_f= this->DAG.subgraph(std::vector<mc::FFVar> {F[0]});
+    for( Ipopt::Index i=0; i<n; i++ ){
+          BXval[i] = x[i];
+    }
+    this->DAG.eval( op_f, Bwk, 1, &(F[0]), &BCval, n, this->X.data(), BXval.data() );
+        
+    Bwk.clear();
+    BCval.diff( 0, 1 );
+    // Gather derivatives
+    for( Ipopt::Index i=0; i<n; i++ ){
+        grad_f[i] = BXval[i].d(0);
+    }
+    return true;
+};
+bool ProcessModel_IPOPT::eval_g(
+            Ipopt::Index         n,
+            const Ipopt::Number* x,
+            bool          new_x,
+            Ipopt::Index         m,
+            Ipopt::Number*       g
+        )
+{
+    std::vector<double> dwk;
+    mc::FFSubgraph   op_g= this->DAG.subgraph(m,this->F.data()+1);
+    // skipping the first one since it's the objective
+    this->DAG.eval( op_g, dwk, m, this->F.data()+1, g, n, this->X.data(), x );
+
+    return true;
+}
+bool ProcessModel_IPOPT::eval_jac_g(
+            Ipopt::Index         n,
+            const Ipopt::Number* x,
+            bool          new_x,
+            Ipopt::Index         m,
+            Ipopt::Index         nele_jac,
+            Ipopt::Index*        iRow,
+            Ipopt::Index*        jCol,
+            Ipopt::Number*       values
+        ) 
+{
+
+    // Dense pattern: row-major (constraint-major)
+    if (values == nullptr) {
+        Ipopt::Index k = 0;
+        for (Ipopt::Index row = 0; row < m; ++row) {
+            for (Ipopt::Index col = 0; col < n; ++col) {
+                iRow[k] = row;
+                jCol[k] = col;
+                ++k;
+            }
+        }
+        assert(k == nele_jac);
+        return true;
+    }
+    std::vector<fadbad::B<double>> BXval(n);
+    std::vector<fadbad::B<double>> BFval(m);
+    fadbad::B<double>   BCval;
+    std::vector<fadbad::B<double>> Bwk;
+    mc::FFSubgraph   op_g= this->DAG.subgraph(m,this->F.data()+1);
+
+    // Initialize participating variables in fadbad::B<double>
+    for( Ipopt::Index i=0; i<n; i++ ){
+        BXval[i] = x[i];
+    }
+
+
+    this->DAG.eval( op_g, Bwk, m, this->F.data()+1, BFval.data(), n, this->X.data(), BXval.data() );
+
+
+    Bwk.clear();
+    for( Ipopt::Index j=0; j<m; j++ ){
+        BFval[j].diff( j, m );
+    }
+    // Gather derivatives
+
+    for (Ipopt::Index row=0; row<m; ++row) {
+        BFval[row].diff(row, m);
+    }
+    Ipopt::Index k = 0;
+    for (Ipopt::Index row = 0; row < m; ++row) {
+        for (Ipopt::Index col = 0; col < n; ++col) {
+            values[k++] = BXval[col].d(row);   // <-- key
+        }
+    }
+    return true;
+
+};
+void ProcessModel_IPOPT::finalize_solution(
+        Ipopt::SolverReturn               status,
+        Ipopt::Index                      n,
+        const Ipopt::Number*              x,
+        const Ipopt::Number*              z_L,
+        const Ipopt::Number*              z_U,
+        Ipopt::Index                      m,
+        const Ipopt::Number*              g,
+        const Ipopt::Number*              lambda,
+        Ipopt::Number                     obj_value,
+        const Ipopt::IpoptData*           ip_data,
+        Ipopt::IpoptCalculatedQuantities* ip_cq
+    ) 
+{
+    std::vector<double> Pval;
+    this->solution.stat    = status;
+    this->solution.p       = Pval;
+    this->solution.x.assign( x, x+n );
+    this->solution.ux.resize( n );
+    for( int i=0; i<n; i++ ) this->solution.ux[i] = z_L[i] - z_U[i];  
+    this->solution.f.assign( 1, obj_value );
+    this->solution.f.insert( this->solution.f.end() , g, g+m );
+    this->solution.uf.assign( 1, -1. );
+    this->solution.uf.resize( m+1 );
+    for( int j=0; j<m; j++ ) this->solution.uf[1+j] = - lambda[j];
 };

@@ -75,10 +75,10 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
         child1.first_stage_IX[iterator] = mc::Interval(child1.first_stage_IX[iterator].l(), branch_point);
         child2.first_stage_IX[iterator] = mc::Interval(branch_point, child2.first_stage_IX[iterator].u());
 
-        double left_LBD=this->cheatstrongbranching(&child1,tolerance); // this is cheating version
-        double right_LBD=this->cheatstrongbranching(&child2,tolerance); 
-        // double left_LBD=this->calculateLBD(&child1,tolerance); // this is real world version
-        // double right_LBD=this->calculateLBD(&child2,tolerance);
+        // double left_LBD=this->cheatstrongbranching(&child1,tolerance); // this is cheating version
+        // double right_LBD=this->cheatstrongbranching(&child2,tolerance); 
+        double left_LBD=this->calculateLBD(&child1,tolerance); // this is real world version
+        double right_LBD=this->calculateLBD(&child2,tolerance);
 
         if (left_LBD == INFINITY){
             // left child is infeasible, right child no improve split one more time
@@ -155,9 +155,6 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     this->first_stage_IX_record.push_back(initial_first_stage_IX_record);
     this->LBD_values_records.push_back(child1.LBD); // record LBD value for child1
 
-
-
-
     initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     initial_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     this->calculateLBD(&child2, tolerance);
@@ -231,7 +228,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
         this->model->second_stage_IX = node->second_stage_IX;
         insideAlgo inneralgo(this->model,scenario_name);
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
-        double scenario_LBD=inneralgo.solve(tolerance);
+        double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
         if (scenario_LBD == INFINITY) {
             // if any scenario is infeasible, then the node is infeasible
             totalLBD = INFINITY;
@@ -273,7 +270,7 @@ double outsideAlgo::solve(double tolerance) {
     }
     insideAlgo::lbd_calculation_time=before_strong_branching_lbd_calculation_time; // add the LBD calculation time before strong branching to the total LBD calculation time
     insideAlgo::lbd_calculation_count=before_strong_branching_lbd_calculation_count;
-    double gap = (this->bestUBD - this->worstLBD)/std::abs(this->bestUBD); // abs gap calculation
+    double gap = (this->bestUBD - this->worstLBD); // abs gap calculation
     int iterations = 0;
 
     while (gap > tolerance) {
@@ -293,14 +290,14 @@ double outsideAlgo::solve(double tolerance) {
         this->worstLBD=this->getWorstLBD();
 
         // update gap
-        gap = (this->bestUBD - this->worstLBD)/std::abs(this->bestUBD); // relative gap
+        gap = (this->bestUBD - this->worstLBD); // absolute gap
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
 
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
-        std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<100*gap<<"%"<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+        std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
         std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
 
         iterations++;
@@ -595,7 +592,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         // this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, tolerance);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
 
         //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
@@ -622,53 +619,78 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         // if solvefullModel is true, we solve the full MINLP to get the UBD, otherwise we just use the provided UBD for this node
         return this->provided_UBD;
     }
-    this->model->scenario_name = node->scenario_name;
-    this->model->first_stage_IX = node->first_stage_IX;
-    this->model->second_stage_IX = node->second_stage_IX;
+    // this->model->scenario_name = node->scenario_name;
+    // this->model->first_stage_IX = node->first_stage_IX;
+    // this->model->second_stage_IX = node->second_stage_IX;
+    // Ipopt::SmartPtr<Ipopt::TNLP> mynlp = new ProcessModel_IPOPT(BranchingStrategy::pseudo);
+    // ProcessModel_IPOPT* pm =dynamic_cast<ProcessModel_IPOPT*>(GetRawPtr(mynlp));
+    // Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
+    // app->Options()->SetNumericValue("tol", 3.82e-6);
+    // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+    // app->Options()->SetStringValue("mu_strategy", "adaptive");
+    // app->Options()->SetStringValue("output_file", "ipopt.out");
+    // Ipopt::ApplicationReturnStatus status;
+    // status = app->Initialize();
+    // if( status != Ipopt::Solve_Succeeded )
+    // {
+    //     std::cout << std::endl << std::endl << "*** Error during initialization!" << std::endl;
+    //     return (int) status;
+    // }
 
-    GRBEnv env = GRBEnv(true); // empty environemtn to turn off annoying Gurobi output
-    env.set(GRB_IntParam_OutputFlag, 0);
-    env.set(GRB_IntParam_LogToConsole, 0);
-    env.start();
-    try {
-        GRBModel grbmodel = GRBModel(env);
-        this->model->generateMINLP(&grbmodel);
+    // // Ask Ipopt to solve the problem
+    // status = app->OptimizeTNLP(mynlp);
 
-        grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
+    // if( status == Ipopt::Solve_Succeeded )
+    // {
+    //     std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
+    // }
+    // else if (status == Ipopt::Infeasible_Problem_Detected)
+    // {
+    //     std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
+    // }
+    // GRBEnv env = GRBEnv(true); // empty environemtn to turn off annoying Gurobi output
+    // env.set(GRB_IntParam_OutputFlag, 0);
+    // env.set(GRB_IntParam_LogToConsole, 0);
+    // env.start();
+    // try {
+    //     GRBModel grbmodel = GRBModel(env);
+    //     this->model->generateMINLP(&grbmodel);
 
-        grbmodel.optimize();
-        //grbmodel.write("model.sol");
-        int status = grbmodel.get(GRB_IntAttr_Status);
+    //     grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
-        if (status == GRB_OPTIMAL) {
-            double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
-            node->UBD = objval;
-            // std::cout << "Optimized solution values: "<<objval<<std::endl;
-            // for (int i = 0; i <200; ++i) {
-            //     std::string auxName = "x" + std::to_string(i);
+    //     grbmodel.optimize();
+    //     //grbmodel.write("model.sol");
+    //     int status = grbmodel.get(GRB_IntAttr_Status);
+
+    //     if (status == GRB_OPTIMAL) {
+    //         double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
+    //         node->UBD = objval;
+    //         // std::cout << "Optimized solution values: "<<objval<<std::endl;
+    //         // for (int i = 0; i <200; ++i) {
+    //         //     std::string auxName = "x" + std::to_string(i);
                     
-            //         // 1. Get the variable object
-            //     GRBVar auxVar = grbmodel.getVarByName(auxName);
-            //     double value = auxVar.get(GRB_DoubleAttr_X);
-            //     std::cout << "Variable " << auxName << " = " << value << "\n";
-            // }
+    //         //         // 1. Get the variable object
+    //         //     GRBVar auxVar = grbmodel.getVarByName(auxName);
+    //         //     double value = auxVar.get(GRB_DoubleAttr_X);
+    //         //     std::cout << "Variable " << auxName << " = " << value << "\n";
+    //         // }
 
-            return objval;
-        }
+    //         return objval;
+    //     }
 
-        if (status == GRB_INFEASIBLE) {
-            std::cerr<<"Gurobi model infeasible (status=" + std::to_string(status) + ").\n";
-        } else if (status == GRB_UNBOUNDED) {
-            std::cerr<<"Gurobi model unbounded (status=" + std::to_string(status) + ").\n";
-        }else {
-            std::cerr<<"Gurobi optimization ended with status " + std::to_string(status) + ".\n";
-        }
-    } catch (GRBException& e) {
-        std::cerr << "Gurobi exception: code=" << e.getErrorCode() << " message=" << e.getMessage() << "\n";
-    }
+    //     if (status == GRB_INFEASIBLE) {
+    //         std::cerr<<"Gurobi model infeasible (status=" + std::to_string(status) + ").\n";
+    //     } else if (status == GRB_UNBOUNDED) {
+    //         std::cerr<<"Gurobi model unbounded (status=" + std::to_string(status) + ").\n";
+    //     }else {
+    //         std::cerr<<"Gurobi optimization ended with status " + std::to_string(status) + ".\n";
+    //     }
+    // } catch (GRBException& e) {
+    //     std::cerr << "Gurobi exception: code=" << e.getErrorCode() << " message=" << e.getMessage() << "\n";
+    // }
 
-    node->UBD = INFINITY;
-    return INFINITY;
+    // node->UBD = INFINITY;
+    // return INFINITY;
 }
 
 double insideAlgo::solve(double tolerance) {
@@ -682,24 +704,25 @@ double insideAlgo::solve(double tolerance) {
     int before_strong_branching_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
-        std::cout<<"========================================"<<std::endl;
-        std::cout<<"Started Inside Strong Branching"<<std::endl;
-        std::cout<<"========================================"<<std::endl;
+        // std::cout<<"========================================"<<std::endl;
+        // std::cout<<"Started Inside Strong Branching"<<std::endl;
+        // std::cout<<"========================================"<<std::endl;
         auto start = std::chrono::high_resolution_clock::now();
         this->strongbranching(&(this->activeNodes[0]), tolerance);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout<<"========================================"<<std::endl;
-        std::cout<<"Finished Inside Strong Branching"<<std::endl;
-        std::cout<<"Strong branching Time: " << elapsed.count() << " seconds" << std::endl;
-        std::cout<<"========================================"<<std::endl;
+        // std::cout<<"========================================"<<std::endl;
+        // std::cout<<"Finished Inside Strong Branching"<<std::endl;
+        // std::cout<<"Strong branching Time: " << elapsed.count() << " seconds" << std::endl;
+        // std::cout<<"========================================"<<std::endl;
     }
     insideAlgo::lbd_calculation_count=before_strong_branching_lbd_calculation_count; //offset the LBD calculation count to exclude strong branching calculations for fair comparison
     insideAlgo::lbd_calculation_time=before_strong_branching_lbd_calculation_time; // same idea
 
-    double gap = (this->bestUBD - this->worstLBD)/std::abs(this->bestUBD);
+    double gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
 
     int iterations = 0;
+
     while (gap >= tolerance) {
 
         if (this->activeNodes.empty()) {
@@ -708,18 +731,18 @@ double insideAlgo::solve(double tolerance) {
         
         int idx = this->getWorstNodeIdx();
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance);
-        std::cout<<"Branching variable index: "<<branch_var_idx<<std::endl;
+        //std::cout<<"Branching variable index: "<<branch_var_idx<<std::endl;
 
         this->fathomNodes(this->bestUBD);
         this->worstLBD = this->getWorstLBD();
         this->LBD_values_records.push_back(this->worstLBD); // record LBD value for worst node
 
-        gap = (this->bestUBD - this->worstLBD) / std::abs(this->bestUBD);
+        gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<100*gap<<"%"<<std::endl;
-        std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
+        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<100*gap<<"%"<<std::endl;
+        //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }
-    return this->bestUBD;
+    return this->worstLBD;
 }
 #endif

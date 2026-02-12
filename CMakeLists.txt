@@ -14,6 +14,9 @@ set(PROJ_ROOT ${CMAKE_CURRENT_SOURCE_DIR})  # e.g., /Users/username/Desktop/Crap
 
 set(CPLEX_ROOT ${CPLEX_ROOT_DIR})  # e.g., /opt/ibm/ILOG/CPLEX_Studio2210
 set(GUROBI_ROOT ${GUROBI_ROOT_DIR}) # e.g., /opt/gurobi/gurobi2210/linux64
+
+set(IPOPT_INC ${IPOPT_INC})
+set(IPOPT_LIB ${IPOPT_LIB})
 set(GUROBI_INC "${GUROBI_ROOT}/include")
 set(GUROBI_LIB "${GUROBI_ROOT}/lib")
 set(CPLEX_INC_CONCERT "${CPLEX_ROOT}/concert/include")
@@ -51,14 +54,16 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${PROJ_ROOT}/mcpp/src/3rdparty/fadbad++"
     "${CPLEX_INC_CONCERT}"
     "${CPLEX_INC_CPLEX}"
-    "${GUROBI_INC}"
+    "${GUROBI_INC}",
+    "${IPOPT_INC}"
 )
 
 # ---- Library search paths (match your -L list) ----
 target_link_directories(${EXECUTABLE_NAME} PRIVATE
     "${CPLEX_LIB_CONCERT}"
     "${CPLEX_LIB_CPLEX}"
-    "${GUROBI_LIB}"
+    "${GUROBI_LIB}",
+    "${IPOPT_LIB}"
 )
 
 # ---- Link libs (match your -l list) ----
@@ -71,6 +76,7 @@ if (IS_ARM64_OSX)
         pthread
         gurobi_c++
         gurobi130
+        ipopt
     )
 else()
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE
@@ -81,6 +87,7 @@ else()
         pthread
         gurobi_c++
         gurobi120
+        ipopt
     )
 endif()
 # Optional: if your cluster needs it for static_pic objects

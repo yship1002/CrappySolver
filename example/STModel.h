@@ -6,6 +6,8 @@
 */
 #ifndef STMODEL_H
 #define STMODEL_H
+#include "IpTNLP.hpp"
+#include "IpIpoptApplication.hpp"
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
 #include <vector>
@@ -16,6 +18,46 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
+struct SOLUTION_OPT
+{
+  //! @brief Default constructor
+  SOLUTION_OPT
+    ( int stat_ = -999 )
+    : stat( stat_ )
+    {}
+  //! @brief Destructor
+  ~SOLUTION_OPT
+    ()
+    {}
+  //! @brief Copy constructor
+  SOLUTION_OPT
+    ( const SOLUTION_OPT &sol )
+    : stat( sol.stat ), p( sol.p ), x( sol.x ), ux( sol.ux ), f( sol.f ), uf( sol.uf )
+    {}
+
+  SOLUTION_OPT& operator=
+    ( SOLUTION_OPT const& sol )
+    { stat = sol.stat; p = sol.p; x = sol.x; ux = sol.ux; f = sol.f; uf = sol.uf; 
+      return *this; }
+
+  //! @brief Resets the solution fields
+  void reset
+    ( int const stat_ = -999 )
+    { stat = stat_; p.clear(); x.clear(); ux.clear(); f.clear(); uf.clear(); }
+
+  //! @brief Solver status
+  int stat;
+  //! @brief Parameter values
+  std::vector<double> p;
+  //! @brief Variable values
+  std::vector<double> x;
+  //! @brief Variable bound multipliers
+  std::vector<double> ux;
+  //! @brief Function values  
+  std::vector<double> f;
+  //! @brief Function multipliers
+  std::vector<double> uf;
+};
 // std::vector<std::string> OPTYPE{
 //     "CNST", "VAR",
 //     "PLUS", "SHIFT", "NEG", "MINUS", "TIMES", "SCALE", "DIV", "INV",
@@ -32,6 +74,7 @@ class STModel{
         STModel(const STModel& other)=default;
         STModel()=default; // default constructor
         /// A vector of ScenarioNames
+        SOLUTION_OPT solution;
         BranchingStrategy branching_strategy;
         std::vector<ScenarioNames> scenario_names;
         std::map<ScenarioNames, double> perturb;
