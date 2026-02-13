@@ -611,6 +611,10 @@ ProcessModel_IPOPT::ProcessModel_IPOPT(BranchingStrategy branching_strategy):Pro
     this->F = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
 
 };
+ProcessModel_IPOPT::ProcessModel_IPOPT(const ProcessModel& pm):ProcessModel(pm),Ipopt::TNLP() {
+
+}
+    
 bool ProcessModel_IPOPT::get_nlp_info(
             Ipopt::Index& n,
             Ipopt::Index& m,
@@ -785,9 +789,7 @@ bool ProcessModel_IPOPT::eval_jac_g(
         BXval[i] = x[i];
     }
 
-
     this->DAG.eval( op_g, Bwk, m, this->F.data()+1, BFval.data(), n, this->X.data(), BXval.data() );
-
 
     Bwk.clear();
     for( Ipopt::Index j=0; j<m; j++ ){

@@ -31,13 +31,13 @@ class ProcessModel:public STModel{
 class ProcessModel_IPOPT:public ProcessModel,public Ipopt::TNLP{ 
     public:
         ProcessModel_IPOPT(BranchingStrategy branching_strategy);
+        ProcessModel_IPOPT(const ProcessModel& other);
         ProcessModel_IPOPT(const ProcessModel_IPOPT& other)=default;
         ProcessModel_IPOPT()=default; // default constructor
 
         mc::FFGraph DAG;
         std::vector<mc::FFVar> X;
         std::vector<mc::FFVar> F;
-
 
         bool get_nlp_info(
             Ipopt::Index& n,

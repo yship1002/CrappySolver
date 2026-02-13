@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
     // Ask Ipopt to solve the problem
     status = app->OptimizeTNLP(mynlp);
-
+    std::cout << "Solution: " << pm->solution.f[0] << std::endl;
     if( status == Ipopt::Solve_Succeeded )
     {
         std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;

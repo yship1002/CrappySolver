@@ -619,10 +619,13 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         // if solvefullModel is true, we solve the full MINLP to get the UBD, otherwise we just use the provided UBD for this node
         return this->provided_UBD;
     }
+
     // this->model->scenario_name = node->scenario_name;
     // this->model->first_stage_IX = node->first_stage_IX;
     // this->model->second_stage_IX = node->second_stage_IX;
-    // Ipopt::SmartPtr<Ipopt::TNLP> mynlp = new ProcessModel_IPOPT(BranchingStrategy::pseudo);
+
+    // Ipopt::SmartPtr<Ipopt::TNLP> mynlp = new ProcessModel_IPOPT(&(this->model));
+    // return INFINITY;
     // ProcessModel_IPOPT* pm =dynamic_cast<ProcessModel_IPOPT*>(GetRawPtr(mynlp));
     // Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
     // app->Options()->SetNumericValue("tol", 3.82e-6);

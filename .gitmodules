@@ -6,7 +6,3 @@
 	path = cereal
 	url = https://github.com/yship1002/cereal.git
 	branch = master
-[submodule "ipopt"]
-	path = ipopt
-	url = https://github.com/yship1002/Ipopt.git
-	branch = stable/3.14
