@@ -1,12 +1,15 @@
 #include "example/STModel.h"
-class ProcessModel:public STModel{
+class ProcessModel:public STModel {
     public:
+
 
         ProcessModel(BranchingStrategy branching_strategy);
         ProcessModel(const ProcessModel& other)=default;
         ProcessModel()=default; // default constructor
         /// A vector of ScenarioNames
 
+        Ipopt::SmartPtr<STModel> clone() override;
+        
         void generateMINLP(GRBModel* grbmodel) override;
         void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
@@ -17,27 +20,8 @@ class ProcessModel:public STModel{
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) override;
-        /**
-        * @brief tell cereal what data to save
-        * @tparam Archive 
-        * @param ar 
-        */
-        template<class Archive>
-        void serialize(Archive& ar) {
-        CEREAL_NVP(first_stage_IX), CEREAL_NVP(second_stage_IX);
-        }
 
-};
-class ProcessModel_IPOPT:public ProcessModel,public Ipopt::TNLP{ 
-    public:
-        ProcessModel_IPOPT(BranchingStrategy branching_strategy);
-        ProcessModel_IPOPT(const ProcessModel& other);
-        ProcessModel_IPOPT(const ProcessModel_IPOPT& other)=default;
-        ProcessModel_IPOPT()=default; // default constructor
-
-        mc::FFGraph DAG;
-        std::vector<mc::FFVar> X;
-        std::vector<mc::FFVar> F;
+        void generateIpoptModel() override;
 
         bool get_nlp_info(
             Ipopt::Index& n,
@@ -107,6 +91,14 @@ class ProcessModel_IPOPT:public ProcessModel,public Ipopt::TNLP{
             const Ipopt::IpoptData*           ip_data,
             Ipopt::IpoptCalculatedQuantities* ip_cq
         ) override;
-    
+        /**
+        * @brief tell cereal what data to save
+        * @tparam Archive 
+        * @param ar 
+        */
+        template<class Archive>
+        void serialize(Archive& ar) {
+        CEREAL_NVP(first_stage_IX), CEREAL_NVP(second_stage_IX);
+        }
 
 };

@@ -69,11 +69,14 @@ enum class ScenarioNames { SCENARIO1=0, SCENARIO2=1,
      SCENARIO3=2,SCENARIO4=3, SCENARIO5=4,SCENARIO6=5,
      SCENARIO7=6,SCENARIO8=7,SCENARIO9=8,SCENARIO10=9};
 enum class BranchingStrategy { relwidth, pseudo };
-class STModel{
+class STModel:public Ipopt::TNLP{
     public:
         STModel(const STModel& other)=default;
         STModel()=default; // default constructor
         /// A vector of ScenarioNames
+        mc::FFGraph DAG;
+        std::vector<mc::FFVar> X;
+        std::vector<mc::FFVar> F;
         SOLUTION_OPT solution;
         BranchingStrategy branching_strategy;
         std::vector<ScenarioNames> scenario_names;
@@ -84,6 +87,7 @@ class STModel{
         std::vector<mc::Interval> second_stage_IX;
 
         ScenarioNames scenario_name; //by default
+        virtual Ipopt::SmartPtr<STModel> clone() = 0;
         virtual void generateMINLP(GRBModel* grbmodel)=0;
         virtual void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
@@ -97,6 +101,7 @@ class STModel{
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x,int var_index,bool max);
+        virtual void generateIpoptModel()=0;
         void convertToCentralizedModel();
         int map_ffop_to_grb(int ffop_type) {
             using T = mc::FFOp::TYPE;

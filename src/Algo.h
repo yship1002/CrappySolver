@@ -13,12 +13,18 @@
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
 #include <chrono>
+enum class UBDSolver
+{
+    GUROBI,
+   IPOPT
+};
 template<typename T>
 class Algo {
     public:
         Algo(STModel* model);
         Algo()=default; // default constructor
         Algo(const Algo& other)=default;
+        UBDSolver ubd_solver;
         double worstLBD;
         double bestUBD;
         STModel* model;
@@ -38,7 +44,7 @@ class Algo {
 };
 class outsideAlgo:public Algo<BBNode>{
     public:
-        outsideAlgo(STModel* model,double provided_UBD);
+        outsideAlgo(STModel* model,double provided_UBD,UBDSolver solver=UBDSolver::IPOPT);
         outsideAlgo()=default; // default constructor
         outsideAlgo(const outsideAlgo& other)=default;
         std::vector<double> LBD_values_records;
@@ -62,13 +68,12 @@ class outsideAlgo:public Algo<BBNode>{
 };
 class insideAlgo:public Algo<xBBNode>{
     public:
-        insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD=INFINITY,bool solvefullModel=false);
+        insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD=INFINITY,bool solvefullModel=false,UBDSolver solver=UBDSolver::IPOPT);
         double provided_UBD;
         bool solvefullModel;
         ScenarioNames scenario_name;
         static int lbd_calculation_count;
         static double lbd_calculation_time;
-        static int fathom_at_start_count;
         std::vector<double> LBD_values_records;
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;

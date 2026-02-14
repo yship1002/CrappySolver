@@ -34,11 +34,24 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
         mc::Interval(1.2,4),
         mc::Interval(145,162)
     };
+    
+    
     // this->convertToCentralizedModel();
 
     
 };
+Ipopt::SmartPtr<STModel> ProcessModel::clone(){
+    Ipopt::SmartPtr<ProcessModel> p = new ProcessModel();
 
+    p->scenario_name=this->scenario_name;
+    p->first_stage_IX=this->first_stage_IX;
+    p->second_stage_IX=this->second_stage_IX;
+    p->perturb=this->perturb;
+    p->scenario_names=this->scenario_names;
+    p->generateIpoptModel();
+
+    return p;
+}
 void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
@@ -77,7 +90,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     c3 = X[0] - 1.22 * X[4] + X[3] - p;
 
     // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);     // this is the problem
+    c4 = (-0.001 * X[4] * X[8] * X[5]) / (98 - X[5]) + X[2] - p;
     nc4 = -c4;
 
     // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
@@ -447,8 +460,7 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
 
         // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
         F.push_back( (-0.001 * X[scenario_start_idx] * X[scenario_start_idx + 4] * X[scenario_start_idx + 1])-(98 - X[scenario_start_idx + 1])*(p-X[2]) );
-        F.push_back( -((-0.001 * X[scenario_start_idx] * X[scenario_start_idx + 4] * X[scenario_start_idx + 1])-(98 - X[scenario_start_idx + 1])*(p-X[2])) );
-        // c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);     // this is the problem
+        F.push_back( -((-0.001 * X[scenario_start_idx] * X[scenario_start_idx + 4] * X[scenario_start_idx + 1])-(98 - X[scenario_start_idx + 1])*(p-X[2])) ); // c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);     // this is the problem
         // nc4 = -c4;
 
         // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
@@ -553,7 +565,7 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     cplexmodel->add(*cplex_constraints);
     cplexmodel->add(*cplex_obj);
 };
-ProcessModel_IPOPT::ProcessModel_IPOPT(BranchingStrategy branching_strategy):ProcessModel(branching_strategy),Ipopt::TNLP() {
+void ProcessModel::generateIpoptModel(){
     int n_first_stage_vars = this->first_stage_IX.size();
     int n_second_stage_vars = this->second_stage_IX.size();
 
@@ -588,7 +600,7 @@ ProcessModel_IPOPT::ProcessModel_IPOPT(BranchingStrategy branching_strategy):Pro
     c3 = X[0] - 1.22 * X[4] + X[3] - p;
 
     // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5])/(98 - X[5])+X[2]-p;     // this is the problem
+    c4 = (-0.001 * X[4] * X[8] * X[5]) / (98 - X[5]) + X[2] - p;
     nc4 = -c4;
 
     // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
@@ -596,7 +608,7 @@ ProcessModel_IPOPT::ProcessModel_IPOPT(BranchingStrategy branching_strategy):Pro
     nc5 = -c5;
 
     // e5: -(x2 + x5)/x1 + x8 == 0
-    c6 = (-(X[1] + X[3]) / X[0] + X[7]);
+    c6 = X[0] * X[7]-(X[1] + X[3]);
     nc6 = -c6;
 
     //e6: x9 + 0.222*x10 == 35.82
@@ -608,14 +620,10 @@ ProcessModel_IPOPT::ProcessModel_IPOPT(BranchingStrategy branching_strategy):Pro
     nc8 = -c8;
 
     mc::FFVar objective =0.333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+
     this->F = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
-
-};
-ProcessModel_IPOPT::ProcessModel_IPOPT(const ProcessModel& pm):ProcessModel(pm),Ipopt::TNLP() {
-
 }
-    
-bool ProcessModel_IPOPT::get_nlp_info(
+bool ProcessModel::get_nlp_info(
             Ipopt::Index& n,
             Ipopt::Index& m,
             Ipopt::Index& nnz_jac_g,
@@ -642,7 +650,7 @@ bool ProcessModel_IPOPT::get_nlp_info(
     index_style = TNLP::C_STYLE;
     return true;
 };
-bool ProcessModel_IPOPT::get_bounds_info(
+bool ProcessModel::get_bounds_info(
             Ipopt::Index   n,
             Ipopt::Number* x_l,
             Ipopt::Number* x_u,
@@ -673,7 +681,7 @@ bool ProcessModel_IPOPT::get_bounds_info(
     return true;
 }
 
-bool ProcessModel_IPOPT::get_starting_point(
+bool ProcessModel::get_starting_point(
             Ipopt::Index   n,
             bool    init_x,
             Ipopt::Number* x,
@@ -696,7 +704,7 @@ bool ProcessModel_IPOPT::get_starting_point(
 
     return true;
 };
-bool ProcessModel_IPOPT::eval_f(
+bool ProcessModel::eval_f(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -714,7 +722,7 @@ bool ProcessModel_IPOPT::eval_f(
 
     return true;
 };
-bool ProcessModel_IPOPT::eval_grad_f(
+bool ProcessModel::eval_grad_f(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -738,7 +746,7 @@ bool ProcessModel_IPOPT::eval_grad_f(
     }
     return true;
 };
-bool ProcessModel_IPOPT::eval_g(
+bool ProcessModel::eval_g(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -753,7 +761,7 @@ bool ProcessModel_IPOPT::eval_g(
 
     return true;
 }
-bool ProcessModel_IPOPT::eval_jac_g(
+bool ProcessModel::eval_jac_g(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -809,7 +817,7 @@ bool ProcessModel_IPOPT::eval_jac_g(
     return true;
 
 };
-void ProcessModel_IPOPT::finalize_solution(
+void ProcessModel::finalize_solution(
         Ipopt::SolverReturn               status,
         Ipopt::Index                      n,
         const Ipopt::Number*              x,
