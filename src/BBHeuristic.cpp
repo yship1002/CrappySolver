@@ -39,7 +39,15 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                 max_idx = static_cast<int>(first_stage_IX.size() + i);
             }
         }
+        std::vector<int> branch_frequency;
+        for (auto& weight : this->weights) {
+            branch_frequency.push_back(weight.size());
+        }
+        int frequency_range = *(std::max_element(branch_frequency.begin(), branch_frequency.end()))-*(std::min_element(branch_frequency.begin(), branch_frequency.end()));
+        if (frequency_range>5){
 
+            return std::min_element(branch_frequency.begin(), branch_frequency.end()) - branch_frequency.begin();
+        }
 
     }else if (this->strategy == BranchingStrategy::relwidth) {
         // Relative width branching logic can be implemented here
@@ -111,18 +119,22 @@ void BBHeuristic::updateWeights(int idx_branched, double left_improve,double rig
     if (left_improve ==INFINITY || right_improve == INFINITY){
         throw std::runtime_error("Improvement values should not be infinity");
     }
-    // if (left_improve < -1e-2 || right_improve < -1e-2){
-    //     throw std::runtime_error("Improvement values should be non-negative");
-    // }
-    if (left_improve<0){
-        left_improve=0.0;
+
+    if (left_improve<-1e-2 || right_improve<-1e-2){
+        throw std::runtime_error("Improvement values should be non-negative");
     }
-    if (right_improve<0){
-        right_improve=0.0;
+    if(left_improve<1e-2 && left_improve<=0){ // fix numerical issue if improve is within tol i treat it as no improve
+        left_improve=0;
+    }
+    if(right_improve<1e-2 && right_improve<=0){
+        right_improve=0;
+    }
+    if (left_improve==0 && right_improve==0){
+        throw std::runtime_error("Branching range should be positive");
     }
 
     this->weights[idx_branched].push_back(std::make_pair(left_improve/range,right_improve/range));
-    
+  
 };
 
 double BBHeuristic::getPseudoCost(int idx_branched,SCORE_FUNCTION score_function){

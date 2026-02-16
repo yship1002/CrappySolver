@@ -31,5 +31,7 @@ class BBHeuristic {
         double getPseudoCost(int idx_branched,SCORE_FUNCTION score_function=SCORE_FUNCTION::SUM);
 
 
+
+
 };
 #endif // BBHEURISTIC_H
