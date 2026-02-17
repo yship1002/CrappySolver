@@ -90,7 +90,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     c3 = X[0] - 1.22 * X[4] + X[3] - p;
 
     // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5]) / (98 - X[5]) + X[2] - p;
+    c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);
     nc4 = -c4;
 
     // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
