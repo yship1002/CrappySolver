@@ -2,22 +2,22 @@
 ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
-    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3,
-     ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
-     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
+    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3
+    //  ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
+    //  ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
     this->perturb = {
         {ScenarioNames::SCENARIO1, 1.0976270078546495},// orignal
         {ScenarioNames::SCENARIO2, 9.430378732744838},
-        {ScenarioNames::SCENARIO3, 6.6027633760716435},
-        {ScenarioNames::SCENARIO4,1.3514894164800063},
-        {ScenarioNames::SCENARIO5,4.236547993428394},
-        {ScenarioNames::SCENARIO6,2.155994520336202},
-        {ScenarioNames::SCENARIO7,5.0580836121681994},
-        {ScenarioNames::SCENARIO8,2.0849789288240969},
-        {ScenarioNames::SCENARIO9,5.6016775572644488},
-        {ScenarioNames::SCENARIO10,4.3503766112257304}
+        {ScenarioNames::SCENARIO3, 6.6027633760716435}
+        // {ScenarioNames::SCENARIO4,1.3514894164800063},
+        // {ScenarioNames::SCENARIO5,4.236547993428394},
+        // {ScenarioNames::SCENARIO6,2.155994520336202},
+        // {ScenarioNames::SCENARIO7,5.0580836121681994},
+        // {ScenarioNames::SCENARIO8,2.0849789288240969},
+        // {ScenarioNames::SCENARIO9,5.6016775572644488},
+        // {ScenarioNames::SCENARIO10,4.3503766112257304}
 
     };
     this->first_stage_IX = {
@@ -90,7 +90,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     c3 = X[0] - 1.22 * X[4] + X[3] - p;
 
     // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5]) / (98 - X[5]) + X[2] - p;
+    c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);
     nc4 = -c4;
 
     // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
@@ -110,7 +110,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     nc8 = -c8;
 
 
-    mc::FFVar objective =0.1*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    mc::FFVar objective =0.333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
 
 
     // Evaluate constraints and objective
@@ -244,7 +244,7 @@ void ProcessModel::generateMINLP(GRBModel* grbmodel){
     nc8 = -c8;
 
 
-    mc::FFVar objective =0.1*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    mc::FFVar objective =0.333333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
     std::vector<mc::FFVar> F = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
     
 
@@ -494,7 +494,7 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     mc::FFVar objective =0;
     for (const auto& scenario_name : this->scenario_names){
         int scenario_start_idx= n_first_stage_vars + static_cast<int>(scenario_name) * n_second_stage_vars;
-        objective +=0.1*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[scenario_start_idx] * X[scenario_start_idx+2]);
+        objective +=0.333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[scenario_start_idx] * X[scenario_start_idx+2]);
 
     }
     F.push_back(objective);
@@ -619,7 +619,7 @@ void ProcessModel::generateIpoptModel(){
     c8 = (-3 * X[6] + X[9]) + 133;
     nc8 = -c8;
 
-    mc::FFVar objective =0.1*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    mc::FFVar objective =0.333333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
 
     this->F = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
 }

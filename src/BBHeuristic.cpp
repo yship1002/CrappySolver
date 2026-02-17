@@ -111,18 +111,14 @@ void BBHeuristic::updateWeights(int idx_branched, double left_improve,double rig
     if (left_improve ==INFINITY || right_improve == INFINITY){
         throw std::runtime_error("Improvement values should not be infinity");
     }
-    // if (left_improve < -1e-2 || right_improve < -1e-2){
-    //     throw std::runtime_error("Improvement values should be non-negative");
-    // }
-    if (left_improve<0){
-        left_improve=0.0;
-    }
-    if (right_improve<0){
-        right_improve=0.0;
+
+    if (left_improve<-0.16 || right_improve<-0.16){
+        throw std::runtime_error("Improvement values should be non-negative");
     }
 
+
     this->weights[idx_branched].push_back(std::make_pair(left_improve/range,right_improve/range));
-    
+  
 };
 
 double BBHeuristic::getPseudoCost(int idx_branched,SCORE_FUNCTION score_function){
