@@ -50,8 +50,8 @@ Ex844Model::Ex844Model(BranchingStrategy branching_strategy):STModel() {
 
     
 };
-Ipopt::SmartPtr<STModel> ProcessModel::clone(){
-    Ipopt::SmartPtr<ProcessModel> p = new ProcessModel();
+Ipopt::SmartPtr<STModel> Ex844Model::clone(){
+    Ipopt::SmartPtr<Ex844Model> p = new Ex844Model();
 
     p->scenario_name=this->scenario_name;
     p->first_stage_IX=this->first_stage_IX;
@@ -62,7 +62,7 @@ Ipopt::SmartPtr<STModel> ProcessModel::clone(){
 
     return p;
 }
-void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
+void Ex844Model::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) {
@@ -213,7 +213,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     cplexmodel->add(*cplex_obj);
 };
 
-void ProcessModel::generateMINLP(GRBModel* grbmodel){
+void Ex844Model::generateMINLP(GRBModel* grbmodel){
     // To be implemented
     int n_first_stage_vars = this->first_stage_IX.size();
     int n_second_stage_vars = this->second_stage_IX.size();
@@ -445,7 +445,7 @@ void ProcessModel::generateMINLP(GRBModel* grbmodel){
     }
 }
 
-void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
+void Ex844Model::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) {
@@ -606,7 +606,7 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     cplexmodel->add(*cplex_constraints);
     cplexmodel->add(*cplex_obj);
 };
-void ProcessModel::generateIpoptModel(){
+void Ex844Model::generateIpoptModel(){
     int n_first_stage_vars = this->first_stage_IX.size();
     int n_second_stage_vars = this->second_stage_IX.size();
 
@@ -664,7 +664,7 @@ void ProcessModel::generateIpoptModel(){
 
     this->F = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
 }
-bool ProcessModel::get_nlp_info(
+bool Ex844Model::get_nlp_info(
             Ipopt::Index& n,
             Ipopt::Index& m,
             Ipopt::Index& nnz_jac_g,
@@ -691,7 +691,7 @@ bool ProcessModel::get_nlp_info(
     index_style = TNLP::C_STYLE;
     return true;
 };
-bool ProcessModel::get_bounds_info(
+bool Ex844Model::get_bounds_info(
             Ipopt::Index   n,
             Ipopt::Number* x_l,
             Ipopt::Number* x_u,
@@ -722,7 +722,7 @@ bool ProcessModel::get_bounds_info(
     return true;
 }
 
-bool ProcessModel::get_starting_point(
+bool Ex844Model::get_starting_point(
             Ipopt::Index   n,
             bool    init_x,
             Ipopt::Number* x,
@@ -745,7 +745,7 @@ bool ProcessModel::get_starting_point(
 
     return true;
 };
-bool ProcessModel::eval_f(
+bool Ex844Model::eval_f(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -763,7 +763,7 @@ bool ProcessModel::eval_f(
 
     return true;
 };
-bool ProcessModel::eval_grad_f(
+bool Ex844Model::eval_grad_f(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -787,7 +787,7 @@ bool ProcessModel::eval_grad_f(
     }
     return true;
 };
-bool ProcessModel::eval_g(
+bool Ex844Model::eval_g(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -802,7 +802,7 @@ bool ProcessModel::eval_g(
 
     return true;
 }
-bool ProcessModel::eval_jac_g(
+bool Ex844Model::eval_jac_g(
             Ipopt::Index         n,
             const Ipopt::Number* x,
             bool          new_x,
@@ -858,7 +858,7 @@ bool ProcessModel::eval_jac_g(
     return true;
 
 };
-void ProcessModel::finalize_solution(
+void Ex844Model::finalize_solution(
         Ipopt::SolverReturn               status,
         Ipopt::Index                      n,
         const Ipopt::Number*              x,
