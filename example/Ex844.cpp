@@ -1,5 +1,6 @@
-#include "example/ProcessModel.h"
-ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
+#include "example/Ex844.h"
+
+Ex844Model::Ex844Model(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
     this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3
@@ -8,9 +9,9 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
     this->perturb = {
-        {ScenarioNames::SCENARIO1, 1.0976270078546495},// orignal
-        {ScenarioNames::SCENARIO2, 9.430378732744838},
-        {ScenarioNames::SCENARIO3, 6.6027633760716435}
+    {ScenarioNames::SCENARIO1, 0.05488135039273248}, 
+    {ScenarioNames::SCENARIO2, 0.17151893663724196}, 
+    {ScenarioNames::SCENARIO3, 0.2602763376071644}
         // {ScenarioNames::SCENARIO4,1.3514894164800063},
         // {ScenarioNames::SCENARIO5,4.236547993428394},
         // {ScenarioNames::SCENARIO6,2.155994520336202},
@@ -20,19 +21,28 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
         // {ScenarioNames::SCENARIO10,4.3503766112257304}
 
     };
-    this->first_stage_IX = {
-        mc::Interval(10, 2000),       
-        mc::Interval(0,16000),    
-        mc::Interval(0,120),      
-        mc::Interval(0,2000)  
-    };
+
+        this->first_stage_IX = {
+            mc::Interval(-2, 0),       
+            mc::Interval(0.5, 2.5),    
+            mc::Interval(-1.5, 0.5),
+            mc::Interval(-1.2, 0.8),
+            mc::Interval(0.1, 2.1),
+            mc::Interval(-1.1, 0.9),
+            mc::Interval(0, 1),
+            mc::Interval(0, 1),
+            mc::Interval(1.1, 1.3),
+            mc::Interval(0, 1),
+            mc::Interval(0, 1)
+        };
+        
     this->second_stage_IX = {
-        mc::Interval(0, 5000),       
-        mc::Interval(85,93),    
-        mc::Interval(90,95),      
-        mc::Interval(3,12), 
-        mc::Interval(1.2,4),
-        mc::Interval(145,162)
+        mc::Interval(4, 6),       
+        mc::Interval(-6,-4),    
+        mc::Interval(2,4),      
+        mc::Interval(-3,-1), 
+        mc::Interval(1,3),
+
     };
     
     
@@ -73,44 +83,61 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     double p = this->perturb[this->scenario_name];
     //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
     // Constraints translated from the Pyomo example (indices assume:
-    // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
-    // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
+    // X[0]=m.x6, X[1]=m.x7, X[2]=m.x8, X[3]=m.x9,X[4]=m.x10, X[5]=m.x11,
+    // X[6]=m.x12, X[7]=m.x13, X[8]=m.x14, X[9]=m.x15, X[10]=m.x16,X[11]=m.x17
+    // X[12]=m.x1[s], X[13]=m.x2[s], X[14]=m.x3[s], X[15]=m.x4[s], X[16]=m.x5[s])
     // Constraints (mapped from the Pyomo model)
-    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
-    mc::FFVar nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8;
-
-    // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
-    c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
-    nc1 = -c1;
-
-    // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
-    c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
-
-    // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
-    c3 = X[0] - 1.22 * X[4] + X[3] - p;
-
-    // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);
-    nc4 = -c4;
-
-    // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
-    c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
-    nc5 = -c5;
-
-    // e5: -(x2 + x5)/x1 + x8 == 0
-    c6 =  X[7]*X[0]-(X[1] + X[3]);
-    nc6 = -c6;
-
-    // e6: x9 + 0.222*x10 == 35.82
-    c7 = (X[8] + 0.222 * X[9]) - 35.82;
-    nc7 = -c7;
-
-    // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
-    c8 = (-3 * X[6] + X[9]) + 133;
-    nc8 = -c8;
+    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11;
+    mc::FFVar nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc10,nc11;
 
 
-    mc::FFVar objective =0.333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
+    c1=X[8]/pow(0.628318,X[9]) - X[1] + X[7];
+    nc1=c1;
+
+
+    c2=X[8]/pow(0.7853975,X[9]) - X[3] + X[7];
+    nc2=c2;
+
+
+    c3=X[8]/pow(0.942477,X[9]) - X[5] + X[7];
+    nc3=c3;
+
+
+    c4=- X[11]/pow(0.4712385,X[9]) - X[0] + 0.4712385*X[10];
+    nc4=c4;
+
+
+    c5=- X[11]/pow(0.628318,X[9]) - X[2] + 0.628318*X[10];
+    nc5=c5;
+
+ 
+    c6=- X[11]/pow(0.7853975,X[9]) - X[4] + 0.7853975*X[10];
+    nc6=c6;
+
+  
+    c7=- X[11]/pow(0.942477,X[9]) - X[6] + 0.942477*X[10];
+    nc7=c7;
+
+
+    c8=X[8]/pow(0.1570795,X[9]) - X[12] + X[7]-p;
+    nc8=c8;
+
+    c9=X[8]/pow(0.314159,X[9]) - X[14] + X[7]-p;
+    nc9=c9;
+
+
+    c10=X[8]/pow(0.4712385,X[9]) - X[16] + X[7]-p;
+    nc10=c10;
+
+    c11=- X[11]/pow(0.1570795,X[9]) - X[13] + 0.1570795*X[10];
+    nc11=c11;
+
+
+
+    mc::FFVar objective =0.3333333333333333*(pow((-5 + X[12]),2) + pow((5 + X[13]),2) + pow((-3 + X[14]),2) + pow((2 + X[15]),2) + pow((-2 + X[16]),2)
+                        + pow((1 + X[0]),2) + pow((-1.5 + X[1]),2) + pow((0.5 + X[2]),2) + pow((-1.2 + X[3]),2) + pow((0.2 + X[4]),2)
+                        + pow((-1.1 + X[5]),2) + pow((0.1 + X[6]),2));
+
 
 
     // Evaluate constraints and objective
@@ -120,12 +147,12 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     for (int i = 0; i < n_first_stage_vars; ++i) PX[i].set(&Env, X[i], this->first_stage_IX[i]);
     for (int i = n_first_stage_vars; i < nvars; ++i) PX[i].set(&Env, X[i], this->second_stage_IX[i - n_first_stage_vars]);
     
-    mc::PolVar<mc::Interval> PF[15];
-    mc::FFVar F[15] = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
-    DAG.eval(15, F, PF, nvars, X, PX);
+    mc::PolVar<mc::Interval> PF[23];
+    mc::FFVar F[23] = {c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc10,nc11,objective};
+    DAG.eval(23, F, PF, nvars, X, PX);
     
 
-    Env.generate_cuts(15, PF);
+    Env.generate_cuts(23, PF);
 
     // Extract LP data from Env Don't touch below this line
     auto c = Env.Cuts();
@@ -209,42 +236,57 @@ void ProcessModel::generateMINLP(GRBModel* grbmodel){
     // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
     // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
     // Constraints (mapped from the Pyomo model)
-    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
-    mc::FFVar nc1,nc4,nc5,nc6,nc7,nc8;
-
-    // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
-    c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
-    nc1 = -c1;
-
-    // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
-    c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
-
-    // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
-    c3 = X[0] - 1.22 * X[4] + X[3] - p;
-
-    // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5])/(98 - X[5])+X[2]-p;     // this is the problem
-    nc4 = -c4;
-
-    // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
-    c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
-    nc5 = -c5;
-
-    // e5: -(x2 + x5)/x1 + x8 == 0
-    c6 = (-(X[1] + X[3]) / X[0] + X[7]);
-    nc6 = -c6;
-
-    //e6: x9 + 0.222*x10 == 35.82
-    c7 = (X[8] + 0.222 * X[9]) - 35.82;
-    nc7 = -c7;
-
-    // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
-    c8 = (-3 * X[6] + X[9]) + 133;
-    nc8 = -c8;
+    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11;
+    mc::FFVar nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc10,nc11;
 
 
-    mc::FFVar objective =0.333333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
-    std::vector<mc::FFVar> F = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
+    c1=X[8]/pow(0.628318,X[9]) - X[1] + X[7];
+    nc1=c1;
+
+
+    c2=X[8]/pow(0.7853975,X[9]) - X[3] + X[7];
+    nc2=c2;
+
+
+    c3=X[8]/pow(0.942477,X[9]) - X[5] + X[7];
+    nc3=c3;
+
+
+    c4=- X[11]/pow(0.4712385,X[9]) - X[0] + 0.4712385*X[10];
+    nc4=c4;
+
+
+    c5=- X[11]/pow(0.628318,X[9]) - X[2] + 0.628318*X[10];
+    nc5=c5;
+
+ 
+    c6=- X[11]/pow(0.7853975,X[9]) - X[4] + 0.7853975*X[10];
+    nc6=c6;
+
+  
+    c7=- X[11]/pow(0.942477,X[9]) - X[6] + 0.942477*X[10];
+    nc7=c7;
+
+
+    c8=X[8]/pow(0.1570795,X[9]) - X[12] + X[7]-p;
+    nc8=c8;
+
+    c9=X[8]/pow(0.314159,X[9]) - X[14] + X[7]-p;
+    nc9=c9;
+
+
+    c10=X[8]/pow(0.4712385,X[9]) - X[16] + X[7]-p;
+    nc10=c10;
+
+    c11=- X[11]/pow(0.1570795,X[9]) - X[13] + 0.1570795*X[10];
+    nc11=c11;
+
+
+
+    mc::FFVar objective =0.3333333333333333*(pow((-5 + X[12]),2) + pow((5 + X[13]),2) + pow((-3 + X[14]),2) + pow((2 + X[15]),2) + pow((-2 + X[16]),2)
+                        + pow((1 + X[0]),2) + pow((-1.5 + X[1]),2) + pow((0.5 + X[2]),2) + pow((-1.2 + X[3]),2) + pow((0.2 + X[4]),2)
+                        + pow((-1.1 + X[5]),2) + pow((0.1 + X[6]),2));
+    std::vector<mc::FFVar> F = {c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc10,nc11,objective};
     
 
 

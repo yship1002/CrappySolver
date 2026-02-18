@@ -657,7 +657,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         try {
             GRBModel grbmodel = GRBModel(env);
             this->model->generateMINLP(&grbmodel);
-
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
