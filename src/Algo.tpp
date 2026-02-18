@@ -131,11 +131,11 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
 int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     double original_LBD= this->activeNodes[idx].LBD;
     BBNode child1 = this->activeNodes[idx]; // Copy current node
-    BBNode::node_idx++; // Increment node index for child nodes
-    child1.node_id = BBNode::node_idx; // Assign unique ID to child1
+    BBNode::node_counter++; // Increment node index for child nodes
+    child1.node_id = BBNode::node_counter; // Assign unique ID to child1
     BBNode child2 = this->activeNodes[idx]; // Copy current node
-    BBNode::node_idx++; // Increment node index for child nodes
-    child2.node_id = BBNode::node_idx; // Assign unique ID to child2
+    BBNode::node_counter++; // Increment node index for child nodes
+    child2.node_id = BBNode::node_counter; // Assign unique ID to child2
    
     int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX);
     std::cout<<"Branching on first stage variable index: "<<branch_idx<<std::endl;

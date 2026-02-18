@@ -28,7 +28,7 @@ class BBNode : public Node {
         BBNode()=default; // default constructor
         BBNode(const BBNode& other)=default;
         std::vector<double> scenario_LBDs; // record LBD for each scenario for this node
-        static int node_idx;
+        static int node_counter;
         int node_id;
 
 

@@ -5,7 +5,8 @@ Node::Node(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> se
 }
 BBNode::BBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX,
     BranchingStrategy strategy): Node(first_stage_IX,second_stage_IX) {
-
+    BBNode::node_counter++;
+    this->node_id = BBNode::node_counter;
     this->branchheuristic = BBHeuristic(first_stage_IX, strategy);
 }
 xBBNode::xBBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX, 

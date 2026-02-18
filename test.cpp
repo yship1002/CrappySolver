@@ -11,7 +11,7 @@
 int insideAlgo::lbd_calculation_count=0;
 
 double insideAlgo::lbd_calculation_time=0;
-int BBNode::node_idx=-1;
+int BBNode::node_counter=0;
 int main(int argc, char* argv[]) {
     //ProcessMode: -1134.15 (10s) -1126.4218270121305. (3s)
     //CrdueModel:-18350.146929611754(5s)
