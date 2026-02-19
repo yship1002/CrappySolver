@@ -34,12 +34,137 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
         mc::Interval(1.2,4),
         mc::Interval(145,162)
     };
-    
-    
-    // this->convertToCentralizedModel();
 
+
+    // this->convertToCentralizedModel();
+    
     
 };
+void ProcessModel::clearDAG(){
+    for (const auto& scenario_name : this->scenario_names) {
+        this->DAG[scenario_name].clear();
+        this->X[scenario_name].clear();
+        this->F[scenario_name].clear();
+    }
+}
+void ProcessModel::buildDAG(){
+    
+    for (const auto& scenario_name : this->scenario_names) {
+
+        int n_first_stage_vars = this->first_stage_IX.size();
+
+        // Loop over each scenario to build subproblem
+
+        const int nvars = n_first_stage_vars + this->second_stage_IX.size();
+
+        this->X[scenario_name].resize(nvars);
+
+
+        for (int i = 0; i < nvars; ++i) this->X[scenario_name][i].set(&this->DAG[scenario_name]);
+
+        // scenario perturbation
+        double p = this->perturb[this->scenario_name];
+        //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
+        // Constraints translated from the Pyomo example (indices assume:
+        // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
+        // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
+        // Constraints (mapped from the Pyomo model)
+        mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
+        mc::FFVar nc1,nc4,nc5,nc6,nc7,nc8;
+
+        // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
+        c1 = (-X[scenario_name][0] * (-0.00667 * pow(X[scenario_name][7],2) + 0.13167 * X[scenario_name][7] + 1.12) + X[scenario_name][4]) - p;
+        nc1 = -c1;
+
+        // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
+        c2 = (-X[scenario_name][0] + 1.22 * X[scenario_name][4] - X[scenario_name][3]) - p;
+
+        // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
+        c3 = X[scenario_name][0] - 1.22 * X[scenario_name][4] + X[scenario_name][3] - p;
+
+        // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
+        c4 = (-0.001 * X[scenario_name][4] * X[scenario_name][8] * X[scenario_name][5])-(98 - X[scenario_name][5])*(p-X[scenario_name][2]);
+        nc4 = -c4;
+
+        // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
+        c5 = (0.038 * pow(X[scenario_name][7],2) - 1.098 * X[scenario_name][7] - 0.325 * X[scenario_name][5] + X[scenario_name][6]) - 57.425;
+        nc5 = -c5;
+
+        // e5: -(x2 + x5)/x1 + x8 == 0
+        c6 =  X[scenario_name][7]*X[scenario_name][0]-(X[scenario_name][1] + X[scenario_name][3]);
+        nc6 = -c6;
+
+        // e6: x9 + 0.222*x10 == 35.82
+        c7 = (X[scenario_name][8] + 0.222 * X[scenario_name][9]) - 35.82;
+        nc7 = -c7;
+
+        // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
+        c8 = (-3 * X[scenario_name][6] + X[scenario_name][9]) + 133;
+        nc8 = -c8;
+
+
+        mc::FFVar objective =0.3333333*( 5.04 * X[scenario_name][0] + 0.035 * X[scenario_name][1] + 10.0 * X[scenario_name][2] + 3.36 * X[scenario_name][3]- 0.063 * X[scenario_name][4] * X[scenario_name][6]);
+        this->F[scenario_name] = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
+    }
+}
+void ProcessModel::buildFullModelDAG(){
+    // for full model solve we will stay in scenario 1
+    int n_first_stage_vars = this->first_stage_IX.size();
+    int nvars = this->first_stage_IX.size();+this->scenario_names.size() * this->second_stage_IX.size();
+    int n_second_stage_vars = this->second_stage_IX.size();
+    this->X[ScenarioNames::SCENARIO1].resize(this->first_stage_IX.size() + this->scenario_names.size() * this->second_stage_IX.size());
+    
+    mc::FFVar objective;
+    
+    for (int s_idx=0; s_idx<this->scenario_names.size(); ++s_idx){
+        int second_stage_start_idx = n_first_stage_vars + s_idx * n_second_stage_vars;
+        for (int i = 0; i < n_second_stage_vars; ++i) this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+i].set(&this->DAG[ScenarioNames::SCENARIO1]);
+
+        // scenario perturbation
+        double p = this->perturb[this->scenario_names[s_idx]];
+        //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
+        // Constraints translated from the Pyomo example (indices assume:
+        // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
+        // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
+        // Constraints (mapped from the Pyomo model)
+
+
+        // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
+        this->F[ScenarioNames::SCENARIO1].push_back((-X[ScenarioNames::SCENARIO1][0] * (-0.00667 * pow(X[ScenarioNames::SCENARIO1][second_stage_start_idx+3],2) + 0.13167 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+3] + 1.12) + X[ScenarioNames::SCENARIO1][second_stage_start_idx]) - p);
+        this->F[ScenarioNames::SCENARIO1].push_back(-((-X[ScenarioNames::SCENARIO1][0] * (-0.00667 * pow(X[ScenarioNames::SCENARIO1][second_stage_start_idx+3],2) + 0.13167 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+3] + 1.12) + X[ScenarioNames::SCENARIO1][second_stage_start_idx]) - p));
+
+        // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
+        this->F[ScenarioNames::SCENARIO1].push_back((-X[ScenarioNames::SCENARIO1][0] + 1.22 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] - X[ScenarioNames::SCENARIO1][3]) - p);
+
+        // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
+        this->F[ScenarioNames::SCENARIO1].push_back(X[ScenarioNames::SCENARIO1][0] - 1.22 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] + X[ScenarioNames::SCENARIO1][3] - p);
+
+        // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
+        this->F[ScenarioNames::SCENARIO1].push_back((-0.001 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+4] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+1])-(98 - X[ScenarioNames::SCENARIO1][second_stage_start_idx+1])*(p-X[ScenarioNames::SCENARIO1][2]));
+        this->F[ScenarioNames::SCENARIO1].push_back(-((-0.001 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+4] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+1])-(98 - X[ScenarioNames::SCENARIO1][second_stage_start_idx+1])*(p-X[ScenarioNames::SCENARIO1][2])));
+
+        // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
+        this->F[ScenarioNames::SCENARIO1].push_back((0.038 * pow(X[ScenarioNames::SCENARIO1][second_stage_start_idx+3],2) - 1.098 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+3] - 0.325 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+1] + X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]) - 57.425);
+        this->F[ScenarioNames::SCENARIO1].push_back(-((0.038 * pow(X[ScenarioNames::SCENARIO1][second_stage_start_idx+3],2) - 1.098 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+3] - 0.325 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+1] + X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]) - 57.425));
+
+        // e5: -(x2 + x5)/x1 + x8 == 0
+        this->F[ScenarioNames::SCENARIO1].push_back(X[ScenarioNames::SCENARIO1][second_stage_start_idx+3]*X[ScenarioNames::SCENARIO1][0]-(X[ScenarioNames::SCENARIO1][1] + X[ScenarioNames::SCENARIO1][3]));
+        this->F[ScenarioNames::SCENARIO1].push_back(-(X[ScenarioNames::SCENARIO1][second_stage_start_idx+3]*X[ScenarioNames::SCENARIO1][0]-(X[ScenarioNames::SCENARIO1][1] + X[ScenarioNames::SCENARIO1][3])));
+
+        // e6: x9 + 0.222*x10 == 35.82
+        this->F[ScenarioNames::SCENARIO1].push_back((X[ScenarioNames::SCENARIO1][second_stage_start_idx+4] + 0.222 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+5]) - 35.82);
+        this->F[ScenarioNames::SCENARIO1].push_back(-((X[ScenarioNames::SCENARIO1][second_stage_start_idx+4] + 0.222 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+5]) - 35.82));
+
+        // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
+        this->F[ScenarioNames::SCENARIO1].push_back((-3 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+2] + X[ScenarioNames::SCENARIO1][second_stage_start_idx+5]) + 133);
+        this->F[ScenarioNames::SCENARIO1].push_back(-((-3 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+2] + X[ScenarioNames::SCENARIO1][second_stage_start_idx+5]) + 133));
+
+
+        objective +=0.3333333*( 5.04 * X[ScenarioNames::SCENARIO1][0] + 0.035 * X[ScenarioNames::SCENARIO1][1] + 10.0 * X[ScenarioNames::SCENARIO1][2] + 3.36 * X[ScenarioNames::SCENARIO1][3]- 0.063 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]);
+    }
+
+    this->F[ScenarioNames::SCENARIO1].push_back(objective);
+}
 Ipopt::SmartPtr<STModel> ProcessModel::clone(){
     Ipopt::SmartPtr<ProcessModel> p = new ProcessModel();
 
@@ -48,7 +173,8 @@ Ipopt::SmartPtr<STModel> ProcessModel::clone(){
     p->second_stage_IX=this->second_stage_IX;
     p->perturb=this->perturb;
     p->scenario_names=this->scenario_names;
-    p->generateIpoptModel();
+    p->buildDAG(); // rebuild DAG for the cloned model
+
 
     return p;
 }
@@ -57,75 +183,24 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) {
 
-
-    int n_first_stage_vars = this->first_stage_IX.size();
-
     // Loop over each scenario to build subproblem
 
-    const int nvars = n_first_stage_vars + this->second_stage_IX.size();
-    mc::FFGraph DAG;
-    mc::FFVar X[nvars];
-
-
-    for (int i = 0; i < nvars; ++i) X[i].set(&DAG);
-
-    // scenario perturbation
-    double p = this->perturb[this->scenario_name];
-    //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
-    // Constraints translated from the Pyomo example (indices assume:
-    // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
-    // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
-    // Constraints (mapped from the Pyomo model)
-    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
-    mc::FFVar nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8;
-
-    // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
-    c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
-    nc1 = -c1;
-
-    // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
-    c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
-
-    // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
-    c3 = X[0] - 1.22 * X[4] + X[3] - p;
-
-    // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);
-    nc4 = -c4;
-
-    // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
-    c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
-    nc5 = -c5;
-
-    // e5: -(x2 + x5)/x1 + x8 == 0
-    c6 =  X[7]*X[0]-(X[1] + X[3]);
-    nc6 = -c6;
-
-    // e6: x9 + 0.222*x10 == 35.82
-    c7 = (X[8] + 0.222 * X[9]) - 35.82;
-    nc7 = -c7;
-
-    // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
-    c8 = (-3 * X[6] + X[9]) + 133;
-    nc8 = -c8;
-
-
-    mc::FFVar objective =0.3333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
-
+    const int nvars = this->X[this->scenario_name].size();
+    std::rotate(this->F[this->scenario_name].begin(), this->F[this->scenario_name].begin() + 1, this->F[this->scenario_name].end());
 
     // Evaluate constraints and objective
     mc::PolImg<mc::Interval> Env;
     mc::PolVar<mc::Interval> PX[nvars];
 
-    for (int i = 0; i < n_first_stage_vars; ++i) PX[i].set(&Env, X[i], this->first_stage_IX[i]);
-    for (int i = n_first_stage_vars; i < nvars; ++i) PX[i].set(&Env, X[i], this->second_stage_IX[i - n_first_stage_vars]);
+    for (int i = 0; i < this->first_stage_IX.size(); ++i) PX[i].set(&Env, this->X[this->scenario_name][i], this->first_stage_IX[i]);
+    for (int i = this->first_stage_IX.size(); i < nvars; ++i) PX[i].set(&Env, this->X[this->scenario_name][i], this->second_stage_IX[i - this->first_stage_IX.size()]);
     
-    mc::PolVar<mc::Interval> PF[15];
-    mc::FFVar F[15] = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
-    DAG.eval(15, F, PF, nvars, X, PX);
+    mc::PolVar<mc::Interval> PF[this->F[this->scenario_name].size()];
+
+    this->DAG[this->scenario_name].eval(this->F[this->scenario_name].size(), this->F[this->scenario_name].data(), PF, nvars, this->X[this->scenario_name].data(), PX);
     
 
-    Env.generate_cuts(15, PF);
+    Env.generate_cuts(this->F[this->scenario_name].size(), PF);
 
     // Extract LP data from Env Don't touch below this line
     auto c = Env.Cuts();
@@ -166,7 +241,7 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
         expr.end();
     }
     IloExpr objExpr(*cplex_env);
-    objExpr+=(*cplex_x)[after_nvars-1];
+    objExpr+=(*cplex_x)[after_nvars-1]; // objective is always the last variable in our construction
     *(cplex_obj) = IloMinimize(*cplex_env, objExpr);
     objExpr.end();
     
@@ -184,91 +259,31 @@ void ProcessModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     cplexmodel->add(*cplex_x);
     cplexmodel->add(*cplex_constraints);
     cplexmodel->add(*cplex_obj);
+    std::rotate(this->F[this->scenario_name].rbegin(), this->F[this->scenario_name].rbegin() + 1, this->F[this->scenario_name].rend()); // rotate back to original order
 };
 
 void ProcessModel::generateMINLP(GRBModel* grbmodel){
-    // To be implemented
-    int n_first_stage_vars = this->first_stage_IX.size();
-    int n_second_stage_vars = this->second_stage_IX.size();
-
-    // Loop over each scenario to build subproblem
-
-    const int nvars = n_first_stage_vars + n_second_stage_vars;
-    mc::FFGraph DAG;
-    std::vector<mc::FFVar> X(nvars);
-
-
-    for (int i = 0; i < nvars; ++i) X[i].set(&DAG);
-
-    // scenario perturbation
-    double p = this->perturb[this->scenario_name];
-
-
-    //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
-    // Constraints translated from the Pyomo example (indices assume:
-    // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
-    // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
-    // Constraints (mapped from the Pyomo model)
-    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
-    mc::FFVar nc1,nc4,nc5,nc6,nc7,nc8;
-
-    // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
-    c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
-    nc1 = -c1;
-
-    // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
-    c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
-
-    // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
-    c3 = X[0] - 1.22 * X[4] + X[3] - p;
-
-    // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5])/(98 - X[5])+X[2]-p;     // this is the problem
-    nc4 = -c4;
-
-    // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
-    c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
-    nc5 = -c5;
-
-    // e5: -(x2 + x5)/x1 + x8 == 0
-    c6 = (-(X[1] + X[3]) / X[0] + X[7]);
-    nc6 = -c6;
-
-    //e6: x9 + 0.222*x10 == 35.82
-    c7 = (X[8] + 0.222 * X[9]) - 35.82;
-    nc7 = -c7;
-
-    // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
-    c8 = (-3 * X[6] + X[9]) + 133;
-    nc8 = -c8;
-
-
-    mc::FFVar objective =0.3333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
-    std::vector<mc::FFVar> F = {c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8,objective};
-    
-
-
     // Don't touch below this line
 
     grbmodel->set(GRB_DoubleParam_MIPGap, 0.00001);
 
-    for (int i = 0; i < n_first_stage_vars; ++i) {
+    for (int i = 0; i < this->first_stage_IX.size(); ++i) {
         grbmodel->addVar(this->first_stage_IX[i].l(), this->first_stage_IX[i].u(), 0.0, GRB_CONTINUOUS, ("x" + std::to_string(i)));
     }
-    for (int i = 0; i < n_second_stage_vars; ++i) {
-        grbmodel->addVar(this->second_stage_IX[i].l(), this->second_stage_IX[i].u(), 0.0, GRB_CONTINUOUS, ("x" + std::to_string(i+n_first_stage_vars)));
+    for (int i = 0; i < this->second_stage_IX.size(); ++i) {
+        grbmodel->addVar(this->second_stage_IX[i].l(), this->second_stage_IX[i].u(), 0.0, GRB_CONTINUOUS, ("x" + std::to_string(i+this->first_stage_IX.size())));
     }
 
     grbmodel->update();
 
-    for (int i = 0; i < F.size(); ++i) {
-        mc::FFSubgraph subgraph = DAG.subgraph(std::vector<mc::FFVar> {F[i]});
+    for (int i = 0; i < this->F[this->scenario_name].size(); ++i) {
+        mc::FFSubgraph subgraph = this->DAG[this->scenario_name].subgraph(std::vector<mc::FFVar> {this->F[this->scenario_name][i]});
         for (auto op : subgraph.l_op) {
             if (op->varin.size()==0) continue;
             if (op->varout[0]->id().first == mc::FFVar::CINT || op->varout[0]->id().first == mc::FFVar::CREAL || op->varout[0]->id().first == mc::FFVar::VAR) continue;
             // now we have an aux variable as output
-            if (op->varout[0]->id().second == F[i].id().second) { //if either object or constraint
-                if (i == F.size()-1) { // objective
+            if (op->varout[0]->id().second == this->F[this->scenario_name][i].id().second) { //if either object or constraint
+                if (i == 0) { // objective
                     grbmodel->addVar(-GRB_INFINITY, GRB_INFINITY, 1.0, GRB_CONTINUOUS, "aux_"+std::to_string(op->varout[0]->id().second));
                 } else {
                     grbmodel->addVar(-GRB_INFINITY, 0, 0.0, GRB_CONTINUOUS, "aux_"+std::to_string(op->varout[0]->id().second)); // this is final output
@@ -401,6 +416,8 @@ void ProcessModel::generateMINLP(GRBModel* grbmodel){
 
         }
     }
+    // grbmodel->write("model.lp");
+     // Set objective
 }
 
 void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
@@ -408,102 +425,25 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) {
 
-
-    int n_first_stage_vars = this->first_stage_IX.size();
-    int n_second_stage_vars = static_cast<int>(this->second_stage_IX.size())/static_cast<int>(this->scenario_names.size());
-
-    // Loop over each scenario to build subproblem
-
-    int nvars = n_first_stage_vars + this->second_stage_IX.size();
-    mc::FFGraph DAG;
-    mc::FFVar X[nvars];
     mc::PolImg<mc::Interval> Env;
-    mc::PolVar<mc::Interval> PX[nvars];
+    mc::PolVar<mc::Interval> PX[this->X[ScenarioNames::SCENARIO1].size()];
 
-    for (int i = 0; i < nvars; ++i) X[i].set(&DAG);
+    for (int i = 0; i < this->X[ScenarioNames::SCENARIO1].size(); ++i) this->X[ScenarioNames::SCENARIO1][i].set(&this->DAG[ScenarioNames::SCENARIO1]);
 
-    for (int i = 0; i < n_first_stage_vars; ++i) PX[i].set(&Env, X[i], this->first_stage_IX[i]);
+    for (int i = 0; i < this->first_stage_IX.size(); ++i) PX[i].set(&Env, this->X[ScenarioNames::SCENARIO1][i], this->first_stage_IX[i]);
     for (const auto& scenario_name : this->scenario_names) {
-        int scenario_start_idx= n_first_stage_vars + static_cast<int>(scenario_name) * n_second_stage_vars;
-        for (int i =0; i < n_second_stage_vars; ++i){
-            PX[i+scenario_start_idx].set(&Env, X[i+scenario_start_idx], this->second_stage_IX[i+scenario_start_idx-n_first_stage_vars]);
+        int scenario_start_idx= this->first_stage_IX.size() + static_cast<int>(scenario_name) * this->second_stage_IX.size();
+        for (int i =0; i < this->second_stage_IX.size(); ++i){
+            PX[i+scenario_start_idx].set(&Env, this->X[ScenarioNames::SCENARIO1][i+scenario_start_idx], this->second_stage_IX[i]);
         }
     }
 
-    std::vector<mc::FFVar> F;
-    // scenario perturbation
-    for (const auto& scenario_name : this->scenario_names){
-        int scenario_start_idx= n_first_stage_vars + static_cast<int>(scenario_name) * n_second_stage_vars;
-        double p = this->perturb[this->scenario_name];
-        //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
-        // Constraints translated from the Pyomo example (indices assume:
-        // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
-        // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
-        // Constraints (mapped from the Pyomo model)
 
+    std::vector<mc::PolVar<mc::Interval>> PF(this->F[ScenarioNames::SCENARIO1].size());
 
-        // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
-        F.push_back( (-X[0] * (-0.00667 * pow(X[scenario_start_idx + 3],2) + 0.13167 * X[scenario_start_idx + 3] + 1.12) + X[scenario_start_idx]) - p );
-        F.push_back(-( (-X[0] * (-0.00667 * pow(X[scenario_start_idx + 3],2) + 0.13167 * X[scenario_start_idx + 3] + 1.12) + X[scenario_start_idx]) - p ));
-        
-        // c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
-        // nc1 = -c1;
-
-        // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
-        F.push_back( (-X[0] + 1.22 * X[scenario_start_idx] - X[3]) - p );
-        // c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
-
-        // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
-        F.push_back( X[0] - 1.22 * X[scenario_start_idx] + X[3] - p );
-        // c3 = X[0] - 1.22 * X[4] + X[3] - p;
-
-        // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-        F.push_back( (-0.001 * X[scenario_start_idx] * X[scenario_start_idx + 4] * X[scenario_start_idx + 1])-(98 - X[scenario_start_idx + 1])*(p-X[2]) );
-        F.push_back( -((-0.001 * X[scenario_start_idx] * X[scenario_start_idx + 4] * X[scenario_start_idx + 1])-(98 - X[scenario_start_idx + 1])*(p-X[2])) ); // c4 = (-0.001 * X[4] * X[8] * X[5])-(98 - X[5])*(p-X[2]);     // this is the problem
-        // nc4 = -c4;
-
-        // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
-        F.push_back( (0.038 * pow(X[scenario_start_idx + 3],2) - 1.098 * X[scenario_start_idx + 3] - 0.325 * X[scenario_start_idx + 1] + X[scenario_start_idx + 2]) - 57.425 );
-        F.push_back( -((0.038 * pow(X[scenario_start_idx + 3],2) - 1.098 * X[scenario_start_idx + 3] - 0.325 * X[scenario_start_idx + 1] + X[scenario_start_idx + 2]) - 57.425) );
-        // c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
-        // nc5 = -c5;
-
-        // e5: -(x2 + x5)/x1 + x8 == 0
-        F.push_back( X[scenario_start_idx + 3]*X[0]-(X[1] + X[3]) );
-        F.push_back( -(X[scenario_start_idx + 3]*X[0]-(X[1] + X[3])) );
-        //
-        // c6 =  X[7]*X[0]-(X[1] + X[3]);
-        // nc6 = -c6;
-
-        // e6: x9 + 0.222*x10 == 35.82
-        F.push_back( (X[scenario_start_idx + 4] + 0.222 * X[scenario_start_idx + 5]) - 35.82 );
-        F.push_back( -((X[scenario_start_idx + 4] + 0.222 * X[scenario_start_idx + 5]) - 35.82) );
-        // c7 = (X[8] + 0.222 * X[9]) - 35.82;
-        // nc7 = -c7;
-
-        // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
-        F.push_back( (-3 * X[scenario_start_idx + 2] + X[scenario_start_idx + 5]) + 133 );
-        F.push_back( -((-3 * X[scenario_start_idx + 2] + X[scenario_start_idx + 5]) + 133) );
-        //
-        // c8 = (-3 * X[6] + X[9]) + 133;
-        // nc8 = -c8;
-
-
-    }
-    mc::FFVar objective =0;
-    for (const auto& scenario_name : this->scenario_names){
-        int scenario_start_idx= n_first_stage_vars + static_cast<int>(scenario_name) * n_second_stage_vars;
-        objective +=0.3333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[scenario_start_idx] * X[scenario_start_idx+2]);
-
-    }
-    F.push_back(objective);
-
-    std::vector<mc::PolVar<mc::Interval>> PF(F.size());
-
-    DAG.eval(F.size(), F.data(), PF.data(), nvars, X, PX);
+    this->DAG[ScenarioNames::SCENARIO1].eval(this->F[ScenarioNames::SCENARIO1].size(), this->F[ScenarioNames::SCENARIO1].data(), PF.data(), this->X[ScenarioNames::SCENARIO1].size(), this->X[ScenarioNames::SCENARIO1].data(), PX);
     
-
-    Env.generate_cuts(F.size(), PF.data());
+    Env.generate_cuts(this->F[ScenarioNames::SCENARIO1].size(), PF.data());
 
     // Extract LP data from Env Don't touch below this line
     auto c = Env.Cuts();
@@ -564,64 +504,7 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     cplexmodel->add(*cplex_constraints);
     cplexmodel->add(*cplex_obj);
 };
-void ProcessModel::generateIpoptModel(){
-    int n_first_stage_vars = this->first_stage_IX.size();
-    int n_second_stage_vars = this->second_stage_IX.size();
 
-    // Loop over each scenario to build subproblem
-
-    const int nvars = n_first_stage_vars + n_second_stage_vars;
-
-    this->X.resize(nvars);
-
-    for (int i = 0; i < nvars; ++i) X[i].set(&(this->DAG));
-
-    // scenario perturbation
-    double p = this->perturb[this->scenario_name];
-
-
-    //std::cout << "Building LP for " << scenario_name << " with perturbation " << p << std::endl;
-    // Constraints translated from the Pyomo example (indices assume:
-    // X[0]=m.x1, X[1]=m.x2, X[2]=m.x3, X[3]=m.x5,X[4]=m.x4[s], X[5]=m.x6[s],
-    // X[6]=m.x7[s], X[7]=m.x8[s], X[8]=m.x9[s], X[9]=m.x10[s]
-    // Constraints (mapped from the Pyomo model)
-    mc::FFVar c1,c2,c3,c4,c5,c6,c7,c8;
-    mc::FFVar nc1,nc4,nc5,nc6,nc7,nc8;
-
-    // e1: -x1 * (-0.00667*x8^2 + 0.13167*x8 + 1.12) + x4 == perturb
-    c1 = (-X[0] * (-0.00667 * pow(X[7],2) + 0.13167 * X[7] + 1.12) + X[4]) - p;
-    nc1 = -c1;
-
-    // e2_1: -x1 + 1.22*x4 - x5 <= perturb  --> (expr - p) <= 0
-    c2 = (-X[0] + 1.22 * X[4] - X[3]) - p;
-
-    // e2_2: -x1 + 1.22*x4 - x5 >= -perturb  --> -(expr + p) <= 0
-    c3 = X[0] - 1.22 * X[4] + X[3] - p;
-
-    // e3: -0.001 * x4 * x9 * x6 / (98 - x6) + x3 == perturb
-    c4 = (-0.001 * X[4] * X[8] * X[5]) / (98 - X[5]) + X[2] - p;
-    nc4 = -c4;
-
-    // e4: 0.038*x8^2 - 1.098*x8 - 0.325*x6 + x7 == 57.425
-    c5 = (0.038 * pow(X[7],2) - 1.098 * X[7] - 0.325 * X[5] + X[6]) - 57.425;
-    nc5 = -c5;
-
-    // e5: -(x2 + x5)/x1 + x8 == 0
-    c6 = X[0] * X[7]-(X[1] + X[3]);
-    nc6 = -c6;
-
-    //e6: x9 + 0.222*x10 == 35.82
-    c7 = (X[8] + 0.222 * X[9]) - 35.82;
-    nc7 = -c7;
-
-    // e7: -3*x7 + x10 == -133  -> (-3*x7 + x10) + 133 == 0
-    c8 = (-3 * X[6] + X[9]) + 133;
-    nc8 = -c8;
-
-    mc::FFVar objective =0.333333*( 5.04 * X[0] + 0.035 * X[1] + 10.0 * X[2] + 3.36 * X[3]- 0.063 * X[4] * X[6]);
-
-    this->F = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
-}
 bool ProcessModel::get_nlp_info(
             Ipopt::Index& n,
             Ipopt::Index& m,
@@ -635,8 +518,8 @@ bool ProcessModel::get_nlp_info(
     // number of variables
     n = this->first_stage_IX.size() + this->second_stage_IX.size();
 
-    // one equality constraint and one inequality constraint
-    m = this->F.size()-1; // w
+    // number of constraints
+    m = this->F[this->scenario_name].size()-1; // w
 
     // in this example the jacobian is dense and contains 8 nonzeros
     nnz_jac_g = n*m;
@@ -659,7 +542,7 @@ bool ProcessModel::get_bounds_info(
         )
 {
     assert(n == (Ipopt::Index)(this->first_stage_IX.size()+this->second_stage_IX.size()));
-    assert(m == (Ipopt::Index)(F.size()-1));
+    assert(m == (Ipopt::Index)(this->F[this->scenario_name].size()-1));
     // the variables have lower bounds of 1
     for( Ipopt::Index i = 0; i < this->first_stage_IX.size(); i++ )
     {
@@ -712,12 +595,12 @@ bool ProcessModel::eval_f(
 {
 
 
-    mc::FFSubgraph   op_f= this->DAG.subgraph(std::vector<mc::FFVar> {F[0]});
+    mc::FFSubgraph   op_f= this->DAG[this->scenario_name].subgraph(std::vector<mc::FFVar> {this->F[this->scenario_name][0]});
     std::vector<double> dwk;
     std::vector<mc::FFVar>  Fvar;
 
-    this->DAG.eval(op_f, dwk, 1, &(F[0]), &obj_value,
-             n,this->X.data(), x);
+    this->DAG[this->scenario_name].eval(op_f, dwk, 1, &(this->F[this->scenario_name][0]), &obj_value,
+             n,this->X[this->scenario_name].data(), x);
 
     return true;
 };
@@ -731,11 +614,11 @@ bool ProcessModel::eval_grad_f(
     std::vector<fadbad::B<double>> BXval(n);
     fadbad::B<double>   BCval;
     std::vector<fadbad::B<double>> Bwk;
-    mc::FFSubgraph   op_f= this->DAG.subgraph(std::vector<mc::FFVar> {F[0]});
+    mc::FFSubgraph   op_f= this->DAG[this->scenario_name].subgraph(std::vector<mc::FFVar> {this->F[this->scenario_name][0]});
     for( Ipopt::Index i=0; i<n; i++ ){
           BXval[i] = x[i];
     }
-    this->DAG.eval( op_f, Bwk, 1, &(F[0]), &BCval, n, this->X.data(), BXval.data() );
+    this->DAG[this->scenario_name].eval( op_f, Bwk, 1, &(this->F[this->scenario_name][0]), &BCval, n, this->X[this->scenario_name].data(), BXval.data() );
         
     Bwk.clear();
     BCval.diff( 0, 1 );
@@ -754,9 +637,9 @@ bool ProcessModel::eval_g(
         )
 {
     std::vector<double> dwk;
-    mc::FFSubgraph   op_g= this->DAG.subgraph(m,this->F.data()+1);
+    mc::FFSubgraph   op_g= this->DAG[this->scenario_name].subgraph(m,this->F[this->scenario_name].data()+1);
     // skipping the first one since it's the objective
-    this->DAG.eval( op_g, dwk, m, this->F.data()+1, g, n, this->X.data(), x );
+    this->DAG[this->scenario_name].eval( op_g, dwk, m, this->F[this->scenario_name].data()+1, g, n, this->X[this->scenario_name].data(), x );
 
     return true;
 }
@@ -789,14 +672,14 @@ bool ProcessModel::eval_jac_g(
     std::vector<fadbad::B<double>> BFval(m);
     fadbad::B<double>   BCval;
     std::vector<fadbad::B<double>> Bwk;
-    mc::FFSubgraph   op_g= this->DAG.subgraph(m,this->F.data()+1);
+    mc::FFSubgraph   op_g= this->DAG[this->scenario_name].subgraph(m,this->F[this->scenario_name].data()+1);
 
     // Initialize participating variables in fadbad::B<double>
     for( Ipopt::Index i=0; i<n; i++ ){
         BXval[i] = x[i];
     }
 
-    this->DAG.eval( op_g, Bwk, m, this->F.data()+1, BFval.data(), n, this->X.data(), BXval.data() );
+    this->DAG[this->scenario_name].eval( op_g, Bwk, m, this->F[this->scenario_name].data()+1, BFval.data(), n, this->X[this->scenario_name].data(), BXval.data() );
 
     Bwk.clear();
     for( Ipopt::Index j=0; j<m; j++ ){

@@ -74,9 +74,9 @@ class STModel:public Ipopt::TNLP{
         STModel(const STModel& other)=default;
         STModel()=default; // default constructor
         /// A vector of ScenarioNames
-        mc::FFGraph DAG;
-        std::vector<mc::FFVar> X;
-        std::vector<mc::FFVar> F;
+        std::map<ScenarioNames, mc::FFGraph> DAG;
+        std::map<ScenarioNames, std::vector<mc::FFVar>> X;
+        std::map<ScenarioNames, std::vector<mc::FFVar>> F;
         SOLUTION_OPT solution;
         BranchingStrategy branching_strategy;
         std::vector<ScenarioNames> scenario_names;
@@ -88,6 +88,9 @@ class STModel:public Ipopt::TNLP{
 
         ScenarioNames scenario_name; //by default
         virtual Ipopt::SmartPtr<STModel> clone() = 0;
+        virtual void buildDAG() = 0;
+        virtual void clearDAG() = 0;
+        virtual void buildFullModelDAG() = 0;
         virtual void generateMINLP(GRBModel* grbmodel)=0;
         virtual void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
@@ -101,7 +104,7 @@ class STModel:public Ipopt::TNLP{
                               IloRangeArray* cplex_constraints,
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x,int var_index,bool max);
-        virtual void generateIpoptModel()=0;
+
         void convertToCentralizedModel();
         int map_ffop_to_grb(int ffop_type) {
             using T = mc::FFOp::TYPE;

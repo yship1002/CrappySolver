@@ -9,7 +9,9 @@ class ProcessModel:public STModel {
         /// A vector of ScenarioNames
 
         Ipopt::SmartPtr<STModel> clone() override;
-        
+        void buildDAG() override;
+        void clearDAG() override;
+        void buildFullModelDAG() override;
         void generateMINLP(GRBModel* grbmodel) override;
         void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,
@@ -21,7 +23,6 @@ class ProcessModel:public STModel {
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x) override;
 
-        void generateIpoptModel() override;
 
         bool get_nlp_info(
             Ipopt::Index& n,
