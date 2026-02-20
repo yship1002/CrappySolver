@@ -23,11 +23,11 @@ int main(int argc, char* argv[]) {
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(1.0); // relgap=0.1% tolerance, abs=1
 
-    // {
-    //     std::ofstream os(argv[1]);
-    //     cereal::JSONOutputArchive oarchive(os);
-    //     oarchive(cereal::make_nvp("outsideAlgo", CZalgo));
-    // }
+    {
+        std::ofstream os(argv[1]);
+        cereal::JSONOutputArchive oarchive(os);
+        oarchive(cereal::make_nvp("outsideAlgo", CZalgo));
+    }
     // {
     //     std::ofstream os(argv[1]);
     //     cereal::JSONOutputArchive oarchive(os);
