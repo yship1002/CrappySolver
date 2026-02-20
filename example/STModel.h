@@ -90,6 +90,7 @@ class STModel:public Ipopt::TNLP{
         virtual Ipopt::SmartPtr<STModel> clone() = 0;
         virtual void buildDAG() = 0;
         virtual void clearDAG() = 0;
+        virtual void convertToCentralizedModel() = 0;
         virtual void buildFullModelDAG() = 0;
         virtual void generateMINLP(GRBModel* grbmodel)=0;
         virtual void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
@@ -105,7 +106,7 @@ class STModel:public Ipopt::TNLP{
                               IloObjective* cplex_obj,
                               IloNumVarArray* cplex_x,int var_index,bool max);
 
-        void convertToCentralizedModel();
+
         int map_ffop_to_grb(int ffop_type) {
             using T = mc::FFOp::TYPE;
             switch ((T)ffop_type) {

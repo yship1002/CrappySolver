@@ -12,6 +12,7 @@ class ProcessModel:public STModel {
         void buildDAG() override;
         void clearDAG() override;
         void buildFullModelDAG() override;
+        void convertToCentralizedModel() override;
         void generateMINLP(GRBModel* grbmodel) override;
         void generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
                               IloRangeArray* cplex_constraints,

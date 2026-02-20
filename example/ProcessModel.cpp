@@ -107,18 +107,30 @@ void ProcessModel::buildDAG(){
         this->F[scenario_name] = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
     }
 }
+void ProcessModel::convertToCentralizedModel(){
+    std::vector<mc::Interval> new_second_stage_IX;
+    for (auto & scenario_name : this->scenario_names){
+        new_second_stage_IX.insert(new_second_stage_IX.end(), this->second_stage_IX.begin(), this->second_stage_IX.end());
+    };
+    this->second_stage_IX = new_second_stage_IX;
+}
 void ProcessModel::buildFullModelDAG(){
     // for full model solve we will stay in scenario 1
     int n_first_stage_vars = this->first_stage_IX.size();
-    int nvars = this->first_stage_IX.size();+this->scenario_names.size() * this->second_stage_IX.size();
-    int n_second_stage_vars = this->second_stage_IX.size();
-    this->X[ScenarioNames::SCENARIO1].resize(this->first_stage_IX.size() + this->scenario_names.size() * this->second_stage_IX.size());
+    int nvars = this->first_stage_IX.size()+this->second_stage_IX.size();
+    int n_second_stage_vars = this->second_stage_IX.size()/this->scenario_names.size(); // number of second stage variables per scenario
+    this->X[ScenarioNames::SCENARIO1].resize(this->first_stage_IX.size() +this->second_stage_IX.size());
     
-    mc::FFVar objective;
-    
+    mc::FFVar objective=0;
+    for (int i = 0; i < n_first_stage_vars; ++i) this->X[ScenarioNames::SCENARIO1][i].set(&this->DAG[ScenarioNames::SCENARIO1]);
     for (int s_idx=0; s_idx<this->scenario_names.size(); ++s_idx){
         int second_stage_start_idx = n_first_stage_vars + s_idx * n_second_stage_vars;
-        for (int i = 0; i < n_second_stage_vars; ++i) this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+i].set(&this->DAG[ScenarioNames::SCENARIO1]);
+        for (int i = 0; i < n_second_stage_vars; ++i){
+            this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+i].set(&this->DAG[ScenarioNames::SCENARIO1]);
+        }
+    }
+    for (int s_idx=0; s_idx<this->scenario_names.size(); ++s_idx){
+        int second_stage_start_idx = n_first_stage_vars + s_idx * n_second_stage_vars;
 
         // scenario perturbation
         double p = this->perturb[this->scenario_names[s_idx]];
@@ -160,10 +172,10 @@ void ProcessModel::buildFullModelDAG(){
         this->F[ScenarioNames::SCENARIO1].push_back(-((-3 * X[ScenarioNames::SCENARIO1][second_stage_start_idx+2] + X[ScenarioNames::SCENARIO1][second_stage_start_idx+5]) + 133));
 
 
-        objective +=0.3333333*( 5.04 * X[ScenarioNames::SCENARIO1][0] + 0.035 * X[ScenarioNames::SCENARIO1][1] + 10.0 * X[ScenarioNames::SCENARIO1][2] + 3.36 * X[ScenarioNames::SCENARIO1][3]- 0.063 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]);
+        objective +=0.33333*( 5.04 * X[ScenarioNames::SCENARIO1][0] + 0.035 * X[ScenarioNames::SCENARIO1][1] + 10.0 * X[ScenarioNames::SCENARIO1][2] + 3.36 * X[ScenarioNames::SCENARIO1][3]- 0.063 * X[ScenarioNames::SCENARIO1][second_stage_start_idx] * X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]);
     }
 
-    this->F[ScenarioNames::SCENARIO1].push_back(objective);
+    this->F[ScenarioNames::SCENARIO1].insert(this->F[ScenarioNames::SCENARIO1].begin(), objective);
 }
 Ipopt::SmartPtr<STModel> ProcessModel::clone(){
     Ipopt::SmartPtr<ProcessModel> p = new ProcessModel();
@@ -429,12 +441,13 @@ void ProcessModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     mc::PolVar<mc::Interval> PX[this->X[ScenarioNames::SCENARIO1].size()];
 
     for (int i = 0; i < this->X[ScenarioNames::SCENARIO1].size(); ++i) this->X[ScenarioNames::SCENARIO1][i].set(&this->DAG[ScenarioNames::SCENARIO1]);
-
+    int n_second_stage_vars=this->second_stage_IX.size()/this->scenario_names.size();
     for (int i = 0; i < this->first_stage_IX.size(); ++i) PX[i].set(&Env, this->X[ScenarioNames::SCENARIO1][i], this->first_stage_IX[i]);
+    
     for (const auto& scenario_name : this->scenario_names) {
-        int scenario_start_idx= this->first_stage_IX.size() + static_cast<int>(scenario_name) * this->second_stage_IX.size();
-        for (int i =0; i < this->second_stage_IX.size(); ++i){
-            PX[i+scenario_start_idx].set(&Env, this->X[ScenarioNames::SCENARIO1][i+scenario_start_idx], this->second_stage_IX[i]);
+        int scenario_start_idx= this->first_stage_IX.size() + static_cast<int>(scenario_name) * n_second_stage_vars;
+        for (int i =0; i < n_second_stage_vars; ++i){
+            PX[i+scenario_start_idx].set(&Env, this->X[ScenarioNames::SCENARIO1][i+scenario_start_idx], this->second_stage_IX[i+scenario_start_idx]);
         }
     }
 

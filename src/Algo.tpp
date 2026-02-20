@@ -547,7 +547,11 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
     this->model->clearDAG(); // remove the previous DAG to avoid interference
-    this->model->buildDAG();
+    if (!this->solvefullModel){
+        this->model->buildDAG();
+    }else{
+        this->model->buildFullModelDAG();
+    }
     try{
         ILOSTLBEGIN
         IloEnv env;
@@ -557,11 +561,9 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         IloRangeArray c(env);
         IloObjective obj (env);
         IloNumVarArray x(env);
-        if (this->solvefullModel){
-            this->model->generateFullLP(&env,&cplexmodel,&c,&obj,&x);
-        }else{
-            this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
-        }
+
+        this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+
         // this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
@@ -588,8 +590,10 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
 
 }
 double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
+
     if (this->solvefullModel){
         // if solvefullModel is true, we solve the full MINLP to get the UBD, otherwise we just use the provided UBD for this node
+        node->UBD = this->provided_UBD;
         return this->provided_UBD;
     }
 
@@ -601,7 +605,6 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
     if (this->ubd_solver == UBDSolver::IPOPT){
         Ipopt::SmartPtr<Ipopt::TNLP> mynlp = this->model->clone();
         STModel* sm = dynamic_cast<STModel*>(Ipopt::GetRawPtr(mynlp));
-
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
         app->Options()->SetNumericValue("tol", 1e-9);           // Optimality tolerance
@@ -740,8 +743,8 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
-        //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
+        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }
 
