@@ -564,12 +564,11 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
 
         this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
 
-        // this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
 
-        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
         cplex.solve();
@@ -666,6 +665,11 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
                 //     std::cout << "Variable " << auxName << " = " << value << "\n";
                 // }
 
+                return objval;
+            }else if(status == GRB_SUBOPTIMAL){
+                double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
+                node->UBD = objval;
+                std::cout << "Suboptimal solution values: "<<objval<<std::endl;
                 return objval;
             }
 
