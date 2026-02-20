@@ -3,22 +3,23 @@
 Ex844Model::Ex844Model(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
-    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3
-    //  ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
-    //  ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
+    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3,
+     ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
+     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
     this->perturb = {
-    {ScenarioNames::SCENARIO1, 0.05488135039273248}, 
-    {ScenarioNames::SCENARIO2, 0.17151893663724196}, 
-    {ScenarioNames::SCENARIO3, 0.2602763376071644}
-        // {ScenarioNames::SCENARIO4,1.3514894164800063},
-        // {ScenarioNames::SCENARIO5,4.236547993428394},
-        // {ScenarioNames::SCENARIO6,2.155994520336202},
-        // {ScenarioNames::SCENARIO7,5.0580836121681994},
-        // {ScenarioNames::SCENARIO8,2.0849789288240969},
-        // {ScenarioNames::SCENARIO9,5.6016775572644488},
-        // {ScenarioNames::SCENARIO10,4.3503766112257304}
+        {ScenarioNames::SCENARIO1, 0.05488135039273248}, 
+        {ScenarioNames::SCENARIO2, 0.17151893663724196}, 
+        {ScenarioNames::SCENARIO3, 0.2602763376071644},
+        {ScenarioNames::SCENARIO4, 0.05488135039273248}, 
+        {ScenarioNames::SCENARIO5, 0.17151893663724196}, 
+        {ScenarioNames::SCENARIO6, 0.2602763376071644},
+        {ScenarioNames::SCENARIO7, 0.05488135039273248}, 
+        {ScenarioNames::SCENARIO8, 0.17151893663724196}, 
+        {ScenarioNames::SCENARIO9, 0.2602763376071644},
+        {ScenarioNames::SCENARIO10, 0.05488135039273248}
+
 
     };
     // this->first_stage_IX = {
@@ -148,7 +149,7 @@ void Ex844Model::buildDAG() {
 
 
 
-        mc::FFVar objective =1000*0.3333333333333333*(pow((-5 + this->X[scenario_name][12]),2) + pow((5 + this->X[scenario_name][13]),2) + pow((-3 + this->X[scenario_name][14]),2) + pow((2 + this->X[scenario_name][15]),2) + pow((-2 + this->X[scenario_name][16]),2)
+        mc::FFVar objective =1000*0.1*(pow((-5 + this->X[scenario_name][12]),2) + pow((5 + this->X[scenario_name][13]),2) + pow((-3 + this->X[scenario_name][14]),2) + pow((2 + this->X[scenario_name][15]),2) + pow((-2 + this->X[scenario_name][16]),2)
                             + pow((1 + this->X[scenario_name][0]),2) + pow((-1.5 + this->X[scenario_name][1]),2) + pow((0.5 + this->X[scenario_name][2]),2) + pow((-1.2 + this->X[scenario_name][3]),2) + pow((0.2 + this->X[scenario_name][4]),2)
                             + pow((-1.1 + this->X[scenario_name][5]),2) + pow((0.1 + this->X[scenario_name][6]),2));
         this->F[scenario_name]={objective,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc10,nc11};
@@ -240,7 +241,7 @@ void Ex844Model::buildFullModelDAG(){
 
 
 
-        objective +=1000*0.3333333333333333*(pow((-5 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx]),2) + pow((5 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+1]),2) + pow((-3 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]),2) + pow((2 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+3]),2) + pow((-2 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+4]),2)
+        objective +=1000*0.1*(pow((-5 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx]),2) + pow((5 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+1]),2) + pow((-3 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]),2) + pow((2 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+3]),2) + pow((-2 + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+4]),2)
                             + pow((1 + this->X[ScenarioNames::SCENARIO1][0]),2) + pow((-1.5 + this->X[ScenarioNames::SCENARIO1][1]),2) + pow((0.5 + this->X[ScenarioNames::SCENARIO1][2]),2) + pow((-1.2 + this->X[ScenarioNames::SCENARIO1][3]),2) + pow((0.2 + this->X[ScenarioNames::SCENARIO1][4]),2)
                             + pow((-1.1 + this->X[ScenarioNames::SCENARIO1][5]),2) + pow((0.1 + this->X[ScenarioNames::SCENARIO1][6]),2));
         std::vector<mc::FFVar> scenario_constraints = {nc1,nc2,nc3,nc4,nc5,nc6,nc7,nc8,nc9,nc10,nc11,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11};
