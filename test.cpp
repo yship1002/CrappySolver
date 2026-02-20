@@ -18,9 +18,9 @@ int main(int argc, char* argv[]) {
     ProcessModel model(BranchingStrategy::pseudo);
 
     //outsideAlgo CZalgo(&model,-1126.4218270121305,UBDSolver::IPOPT); // provide UBD for outer layer
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1, -1126.4218270121305,true,UBDSolver::GUROBI); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1, -1134.15,true,UBDSolver::GUROBI); // provide UBD for outer layer
     //std::cout<<"UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate UBD for root node before starting the algorithm, this is important for strong branching to have a good initial UBD for weight update when infeasible
-    //CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
+    CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(1.0); // relgap=0.1% tolerance, abs=1
 
     // {
