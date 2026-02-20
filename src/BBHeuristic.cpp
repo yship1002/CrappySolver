@@ -112,8 +112,11 @@ void BBHeuristic::updateWeights(int idx_branched, double left_improve,double rig
         throw std::runtime_error("Improvement values should not be infinity");
     }
 
-    if (left_improve<-0.16 || right_improve<-0.16){
-        throw std::runtime_error("Improvement values should be non-negative");
+    if (left_improve<0){
+        left_improve=0;
+    }
+    if (right_improve<0){
+        right_improve=0;
     }
 
 
