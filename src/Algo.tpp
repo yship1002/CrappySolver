@@ -568,7 +568,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
 
-        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
         cplex.solve();
