@@ -197,7 +197,7 @@ void STModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     
 
     // Env.options.SANDWICH_RTOL=1e-10;
-    // Env.options.SANDWICH_MAXCUT=100;
+    Env.options.SANDWICH_MAXCUT=100;
 
 
     Env.generate_cuts(this->F[this->scenario_name].size(), PF);
