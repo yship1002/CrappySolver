@@ -7,7 +7,7 @@ class Ex844Model:public STModel {
         Ex844Model(const Ex844Model& other)=default;
         Ex844Model()=default; // default constructor
         /// A vector of ScenarioNames
-
+        double probability;
         Ipopt::SmartPtr<STModel> clone() override;
         void buildDAG() override;
         void buildFullModelDAG() override;
