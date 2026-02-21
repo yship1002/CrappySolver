@@ -2,22 +2,37 @@
 ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
-    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3
-    //  ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
-    //  ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
+    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3,
+     ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
+     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
+    // ScenarioNames::SCENARIO11,ScenarioNames::SCENARIO12,
+    //  ScenarioNames::SCENARIO13,ScenarioNames::SCENARIO14,ScenarioNames::SCENARIO15,
+    // ScenarioNames::SCENARIO16,ScenarioNames::SCENARIO17,ScenarioNames::SCENARIO18,
+    // ScenarioNames::SCENARIO19,ScenarioNames::SCENARIO20
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
+    this->probability = 0.1; // equal probability for each scenario
     this->perturb = {
         {ScenarioNames::SCENARIO1, 1.0976270078546495},// orignal
         {ScenarioNames::SCENARIO2, 9.430378732744838},
-        {ScenarioNames::SCENARIO3, 6.6027633760716435}
-        // {ScenarioNames::SCENARIO4,1.3514894164800063},
-        // {ScenarioNames::SCENARIO5,4.236547993428394},
-        // {ScenarioNames::SCENARIO6,2.155994520336202},
-        // {ScenarioNames::SCENARIO7,5.0580836121681994},
-        // {ScenarioNames::SCENARIO8,2.0849789288240969},
-        // {ScenarioNames::SCENARIO9,5.6016775572644488},
-        // {ScenarioNames::SCENARIO10,4.3503766112257304}
+        {ScenarioNames::SCENARIO3, 6.6027633760716435},
+        {ScenarioNames::SCENARIO4,1.3514894164800063},
+        {ScenarioNames::SCENARIO5,4.236547993428394},
+        {ScenarioNames::SCENARIO6,2.155994520336202},
+        {ScenarioNames::SCENARIO7,5.0580836121681994},
+        {ScenarioNames::SCENARIO8,2.0849789288240969},
+        {ScenarioNames::SCENARIO9,5.6016775572644488},
+        {ScenarioNames::SCENARIO10,4.3503766112257304}
+        // {ScenarioNames::SCENARIO11, 1.0976270078546495},
+        // {ScenarioNames::SCENARIO12, 9.430378732744838},
+        // {ScenarioNames::SCENARIO13, 6.6027633760716435},
+        // {ScenarioNames::SCENARIO14,1.3514894164800063},
+        // {ScenarioNames::SCENARIO15,4.236547993428394},
+        // {ScenarioNames::SCENARIO16,2.155994520336202},
+        // {ScenarioNames::SCENARIO17,5.0580836121681994},
+        // {ScenarioNames::SCENARIO18,2.0849789288240969},
+        // {ScenarioNames::SCENARIO19,5.6016775572644488},
+        // {ScenarioNames::SCENARIO20,4.3503766112257304}
 
     };
     this->first_stage_IX = {
@@ -93,7 +108,7 @@ void ProcessModel::buildDAG(){
         nc8 = -c8;
 
 
-        mc::FFVar objective =0.3333333*( 5.04 * this->X[scenario_name][0] + 0.035 * this->X[scenario_name][1] + 10.0 * this->X[scenario_name][2] + 3.36 * this->X[scenario_name][3]- 0.063 * this->X[scenario_name][4] * this->X[scenario_name][6]);
+        mc::FFVar objective =this->probability*( 5.04 * this->X[scenario_name][0] + 0.035 * this->X[scenario_name][1] + 10.0 * this->X[scenario_name][2] + 3.36 * this->X[scenario_name][3]- 0.063 * this->X[scenario_name][4] * this->X[scenario_name][6]);
         this->F[scenario_name] = {objective,c1,c2,c3,c4,c5,c6,c7,c8,nc1,nc4,nc5,nc6,nc7,nc8};
     }
 }
@@ -156,7 +171,7 @@ void ProcessModel::buildFullModelDAG(){
         this->F[ScenarioNames::SCENARIO1].push_back(-((-3 * this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+2] + this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+5]) + 133));
 
 
-        objective +=0.333333*( 5.04 * this->X[ScenarioNames::SCENARIO1][0] + 0.035 * this->X[ScenarioNames::SCENARIO1][1] + 10.0 * this->X[ScenarioNames::SCENARIO1][2] + 3.36 * this->X[ScenarioNames::SCENARIO1][3]- 0.063 * this->X[ScenarioNames::SCENARIO1][second_stage_start_idx] * this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]);
+        objective +=this->probability*( 5.04 * this->X[ScenarioNames::SCENARIO1][0] + 0.035 * this->X[ScenarioNames::SCENARIO1][1] + 10.0 * this->X[ScenarioNames::SCENARIO1][2] + 3.36 * this->X[ScenarioNames::SCENARIO1][3]- 0.063 * this->X[ScenarioNames::SCENARIO1][second_stage_start_idx] * this->X[ScenarioNames::SCENARIO1][second_stage_start_idx+2]);
     }
 
     this->F[ScenarioNames::SCENARIO1].insert(this->F[ScenarioNames::SCENARIO1].begin(), objective);
@@ -169,6 +184,8 @@ Ipopt::SmartPtr<STModel> ProcessModel::clone(){
     p->second_stage_IX=this->second_stage_IX;
     p->perturb=this->perturb;
     p->scenario_names=this->scenario_names;
+    p->probability=this->probability;
+    p->clearDAG(); // clear the DAG for the cloned model
     p->buildDAG(); // rebuild DAG for the cloned model
 
 

@@ -342,8 +342,8 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
     if (this->solvefullModel){
         this->model->convertToCentralizedModel();
     }
-    this->activeNodes.push_back(xBBNode(model->first_stage_IX,model->second_stage_IX,
-        model->branching_strategy,this->scenario_name));
+    this->activeNodes.push_back(xBBNode(this->model->first_stage_IX,this->model->second_stage_IX,
+        this->model->branching_strategy,this->scenario_name));
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
@@ -600,7 +600,12 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
     this->model->clearDAG(); // remove the previous DAG to avoid interference
-    this->model->buildDAG();
+    if (!this->solvefullModel){
+        this->model->buildDAG();
+    }else{
+        this->model->buildFullModelDAG();
+    }
+
     if (this->ubd_solver == UBDSolver::IPOPT){
         Ipopt::SmartPtr<Ipopt::TNLP> mynlp = this->model->clone();
         STModel* sm = dynamic_cast<STModel*>(Ipopt::GetRawPtr(mynlp));
