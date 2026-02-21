@@ -19,17 +19,17 @@ int main(int argc, char* argv[]) {
     Ex844Model model(BranchingStrategy::pseudo);
 
 
-    outsideAlgo CZalgo(&model,0.325313529673937*1000,UBDSolver::GUROBI); // provide UBD for outer layer
-    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,0.325313529673937*1000,true,UBDSolver::IPOPT); // provide UBD for outer layer
+    //outsideAlgo CZalgo(&model,0.325313529673937*1000,UBDSolver::IPOPT); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,0.325313529673937*1000,true,UBDSolver::IPOPT); // provide UBD for outer layer
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(0.3); // relgap=0.1% tolerance, abs=1
 
-    {
-        std::ofstream os(argv[1]);
-        cereal::JSONOutputArchive oarchive(os);
-        oarchive(cereal::make_nvp("outsideAlgo", CZalgo));
-    }
+    // {
+    //     std::ofstream os(argv[1]);
+    //     cereal::JSONOutputArchive oarchive(os);
+    //     oarchive(cereal::make_nvp("outsideAlgo", CZalgo));
+    // }
     // {
     //     std::ofstream os(argv[1]);
     //     cereal::JSONOutputArchive oarchive(os);

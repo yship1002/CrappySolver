@@ -460,6 +460,22 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
 
         iterator++;
     }
+        // if there are 0 0 improve in any first stage weigts
+    double min_weight=INFINITY;
+    for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+        double lower_weight=std::min(weight[0].first,weight[0].second);
+        if (lower_weight!=0 && lower_weight<min_weight){
+            min_weight=lower_weight;
+        }
+    }
+    // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
+    for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+        if (weight[0].first==0 && weight[0].second==0){
+            weight[0].first=min_weight;
+            weight[0].second=min_weight;
+        };
+    }
+    
 }
 int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     double original_LBD= this->activeNodes[idx].LBD;
@@ -752,7 +768,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }
