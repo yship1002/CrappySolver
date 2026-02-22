@@ -502,8 +502,13 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
         child2.second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()] = mc::Interval(branch_point, this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].u());
     
     }
+    double before_LBD_time=insideAlgo::lbd_calculation_time;
     this->calculateLBD(&child1, tolerance);
+    this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time); // record LBD calculation time for child1
+    double before_LBD_time2=insideAlgo::lbd_calculation_time;
     this->calculateLBD(&child2, tolerance);
+    this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
+
     this->calculateUBD(&child1, tolerance);
     this->calculateUBD(&child2, tolerance);
 
@@ -716,7 +721,11 @@ double insideAlgo::solve(double tolerance) {
 
     // std::cout<<"Calculating LBD for Scenario "<<static_cast<int>(this->scenario_name)<<std::endl;
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
+    double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     this->worstLBD = this->calculateLBD(&(this->activeNodes[0]), tolerance);
+
+
+    this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time - before_root_lbd_calculation_time); // record LBD calculation time for root node
     if (this->bestUBD==INFINITY || this->worstLBD==INFINITY){
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
         return INFINITY;

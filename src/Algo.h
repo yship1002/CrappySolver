@@ -72,6 +72,7 @@ class insideAlgo:public Algo<xBBNode>{
         double provided_UBD;
         bool solvefullModel;
         ScenarioNames scenario_name;
+        std::vector<double> LBD_calculation_time_records;
         static int lbd_calculation_count;
         static double lbd_calculation_time;
         std::vector<double> LBD_values_records;
@@ -85,7 +86,9 @@ class insideAlgo:public Algo<xBBNode>{
             ar(
                cereal::make_nvp("lbd_calculation_count", lbd_calculation_count),
                cereal::make_nvp("lbd_calculation_time", lbd_calculation_time),
-               cereal::make_nvp("LBD_values_records", LBD_values_records));
+               cereal::make_nvp("LBD_values_records", LBD_values_records),
+               cereal::make_nvp("LBD_calculation_time_records", LBD_calculation_time_records)
+            );
         }
 };
 #include "Algo.tpp" // Include the implementation file for template definitions

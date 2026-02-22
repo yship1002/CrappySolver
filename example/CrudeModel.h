@@ -8,8 +8,8 @@ class CrudeModel:public STModel {
         CrudeModel()=default; // default constructor
         /// A vector of ScenarioNames
         double probability;
-        std::vector<std::map<std::string, int>> first_stage_map;
-        std::vector<std::map<std::string, int>> second_stage_map;
+        std::map<std::string, int> first_stage_map;
+        std::map<std::string, int> second_stage_map;
         Ipopt::SmartPtr<STModel> clone() override;
         void buildDAG() override;
         void buildFullModelDAG() override;

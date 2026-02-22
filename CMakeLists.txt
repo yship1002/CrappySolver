@@ -41,6 +41,9 @@ file(GLOB src_SOURCES
 file(GLOB EXAMPLE_SOURCES
     "${PROJ_ROOT}/example/STModel.cpp"
     "${PROJ_ROOT}/example/Ex844.cpp"
+    "${PROJ_ROOT}/example/CrudeModel.cpp"
+    "${PROJ_ROOT}/example/ProcessModel.cpp"
+
 
 
 
