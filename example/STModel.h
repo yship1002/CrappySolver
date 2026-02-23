@@ -76,6 +76,8 @@ class STModel:public Ipopt::TNLP{
         STModel(const STModel& other)=default;
         STModel()=default; // default constructor
         /// A vector of ScenarioNames
+        std::map<std::string, int> first_stage_map;
+        std::map<std::string, int> second_stage_map;
         std::map<ScenarioNames, mc::FFGraph> DAG;
         std::map<ScenarioNames, std::vector<mc::FFVar>> X;
         std::map<ScenarioNames, std::vector<mc::FFVar>> F;

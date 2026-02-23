@@ -353,6 +353,12 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     int iterator=0;
     // first stage strong branching
     while (iterator < node->first_stage_IX.size()) { 
+        if (node->first_stage_IX[iterator].u() - node->first_stage_IX[iterator].l() < 1e-5){
+             // if that variable is fixed then skip strong branching on that variable
+            node->branchheuristic.updateWeights(iterator, 0, 0,1); // update pseudocost to avoid branching on this variable again
+            iterator++;
+            continue;
+        }
         xBBNode child1 = *node;
         xBBNode child2 = *node;
         double branch_point = (node->first_stage_IX[iterator].l() + node->first_stage_IX[iterator].u()) / 2.0;
@@ -408,6 +414,12 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     iterator=0;
     // second stage strong branching
     while (iterator < node->second_stage_IX.size()) { 
+        if (node->second_stage_IX[iterator].u() - node->second_stage_IX[iterator].l() < 1e-5){
+             // if that variable is fixed then skip strong branching on that variable
+            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, 0,1); // update pseudocost to avoid branching on this variable again
+            iterator++;
+            continue;
+        }
         xBBNode child3 = *node;
         xBBNode child4 = *node;
         double branch_point = (node->second_stage_IX[iterator].l() + node->second_stage_IX[iterator].u()) / 2.0;
@@ -678,17 +690,24 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         }
     }else if (this->ubd_solver == UBDSolver::GUROBI){
         GRBEnv env = GRBEnv(true); // empty environemtn to turn off annoying Gurobi output
-        env.set(GRB_IntParam_OutputFlag, 0);
-        env.set(GRB_IntParam_LogToConsole, 0);
+        env.set(GRB_IntParam_OutputFlag, 1);
+        env.set(GRB_IntParam_LogToConsole, 1);
         env.start();
         try {
             GRBModel grbmodel = GRBModel(env);
             this->model->generateMINLP(&grbmodel);
+            grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
-            grbmodel.write("model.lp");
+
+            double gap = grbmodel.get(GRB_DoubleAttr_MIPGap);
+            double obj = grbmodel.get(GRB_DoubleAttr_ObjVal);
+            double bound = grbmodel.get(GRB_DoubleAttr_ObjBound);
+
+
+
             int status = grbmodel.get(GRB_IntAttr_Status);
 
             if (status == GRB_OPTIMAL) {
@@ -788,7 +807,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }

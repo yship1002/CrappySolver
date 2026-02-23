@@ -196,8 +196,8 @@ void STModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     this->DAG[this->scenario_name].eval(this->F[this->scenario_name].size(), this->F[this->scenario_name].data(), PF, nvars, this->X[this->scenario_name].data(), PX);
     
 
-    // Env.options.SANDWICH_RTOL=1e-10;
-    // Env.options.SANDWICH_MAXCUT=200;
+    Env.options.SANDWICH_RTOL=1e-10;
+    Env.options.SANDWICH_MAXCUT=500;
 
 
     Env.generate_cuts(this->F[this->scenario_name].size(), PF);
@@ -282,8 +282,8 @@ void STModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
         }
     }
 
-    // Env.options.SANDWICH_RTOL=1e-10;
-    // Env.options.SANDWICH_MAXCUT=200;
+    Env.options.SANDWICH_RTOL=1e-10;
+    Env.options.SANDWICH_MAXCUT=500;
     std::vector<mc::PolVar<mc::Interval>> PF(this->F[ScenarioNames::SCENARIO1].size());
 
     this->DAG[ScenarioNames::SCENARIO1].eval(this->F[ScenarioNames::SCENARIO1].size(), this->F[ScenarioNames::SCENARIO1].data(), PF.data(), this->X[ScenarioNames::SCENARIO1].size(), this->X[ScenarioNames::SCENARIO1].data(), PX);
@@ -484,13 +484,16 @@ bool STModel::get_starting_point(
         ) 
 {
 
-    // initialize to the given starting point
+    //initialize to the given starting point
     for (Ipopt::Index i = 0; i < this->first_stage_IX.size(); ++i) {
         x[i] =0.5*(this->first_stage_IX[i].l() + this->first_stage_IX[i].u()); // for first stage variables
     }
     for (Ipopt::Index i = 0; i < this->second_stage_IX.size(); ++i) {
         x[i + this->first_stage_IX.size()] =0.5*(this->second_stage_IX[i].l() + this->second_stage_IX[i].u()); // for second stage variables
     }
+
+
+
 
     return true;
 };
