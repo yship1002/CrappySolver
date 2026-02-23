@@ -520,9 +520,19 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
         // left child is infeasible, right child infeasible
         if (child2.LBD == INFINITY){
             // no need to update heuristic if both child are infeasible
+            std::cout<<"Both child are infeasible after branching on variable index "<<branch_idx<<std::endl;
+            this->activeNodes.erase(this->activeNodes.begin() + idx);
+            return branch_idx;
         }else{
             // left child is infeasible, right child improve
+
             if (this->bestUBDforInfinity){
+                if (this->bestUBD == INFINITY){ // if bestUBD is infinity, we cannot update heuristic with bestUBD, no idea why this happend
+                    this->activeNodes.erase(this->activeNodes.begin() + idx);
+                    std::cout<<"Warning: bestUBD is infinity, cannot update heuristic with bestUBD, exiting"<<std::endl;
+                    return branch_idx;
+
+                }
                 child1.branchheuristic.updateWeights(branch_idx,
                     this->bestUBD-original_LBD, (child2.LBD - original_LBD),range);
                 child2.branchheuristic.updateWeights(branch_idx,
@@ -678,7 +688,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
-            //grbmodel.write("model.lp");
+            grbmodel.write("model.lp");
             int status = grbmodel.get(GRB_IntAttr_Status);
 
             if (status == GRB_OPTIMAL) {
