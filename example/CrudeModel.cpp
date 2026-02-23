@@ -3,7 +3,7 @@ CrudeModel::CrudeModel(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
     this->scenario_names = {ScenarioNames::SCENARIO1
-        // , ScenarioNames::SCENARIO2, ScenarioNames::SCENARIO3,ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5
+        , ScenarioNames::SCENARIO2, ScenarioNames::SCENARIO3,ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
     this->probability = 0.2; //default
@@ -373,6 +373,133 @@ CrudeModel::CrudeModel(BranchingStrategy branching_strategy):STModel() {
         mc::Interval(0.0, 0.0),   //PickCrude[9]
         mc::Interval(1.0, 1.0)    //PickCrude[10]
     }; 
+    this->second_stage_IX = {
+
+        mc::Interval(0.0, 700), //0:blin_AGO_LG[1]
+        mc::Interval(0.0, 700), //1:blin_AGO_LG[2]
+        mc::Interval(0.0, 700), //2:blin_AGO_LG[3]
+        mc::Interval(0.0, 700), //3:blin_AGO_LG[4]
+        mc::Interval(0.0, 700), //4:blin_CDU_LG[1]
+        mc::Interval(0.0, 700), //5:blin_CDU_LG[2]
+        mc::Interval(0.0, 700), //6:blin_CDU_LG[3]
+        mc::Interval(0.0, 700), //7:blin_CDU_LG[4]
+
+        mc::Interval(0.0, 175), //8:blin_Cracker_AGO[1]
+        mc::Interval(0.0, 175), //9:blin_Cracker_AGO[2]
+        mc::Interval(0.0, 175), //10:blin_Cracker_AGO[3]
+        mc::Interval(0.0, 175), //11:blin_Cracker_Mogas[1]
+        mc::Interval(0.0, 175), //12:blin_Cracker_Mogas[2]
+        mc::Interval(0.0, 175), //13:blin_Cracker_Mogas[3]
+        mc::Interval(0.0, 700), //14:blin_Mogas_LG[1]
+        mc::Interval(0.0, 700), //15:blin_Mogas_LG[2]
+        mc::Interval(0.0, 700), //16:blin_Mogas_LG[3]
+        mc::Interval(0.0, 700), //17:blin_Mogas_LG[4]
+        mc::Interval(0.0, 700), //18:blin_AGO_LG[19]
+        mc::Interval(0.0, 700), //19:blin_AGO_LG[20]
+        mc::Interval(0.0, 700), //20:blin_AGO_LG[21]
+        mc::Interval(0.0, 700), //21:blin_AGO_LG[22]
+        mc::Interval(0.0, 700), //22:blin_AGO_LG[23]
+        mc::Interval(0.0, 700), //23:blin_AGO_LG[24]
+        mc::Interval(0.0, 700), //24:blin_AGO_LG[25]
+        mc::Interval(0.0, 700), //25:blin_AGO_LG[26]
+        mc::Interval(0.0, 201.29570747217807), //26:blin_AGO_LG[27]
+        mc::Interval(0.0, 212.48012718600953), //27:blin_AGO_LG[28]
+        mc::Interval(0.0, 201.29570747217807), //28:blin_AGO_LG[29]
+        mc::Interval(0.0, 199.57869634340224), //29:blin_AGO_LG[30]
+        mc::Interval(0.0, 210.54848966613673), //30:blin_AGO_LG[31]
+        mc::Interval(0.0, 222.1383147853736), //31:blin_AGO_LG[32]
+        mc::Interval(0.0, 196.7885532591415), //32:blin_AGO_LG[33]
+        mc::Interval(0.0, 208.54531001589828), //33:blin_AGO_LG[34]
+        mc::Interval(0.0, 204.3720190779014), //34:blin_AGO_LG[35]
+        mc::Interval(0.0, 210.2623211446741), //35:blin_AGO_LG[36]
+        mc::Interval(0.0, 125), //36:blin_AGO_LG[37]
+        mc::Interval(0.0, 125), //37:blin_AGO_LG[38]
+        mc::Interval(0.0, 125), //38:blin_AGO_LG[39]
+        mc::Interval(0.0, 125), //39:blin_AGO_LG[40]
+        mc::Interval(0.0, 125), //40:blin_AGO_LG[41]
+        mc::Interval(0.0, 125), //41:blin_AGO_LG[42]
+        mc::Interval(0.0, 125), //42:blin_AGO_LG[43]
+        mc::Interval(0.0, 125), //43:blin_AGO_LG[44]
+        mc::Interval(0.0, 125), //44:blin_AGO_LG[45]
+        mc::Interval(0.0, 125), //45:blin_AGO_LG[46]
+        mc::Interval(0.0, 700), //46:blin_AGO_LG[47]
+        mc::Interval(0.0, 175), //47:blin_AGO_LG[48]
+        mc::Interval(0.0, 175), //48:blin_AGO_LG[49]
+        mc::Interval(0.0, 700), //49:blin_AGO_LG[50]
+        mc::Interval(0.0, 700), //50:blin_AGO_LG[51]
+        mc::Interval(0.0, 700), //51:blin_AGO_LG[52]
+        mc::Interval(0.0, 175), //52:blin_AGO_LG[53]
+        mc::Interval(0.0, 175), //53:blin_AGO_LG[54]
+        mc::Interval(0.0, 125), //54:blin_AGO_LG[55]
+        mc::Interval(0.0, 125), //55:blin_AGO_LG[56]
+        mc::Interval(0.0, 125), //56:blin_AGO_LG[57]
+        mc::Interval(0.0, 125), //57:blin_AGO_LG[58]
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 125),
+        mc::Interval(0.0, 175),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 201.29570747217807),
+        mc::Interval(0.0, 212.48012718600953),
+        mc::Interval(0.0, 201.29570747217807),
+        mc::Interval(0.0, 199.57869634340224),
+        mc::Interval(0.0, 210.54848966613673),
+        mc::Interval(0.0, 222.1383147853736),
+        mc::Interval(0.0, 196.7885532591415),
+        mc::Interval(0.0, 208.54531001589828),
+        mc::Interval(0.0, 204.3720190779014),
+        mc::Interval(0.0, 210.2623211446741),
+        mc::Interval(0.0, 175),
+        mc::Interval(0.0, 201.29570747217807),
+        mc::Interval(0.0, 212.48012718600953),
+        mc::Interval(0.0, 201.29570747217807),
+        mc::Interval(0.0, 199.57869634340224),
+        mc::Interval(0.0, 210.54848966613673),
+        mc::Interval(0.0, 222.1383147853736),
+        mc::Interval(0.0, 196.7885532591415),
+        mc::Interval(0.0, 208.54531001589828),
+        mc::Interval(0.0, 204.3720190779014),
+        mc::Interval(0.0, 210.2623211446741),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 0.0),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 700),
+        mc::Interval(0.0, 60),
+        mc::Interval(5.0, 65),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0, 1.0),
+        mc::Interval(0.0,1206.896551724138),
+        mc::Interval(0.0,832.9366968110423),
+        mc::Interval(0.0,1206.896551724138)
+    };
+    
 
     // this->first_stage_IX = {
     //     mc::Interval(0.0, 0),
@@ -397,7 +524,7 @@ CrudeModel::CrudeModel(BranchingStrategy branching_strategy):STModel() {
     //     mc::Interval(1.0, 1.0)
     // };
 
-    // this->second_stage_IX = {
+        // this->second_stage_IX = {
     //     mc::Interval(0.0, 0.0),                                         // 0: blin_AGO_LG[1]
     //     mc::Interval(0.0, 0.0),                                         // 1: blin_AGO_LG[2]
     //     mc::Interval(0.0, 0.0),                                         // 2: blin_AGO_LG[3]
@@ -521,131 +648,7 @@ CrudeModel::CrudeModel(BranchingStrategy branching_strategy):STModel() {
     //     mc::Interval(277.9686088304845, 277.9686088304845),             // 120: volume_HF
     //     mc::Interval(6.417820990789885, 6.417820990789885)              // 121: volume_PG98
     // };
-
-    this->second_stage_IX = {
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 201.29570747217807),
-        mc::Interval(0.0, 212.48012718600953),
-        mc::Interval(0.0, 201.29570747217807),
-        mc::Interval(0.0, 199.57869634340224),
-        mc::Interval(0.0, 210.54848966613673),
-        mc::Interval(0.0, 222.1383147853736),
-        mc::Interval(0.0, 196.7885532591415),
-        mc::Interval(0.0, 208.54531001589828),
-        mc::Interval(0.0, 204.3720190779014),
-        mc::Interval(0.0, 210.2623211446741),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 125),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 201.29570747217807),
-        mc::Interval(0.0, 212.48012718600953),
-        mc::Interval(0.0, 201.29570747217807),
-        mc::Interval(0.0, 199.57869634340224),
-        mc::Interval(0.0, 210.54848966613673),
-        mc::Interval(0.0, 222.1383147853736),
-        mc::Interval(0.0, 196.7885532591415),
-        mc::Interval(0.0, 208.54531001589828),
-        mc::Interval(0.0, 204.3720190779014),
-        mc::Interval(0.0, 210.2623211446741),
-        mc::Interval(0.0, 175),
-        mc::Interval(0.0, 201.29570747217807),
-        mc::Interval(0.0, 212.48012718600953),
-        mc::Interval(0.0, 201.29570747217807),
-        mc::Interval(0.0, 199.57869634340224),
-        mc::Interval(0.0, 210.54848966613673),
-        mc::Interval(0.0, 222.1383147853736),
-        mc::Interval(0.0, 196.7885532591415),
-        mc::Interval(0.0, 208.54531001589828),
-        mc::Interval(0.0, 204.3720190779014),
-        mc::Interval(0.0, 210.2623211446741),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 0.0),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 700),
-        mc::Interval(0.0, 60),
-        mc::Interval(5.0, 65),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0, 1.0),
-        mc::Interval(0.0,1206.896551724138),
-        mc::Interval(0.0,832.9366968110423),
-        mc::Interval(0.0,1206.896551724138)
-    };
+    
 };
 
 void CrudeModel::buildDAG() {
@@ -665,26 +668,27 @@ void CrudeModel::buildDAG() {
 
 
         mc::FFVar g_0_0 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[1]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[2]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[3]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[4]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[5]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[6]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[7]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[8]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[9]"]] + this->X[scenario_name][this->first_stage_map["CrudeQuantity[10]"]]-700;
-        mc::FFVar g_0_1 = 13.419713831478537*this->X[scenario_name][this->first_stage_map["pickCrude[1]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[1]"]];
-        mc::FFVar g_0_2 = 14.165341812400635*this->X[scenario_name][this->first_stage_map["pickCrude[2]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[2]"]];
-        mc::FFVar g_0_3 = 13.419713831478537*this->X[scenario_name][this->first_stage_map["pickCrude[3]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[3]"]];
-        mc::FFVar g_0_4 = 13.305246422893482*this->X[scenario_name][this->first_stage_map["pickCrude[4]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[4]"]];
-        mc::FFVar g_0_5 = 14.036565977742448*this->X[scenario_name][this->first_stage_map["pickCrude[5]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[5]"]];
-        mc::FFVar g_0_6 = 14.809220985691574*this->X[scenario_name][this->first_stage_map["pickCrude[6]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[6]"]];
-        mc::FFVar g_0_7 = 13.119236883942767*this->X[scenario_name][this->first_stage_map["pickCrude[7]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[7]"]];
-        mc::FFVar g_0_8 = 13.903020667726551*this->X[scenario_name][this->first_stage_map["pickCrude[8]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[8]"]];
-        mc::FFVar g_0_9 = 13.624801271860093*this->X[scenario_name][this->first_stage_map["pickCrude[9]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[9]"]];
-        mc::FFVar g_0_10 = 14.017488076311606*this->X[scenario_name][this->first_stage_map["pickCrude[10]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[10]"]];
-        mc::FFVar g_0_11 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[1]"]]-201.29570747217807*this->X[scenario_name][this->first_stage_map["pickCrude[1]"]];
-        mc::FFVar g_0_12 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[2]"]]-212.48012718600953*this->X[scenario_name][this->first_stage_map["pickCrude[2]"]];
-        mc::FFVar g_0_13 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[3]"]]-201.29570747217807*this->X[scenario_name][this->first_stage_map["pickCrude[3]"]];
-        mc::FFVar g_0_14 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[4]"]]-199.57869634340224*this->X[scenario_name][this->first_stage_map["pickCrude[4]"]];
-        mc::FFVar g_0_15 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[5]"]]-210.54848966613673*this->X[scenario_name][this->first_stage_map["pickCrude[5]"]];
-        mc::FFVar g_0_16 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[6]"]]-222.1383147853736*this->X[scenario_name][this->first_stage_map["pickCrude[6]"]];
-        mc::FFVar g_0_17 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[7]"]]-196.7885532591415*this->X[scenario_name][this->first_stage_map["pickCrude[7]"]];
-        mc::FFVar g_0_18 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[8]"]]-208.54531001589828*this->X[scenario_name][this->first_stage_map["pickCrude[8]"]];
-        mc::FFVar g_0_19 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[9]"]]-204.3720190779014*this->X[scenario_name][this->first_stage_map["pickCrude[9]"]];
-        mc::FFVar g_0_20 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[10]"]]-210.2623211446741*this->X[scenario_name][this->first_stage_map["pickCrude[10]"]];
+        // mc::FFVar g_0_1 = 13.419713831478537*this->X[scenario_name][this->first_stage_map["pickCrude[1]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[1]"]];
+        // mc::FFVar g_0_2 = 14.165341812400635*this->X[scenario_name][this->first_stage_map["pickCrude[2]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[2]"]];
+        // mc::FFVar g_0_3 = 13.419713831478537*this->X[scenario_name][this->first_stage_map["pickCrude[3]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[3]"]];
+        // mc::FFVar g_0_4 = 13.305246422893482*this->X[scenario_name][this->first_stage_map["pickCrude[4]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[4]"]];
+        // mc::FFVar g_0_5 = 14.036565977742448*this->X[scenario_name][this->first_stage_map["pickCrude[5]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[5]"]];
+        // mc::FFVar g_0_6 = 14.809220985691574*this->X[scenario_name][this->first_stage_map["pickCrude[6]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[6]"]];
+        // mc::FFVar g_0_7 = 13.119236883942767*this->X[scenario_name][this->first_stage_map["pickCrude[7]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[7]"]];
+        // mc::FFVar g_0_8 = 13.903020667726551*this->X[scenario_name][this->first_stage_map["pickCrude[8]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[8]"]];
+        // mc::FFVar g_0_9 = 13.624801271860093*this->X[scenario_name][this->first_stage_map["pickCrude[9]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[9]"]];
+        
+        // mc::FFVar g_0_10 = 14.017488076311606*this->X[scenario_name][this->first_stage_map["pickCrude[10]"]]-this->X[scenario_name][this->first_stage_map["CrudeQuantity[10]"]];
+        // mc::FFVar g_0_11 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[1]"]]-201.29570747217807*this->X[scenario_name][this->first_stage_map["pickCrude[1]"]];
+        // mc::FFVar g_0_12 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[2]"]]-212.48012718600953*this->X[scenario_name][this->first_stage_map["pickCrude[2]"]];
+        // mc::FFVar g_0_13 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[3]"]]-201.29570747217807*this->X[scenario_name][this->first_stage_map["pickCrude[3]"]];
+        // mc::FFVar g_0_14 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[4]"]]-199.57869634340224*this->X[scenario_name][this->first_stage_map["pickCrude[4]"]];
+        // mc::FFVar g_0_15 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[5]"]]-210.54848966613673*this->X[scenario_name][this->first_stage_map["pickCrude[5]"]];
+        // mc::FFVar g_0_16 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[6]"]]-222.1383147853736*this->X[scenario_name][this->first_stage_map["pickCrude[6]"]];
+        // mc::FFVar g_0_17 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[7]"]]-196.7885532591415*this->X[scenario_name][this->first_stage_map["pickCrude[7]"]];
+        // mc::FFVar g_0_18 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[8]"]]-208.54531001589828*this->X[scenario_name][this->first_stage_map["pickCrude[8]"]];
+        // mc::FFVar g_0_19 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[9]"]]-204.3720190779014*this->X[scenario_name][this->first_stage_map["pickCrude[9]"]];
+        // mc::FFVar g_0_20 = this->X[scenario_name][this->first_stage_map["CrudeQuantity[10]"]]-210.2623211446741*this->X[scenario_name][this->first_stage_map["pickCrude[10]"]];
 
         // mc::FFVar g_1_0 = this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[1]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[2]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[3]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[4]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[5]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[6]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[7]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[8]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[9]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[10]"]] + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_CGO"]]-125;
         // mc::FFVar g_1_1 = 0.08*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Reformer95"]] + 0.09*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Reformer100"]] + 0.015*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Cracker_Mogas"]] + 0.012*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Cracker_AGO"]] + 0.03*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Isomerisation"]] + 0.04*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_CGO"]] - this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Burn[1]"]] + 0.0020105335707024776*this->X[scenario_name][this->first_stage_map["CrudeQuantity[1]"]] + 0.02*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[1]"]] + 0.002033729784573578*this->X[scenario_name][this->first_stage_map["CrudeQuantity[2]"]] + 0.02*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[2]"]] + 0.002110066788923241*this->X[scenario_name][this->first_stage_map["CrudeQuantity[3]"]] + 0.02*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[3]"]] + 0.003973905045918246*this->X[scenario_name][this->first_stage_map["CrudeQuantity[4]"]] + 0.02*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[4]"]] + 0.0019988517589712403*this->X[scenario_name][this->first_stage_map["CrudeQuantity[5]"]] + 0.02*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[5]"]] + 0.0008904820763900271*this->X[scenario_name][this->first_stage_map["CrudeQuantity[6]"]] + 0.03*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[6]"]] + 0.001991196321110873*this->X[scenario_name][this->first_stage_map["CrudeQuantity[7]"]] + 0.03*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[7]"]] + 0.0028411758274924682*this->X[scenario_name][this->first_stage_map["CrudeQuantity[8]"]] + 0.04*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[8]"]] + 0.004057963205263551*this->X[scenario_name][this->first_stage_map["CrudeQuantity[9]"]] + 0.02*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[9]"]] + 0.00427501144267499*this->X[scenario_name][this->first_stage_map["CrudeQuantity[10]"]] + 0.04*this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_Desulphurisation_1[10]"]];
@@ -1079,11 +1083,12 @@ void CrudeModel::buildDAG() {
                 + this->X[scenario_name][n_first_stage_vars + this->second_stage_map["flow_AGO_3[3]"]] )
         );
 
-        this->F[scenario_name] = {objective,
-            g_0_0,g_0_1,g_0_2,g_0_3,g_0_4,g_0_5,g_0_6,g_0_7,g_0_8,g_0_9,g_0_10,
+        this->F[scenario_name] = {
+            objective,g_0_0
+            // g_0_0,g_0_1,g_0_2,g_0_3,g_0_4,g_0_5,g_0_6,g_0_7,g_0_8,g_0_9
             
-            g_0_11,g_0_12,g_0_13,g_0_14,g_0_15,
-            g_0_16,g_0_17,g_0_18,g_0_19,g_0_20, 
+            // g_0_10,g_0_11,g_0_12,g_0_13,g_0_14,g_0_15,
+            // g_0_16,g_0_17,g_0_18,g_0_19,g_0_20, 
             // g_1_0,g_1_1,g_1_2,g_1_3,g_1_4,g_1_5,g_1_6,g_1_7,g_1_8,g_1_9,g_1_10,g_1_11,g_1_12,g_1_13,g_1_14,g_1_15,g_1_16,g_1_17,g_1_18,g_1_19,g_1_20,
             // n_g_1_1,n_g_1_2,n_g_1_3,n_g_1_4,n_g_1_5,n_g_1_6,n_g_1_7,n_g_1_8,n_g_1_9,n_g_1_10,n_g_1_11,n_g_1_12,n_g_1_13,n_g_1_14,n_g_1_15,n_g_1_16,
             // n_g_1_17,n_g_1_18,n_g_1_19,n_g_1_20,

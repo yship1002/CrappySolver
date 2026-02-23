@@ -640,7 +640,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         app->Options()->SetStringValue("hessian_approximation", "limited-memory");
         app->Options()->SetStringValue("mu_strategy", "monotone");
 
-        // app->Options()->SetStringValue("output_file", "/Users/jyang872/Desktop/CrappySolver/ipopt.out");
+        //app->Options()->SetStringValue("output_file", "/Users/jyang872/Desktop/CrappySolver/ipopt.out");
         Ipopt::ApplicationReturnStatus status;
         status = app->Initialize();
         if( status != Ipopt::Solve_Succeeded )
@@ -675,7 +675,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
-            //grbmodel.write("model.sol");
+            //grbmodel.write("model.lp");
             int status = grbmodel.get(GRB_IntAttr_Status);
 
             if (status == GRB_OPTIMAL) {
