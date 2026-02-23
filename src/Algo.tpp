@@ -479,6 +479,9 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
 }
 int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     double original_LBD= this->activeNodes[idx].LBD;
+    if (original_LBD==INFINITY){
+        throw std::runtime_error("Should not branch on infeasible node");
+    }
     xBBNode child1 = this->activeNodes[idx]; // Copy current node
     xBBNode child2 = this->activeNodes[idx]; // Copy current node
     double range;
@@ -735,17 +738,15 @@ double insideAlgo::solve(double tolerance) {
     int before_strong_branching_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
-        // std::cout<<"========================================"<<std::endl;
-        // std::cout<<"Started Inside Strong Branching"<<std::endl;
-        // std::cout<<"========================================"<<std::endl;
+        std::cout<<"========================================"<<std::endl;
+        std::cout<<"Started Inside Strong Branching"<<std::endl;
+
         auto start = std::chrono::high_resolution_clock::now();
         this->strongbranching(&(this->activeNodes[0]), tolerance);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        // std::cout<<"========================================"<<std::endl;
-        // std::cout<<"Finished Inside Strong Branching"<<std::endl;
-        // std::cout<<"Strong branching Time: " << elapsed.count() << " seconds" << std::endl;
-        // std::cout<<"========================================"<<std::endl;
+        std::cout<<"Finished Inside Strong Branching"<<std::endl;
+        std::cout<<"========================================"<<std::endl;
     }
     if (this->activeNodes[0].LBD == INFINITY){ // in rare case when strong branching detects infeasibility
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible after strong branching at root node."<<std::endl;
@@ -777,7 +778,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }
