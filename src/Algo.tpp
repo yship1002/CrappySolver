@@ -690,8 +690,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         }
     }else if (this->ubd_solver == UBDSolver::GUROBI){
         GRBEnv env = GRBEnv(true); // empty environemtn to turn off annoying Gurobi output
-        env.set(GRB_IntParam_OutputFlag, 1);
-        env.set(GRB_IntParam_LogToConsole, 1);
+        env.set(GRB_IntParam_OutputFlag, 0);
+        env.set(GRB_IntParam_LogToConsole, 0);
         env.start();
         try {
             GRBModel grbmodel = GRBModel(env);
@@ -807,7 +807,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }
