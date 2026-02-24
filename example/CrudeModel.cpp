@@ -730,7 +730,7 @@ void CrudeModel::buildDAG() {
 
 
         mc::FFVar objective =
-        0.2*(
+        this->probability*(
             3.2*this->X[scenario_name][n_first_stage_vars + this->second_stage_map.at("flow_Cracker_Mogas")]
         + 3*this->X[scenario_name][n_first_stage_vars + this->second_stage_map.at("flow_Cracker_AGO")]
         + 2.7*this->X[scenario_name][n_first_stage_vars + this->second_stage_map.at("flow_Reformer95")]
@@ -1111,7 +1111,7 @@ void CrudeModel::buildFullModelDAG(){
 
 
         objective +=
-        0.2*(
+        this->probability*(
             3.2*this->X[ScenarioNames::SCENARIO1][n_first_stage_vars + this->second_stage_map.at("flow_Cracker_Mogas")]
         + 3*this->X[ScenarioNames::SCENARIO1][n_first_stage_vars + this->second_stage_map.at("flow_Cracker_AGO")]
         + 2.7*this->X[ScenarioNames::SCENARIO1][n_first_stage_vars + this->second_stage_map.at("flow_Reformer95")]
