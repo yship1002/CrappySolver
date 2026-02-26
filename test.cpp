@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
     //outsideAlgo CZalgo(&model,-1126.4218270121305,UBDSolver::IPOPT); // provide UBD for outer layer
     
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-1126.4218270121305,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-1134.15,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
