@@ -263,7 +263,7 @@ void Ex844Model::buildFullModelDAG(){
     }
     this->F[ScenarioNames::SCENARIO1].insert(this->F[ScenarioNames::SCENARIO1].begin(), objective);
 }
-Ipopt::SmartPtr<STModel> Ex844Model::clone(){
+Ipopt::SmartPtr<STModel> Ex844Model::clone(solveFullmodel flag){
     Ipopt::SmartPtr<Ex844Model> p = new Ex844Model();
 
     p->scenario_name=this->scenario_name;
@@ -273,6 +273,11 @@ Ipopt::SmartPtr<STModel> Ex844Model::clone(){
     p->scenario_names=this->scenario_names;
     p->probability=this->probability;
     p->clearDAG(); // clear the DAG of the cloned model
-    p->buildDAG(); // rebuild DAG for the cloned model
+    if (flag == solveFullmodel::yes){
+        p->buildDAG(); // build the model for the cloned model
+    }else{
+        p->buildFullModelDAG(); // build the full model for the cloned model
+    }
+
     return p;
 }

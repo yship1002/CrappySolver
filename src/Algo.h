@@ -13,10 +13,39 @@
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
 #include <chrono>
+enum class withinStrongBranching { yes, no };
 enum class UBDSolver
 {
     GUROBI,
    IPOPT
+};
+struct Tracker{
+    static int total_ubd_calculation_count;
+    static std::vector<double> total_ubd_calculation_time;
+    static int strong_branching_ubd_calculation_count; // onlyfor CZ
+    static std::vector<double> strong_branching_ubd_calculation_time; // only for CZ
+
+    // LBD related bookeeping variables
+    static int total_lbd_calculation_count; // include strong branching calculations
+    static std::vector<double> total_lbd_calculation_time;
+    static int strong_branching_lbd_calculation_count;
+    static std::vector<double> strong_branching_lbd_calculation_time;
+    static std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
+    template<class Archive>
+    static void serialize(Archive& ar)
+    {        
+        ar(
+        CEREAL_NVP(total_ubd_calculation_count),
+           CEREAL_NVP(total_ubd_calculation_time),
+           CEREAL_NVP(strong_branching_ubd_calculation_count),
+           CEREAL_NVP(strong_branching_ubd_calculation_time),
+           CEREAL_NVP(total_lbd_calculation_count),
+           CEREAL_NVP(total_lbd_calculation_time),
+           CEREAL_NVP(strong_branching_lbd_calculation_count),
+           CEREAL_NVP(strong_branching_lbd_calculation_time),
+           CEREAL_NVP(LBD_value_records)
+        );
+    }
 };
 template<typename T>
 class Algo {
@@ -24,6 +53,7 @@ class Algo {
         Algo(STModel* model);
         Algo()=default; // default constructor
         Algo(const Algo& other)=default;
+
         UBDSolver ubd_solver;
         double worstLBD;
         double bestUBD;
@@ -36,60 +66,42 @@ class Algo {
 
         bool bestUBDforInfinity=false;
 
-        virtual int branchNodeAtIdx(int idx,double tolerance)=0;
-        virtual double solve(double tolerance)=0;
-        virtual double calculateLBD(T* node,double tolerance)=0;
-        virtual double calculateUBD(T* node,double tolerance)=0;
-        virtual void strongbranching(T* node,double tolerance)=0;
+        virtual int branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag=withinStrongBranching::no)=0;
+        virtual double solve(double tolerance,withinStrongBranching flag)=0;
+        virtual double calculateLBD(T* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no)=0;
+        virtual double calculateUBD(T* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no)=0;
+        virtual void strongbranching(T* node,double tolerance)=0; 
 };
 class outsideAlgo:public Algo<BBNode>{
     public:
         outsideAlgo(STModel* model,double provided_UBD,UBDSolver solver=UBDSolver::IPOPT);
         outsideAlgo()=default; // default constructor
         outsideAlgo(const outsideAlgo& other)=default;
-        std::vector<double> LBD_values_records;
+
         std::vector<int> LBD_calculation_records;
-        std::vector<double> LBD_calculation_time_records;
         std::vector<std::vector<std::pair<double, double>>> first_stage_IX_record;
         double cheatstrongbranching(BBNode* node,double tolerance);
-        int branchNodeAtIdx(int idx,double tolerance) override;
-        double solve(double tolerance) override;
-        double calculateLBD(BBNode* node,double tolerance) override;
-        double calculateUBD(BBNode* node,double tolerance) override;
+        int branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+        double solve(double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+        double calculateLBD(BBNode* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+        double calculateUBD(BBNode* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
         void strongbranching(BBNode* node,double tolerance) override;
-        template<class Archive>
-        void serialize(Archive& ar) {
-            ar(
-               cereal::make_nvp("LBD_calculation_records", LBD_calculation_records),
-               cereal::make_nvp("first_stage_IX_record", first_stage_IX_record),
-               cereal::make_nvp("LBD_values_records", LBD_values_records),
-            cereal::make_nvp("LBD_calculation_time_records", LBD_calculation_time_records));
-        }
+    
 };
 class insideAlgo:public Algo<xBBNode>{
     public:
-        insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD=INFINITY,bool solvefullModel=false,UBDSolver solver=UBDSolver::IPOPT);
+        insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD=INFINITY,solveFullmodel solve_full_model_flag=solveFullmodel::no,UBDSolver solver=UBDSolver::IPOPT);
+
         double provided_UBD;
-        bool solvefullModel;
+        solveFullmodel solve_full_model_flag;
         ScenarioNames scenario_name;
-        std::vector<double> LBD_calculation_time_records;
-        static int lbd_calculation_count;
-        static double lbd_calculation_time;
-        std::vector<double> LBD_values_records;
-        double solve(double tolerance) override;
-        int branchNodeAtIdx(int idx,double tolerance) override;
+
+        double solve(double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+        int branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
         void strongbranching(xBBNode* node,double tolerance) override;
-        double calculateLBD(xBBNode* node,double tolerance) override;
-        double calculateUBD(xBBNode* node,double tolerance) override;
-        template<class Archive>
-        void serialize(Archive& ar) {
-            ar(
-               cereal::make_nvp("lbd_calculation_count", lbd_calculation_count),
-               cereal::make_nvp("lbd_calculation_time", lbd_calculation_time),
-               cereal::make_nvp("LBD_values_records", LBD_values_records),
-               cereal::make_nvp("LBD_calculation_time_records", LBD_calculation_time_records)
-            );
-        }
+        double calculateLBD(xBBNode* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+        double calculateUBD(xBBNode* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+
 };
 #include "Algo.tpp" // Include the implementation file for template definitions
 #endif // ALGO_H

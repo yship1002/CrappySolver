@@ -1238,7 +1238,7 @@ void CrudeModel::buildFullModelDAG(){
 }
 
 
-Ipopt::SmartPtr<STModel> CrudeModel::clone(){
+Ipopt::SmartPtr<STModel> CrudeModel::clone(solveFullmodel flag){
     Ipopt::SmartPtr<CrudeModel> p = new CrudeModel();
 
     p->scenario_name=this->scenario_name;
@@ -1250,7 +1250,12 @@ Ipopt::SmartPtr<STModel> CrudeModel::clone(){
     p->first_stage_map=this->first_stage_map;
     p->second_stage_map=this->second_stage_map;
     p->clearDAG(); // clear the DAG of the cloned model
-    p->buildDAG(); // rebuild DAG for the cloned model
+    if (flag == solveFullmodel::yes){
+        p->buildDAG(); // build the model for the cloned model
+    }else{
+        p->buildFullModelDAG(); // build the full model for the cloned model
+    }
+
     return p;
 }
 

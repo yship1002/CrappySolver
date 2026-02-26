@@ -176,7 +176,7 @@ void ProcessModel::buildFullModelDAG(){
 
     this->F[ScenarioNames::SCENARIO1].insert(this->F[ScenarioNames::SCENARIO1].begin(), objective);
 }
-Ipopt::SmartPtr<STModel> ProcessModel::clone(){
+Ipopt::SmartPtr<STModel> ProcessModel::clone(solveFullmodel flag){
     Ipopt::SmartPtr<ProcessModel> p = new ProcessModel();
 
     p->scenario_name=this->scenario_name;
@@ -186,8 +186,11 @@ Ipopt::SmartPtr<STModel> ProcessModel::clone(){
     p->scenario_names=this->scenario_names;
     p->probability=this->probability;
     p->clearDAG(); // clear the DAG for the cloned model
-    p->buildDAG(); // rebuild DAG for the cloned model
-
+    if (flag == solveFullmodel::yes){
+        p->buildFullModelDAG(); // build full model DAG for the cloned model
+    }else{
+        p->buildDAG(); // rebuild DAG for the cloned model
+    }
 
     return p;
 }

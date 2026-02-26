@@ -8,7 +8,7 @@ class ProcessModel:public STModel {
         ProcessModel()=default; // default constructor
         /// A vector of ScenarioNames
         double probability;
-        Ipopt::SmartPtr<STModel> clone() override;
+        Ipopt::SmartPtr<STModel> clone(solveFullmodel flag)override;
         void buildDAG() override;
         void buildFullModelDAG() override;
 

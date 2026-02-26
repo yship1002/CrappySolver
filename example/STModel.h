@@ -18,6 +18,7 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
+enum class solveFullmodel { yes, no };
 struct SOLUTION_OPT
 {
   //! @brief Default constructor
@@ -91,7 +92,7 @@ class STModel:public Ipopt::TNLP{
         std::vector<mc::Interval> second_stage_IX;
 
         ScenarioNames scenario_name; //by default
-        virtual Ipopt::SmartPtr<STModel> clone() = 0;
+        virtual Ipopt::SmartPtr<STModel> clone(solveFullmodel solve_full_model=solveFullmodel::no) = 0;
         virtual void buildDAG() = 0;
         virtual void buildFullModelDAG() = 0;
         void clearDAG();
