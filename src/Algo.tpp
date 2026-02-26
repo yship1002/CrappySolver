@@ -789,8 +789,10 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        std::cout<<"Total Wall Time: " << duration.count() << " seconds" << std::endl;
+        std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << std::endl;
         iterations++;
+        
+    
     }
 
     std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" terminated after "<<iterations<<" iterations."<<std::endl;

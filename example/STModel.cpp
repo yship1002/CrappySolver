@@ -197,7 +197,7 @@ void STModel::generateLP(IloEnv* cplex_env,IloModel* cplexmodel,
     
 
     // Env.options.SANDWICH_RTOL=1e-10;
-    Env.options.SANDWICH_MAXCUT=200;
+    //Env.options.SANDWICH_MAXCUT=500;
 
 
     Env.generate_cuts(this->F[this->scenario_name].size(), PF);
@@ -283,7 +283,7 @@ void STModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
     }
 
     // Env.options.SANDWICH_RTOL=1e-10;
-    Env.options.SANDWICH_MAXCUT=200;
+    //Env.options.SANDWICH_MAXCUT=500;
     std::vector<mc::PolVar<mc::Interval>> PF(this->F[ScenarioNames::SCENARIO1].size());
 
     this->DAG[ScenarioNames::SCENARIO1].eval(this->F[ScenarioNames::SCENARIO1].size(), this->F[ScenarioNames::SCENARIO1].data(), PF.data(), this->X[ScenarioNames::SCENARIO1].size(), this->X[ScenarioNames::SCENARIO1].data(), PX);

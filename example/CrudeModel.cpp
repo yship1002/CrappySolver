@@ -1250,7 +1250,7 @@ Ipopt::SmartPtr<STModel> CrudeModel::clone(solveFullmodel flag){
     p->first_stage_map=this->first_stage_map;
     p->second_stage_map=this->second_stage_map;
     p->clearDAG(); // clear the DAG of the cloned model
-    if (flag == solveFullmodel::yes){
+    if (flag == solveFullmodel::no){
         p->buildDAG(); // build the model for the cloned model
     }else{
         p->buildFullModelDAG(); // build the full model for the cloned model

@@ -1,5 +1,6 @@
 #ifndef ALGO_H
 #define ALGO_H
+#include <string>
 #include <cmath>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
@@ -13,6 +14,7 @@
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
 #include <chrono>
+
 enum class withinStrongBranching { yes, no };
 enum class UBDSolver
 {
@@ -31,6 +33,7 @@ struct Tracker{
     static int strong_branching_lbd_calculation_count;
     static std::vector<double> strong_branching_lbd_calculation_time;
     static std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
+    static std::string file_name; // for output file name
     template<class Archive>
     static void serialize(Archive& ar)
     {        
