@@ -3,26 +3,26 @@
 Ex844Model::Ex844Model(BranchingStrategy branching_strategy):STModel() {
 
     this->branching_strategy = branching_strategy;
-    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3,
-     ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
-     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
+    this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3
+    //  ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
+    //  ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
     //  ScenarioNames::SCENARIO11, ScenarioNames::SCENARIO12,ScenarioNames::SCENARIO13,
     //  ScenarioNames::SCENARIO14, ScenarioNames::SCENARIO15,ScenarioNames::SCENARIO16,
     //  ScenarioNames::SCENARIO17,ScenarioNames::SCENARIO18,ScenarioNames::SCENARIO19,ScenarioNames::SCENARIO20
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
-    this->probability = 0.1; // equal probability for each scenario
+    this->probability = 0.33333333; // equal probability for each scenario
     this->perturb = {
         {ScenarioNames::SCENARIO1, 0.05488135039273248}, 
         {ScenarioNames::SCENARIO2, 0.17151893663724196}, 
-        {ScenarioNames::SCENARIO3, 0.2602763376071644},
-        {ScenarioNames::SCENARIO4, 0.05488135039273248}, 
-        {ScenarioNames::SCENARIO5, 0.17151893663724196}, 
-        {ScenarioNames::SCENARIO6, 0.2602763376071644},
-        {ScenarioNames::SCENARIO7, 0.05488135039273248}, 
-        {ScenarioNames::SCENARIO8, 0.17151893663724196}, 
-        {ScenarioNames::SCENARIO9, 0.2602763376071644},
-        {ScenarioNames::SCENARIO10, 0.05488135039273248}
+        {ScenarioNames::SCENARIO3, 0.2602763376071644}
+        // {ScenarioNames::SCENARIO4, 0.05488135039273248}, 
+        // {ScenarioNames::SCENARIO5, 0.17151893663724196}, 
+        // {ScenarioNames::SCENARIO6, 0.2602763376071644},
+        // {ScenarioNames::SCENARIO7, 0.05488135039273248}, 
+        // {ScenarioNames::SCENARIO8, 0.17151893663724196}, 
+        // {ScenarioNames::SCENARIO9, 0.2602763376071644},
+        // {ScenarioNames::SCENARIO10, 0.05488135039273248}
         // {ScenarioNames::SCENARIO11, 0.05488135039273248}, 
         // {ScenarioNames::SCENARIO12, 0.17151893663724196}, 
         // {ScenarioNames::SCENARIO13, 0.2602763376071644},
@@ -273,7 +273,7 @@ Ipopt::SmartPtr<STModel> Ex844Model::clone(solveFullmodel flag){
     p->scenario_names=this->scenario_names;
     p->probability=this->probability;
     p->clearDAG(); // clear the DAG of the cloned model
-    if (flag == solveFullmodel::yes){
+    if (flag == solveFullmodel::no){
         p->buildDAG(); // build the model for the cloned model
     }else{
         p->buildFullModelDAG(); // build the full model for the cloned model
