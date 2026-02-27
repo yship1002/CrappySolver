@@ -86,6 +86,8 @@ class outsideAlgo:public Algo<BBNode>{
         std::vector<std::vector<std::pair<double, double>>> first_stage_IX_record;
         double cheatstrongbranching(BBNode* node,double tolerance);
         int branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
+        double calculateLBD_MPI(BBNode* node, double tolerance, withinStrongBranching flag);
+        void mpi_worker_loop();
         double solve(double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
         double calculateLBD(BBNode* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;
         double calculateUBD(BBNode* node,double tolerance,withinStrongBranching flag=withinStrongBranching::no) override;

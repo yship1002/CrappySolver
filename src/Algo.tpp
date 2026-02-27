@@ -1,6 +1,34 @@
 #ifndef Algo_TPP
 #define Algo_TPP
+// ----- MPI master/worker protocol for outsideAlgo -----
+enum class OutsideCmd : int {
+    STOP = 0,
+    CALC_LBD = 1
+};
 
+static inline void pack_bounds(
+    const std::vector<mc::Interval>& first,
+    const std::vector<mc::Interval>& second,
+    std::vector<double>& buf
+){
+    buf.clear();
+    buf.reserve(2 * (first.size() + second.size()));
+    for (const auto& it : first) { buf.push_back(it.l()); buf.push_back(it.u()); }
+    for (const auto& it : second){ buf.push_back(it.l()); buf.push_back(it.u()); }
+}
+
+static inline void unpack_bounds(
+    int n1, int n2,
+    const std::vector<double>& buf,
+    std::vector<mc::Interval>& first,
+    std::vector<mc::Interval>& second
+){
+    first.resize(n1);
+    second.resize(n2);
+    int k = 0;
+    for (int i=0;i<n1;i++){ first[i] = mc::Interval(buf[k], buf[k+1]); k += 2; }
+    for (int i=0;i<n2;i++){ second[i]= mc::Interval(buf[k], buf[k+1]); k += 2; }
+}
 template<typename T>
 Algo<T>::Algo(STModel* model) {
     this->model = model;
@@ -137,14 +165,15 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching 
    
     int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX);
     std::cout<<"Branching on first stage variable index: "<<branch_idx<<std::endl;
-   double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
+    double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
     double range=branch_point-this->activeNodes[idx].first_stage_IX[branch_idx].l();
     child1.first_stage_IX[branch_idx] = mc::Interval(this->activeNodes[idx].first_stage_IX[branch_idx].l(), branch_point);
     child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, this->activeNodes[idx].first_stage_IX[branch_idx].u());
 
     // processing left child
 
-    this->calculateLBD(&child1, tolerance,flag);
+
+    this->calculateLBD_MPI(&child1, tolerance, flag);
     std::vector<std::pair<double, double>> initial_first_stage_IX_record; // record the first stage IX for child1
     for (const auto& interval : child1.first_stage_IX) {
         initial_first_stage_IX_record.push_back({interval.l(), interval.u()});
@@ -152,7 +181,7 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching 
     this->first_stage_IX_record.push_back(initial_first_stage_IX_record);
 
     // processing right child
-    this->calculateLBD(&child2, tolerance,flag);
+    this->calculateLBD_MPI(&child2, tolerance, flag);
 
     initial_first_stage_IX_record.clear();
     for (const auto& interval : child2.first_stage_IX) {
@@ -239,40 +268,114 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
     MPI_Allreduce(local_vals.data(), all_vals.data(), S, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     // only rank 0 mutates node state
     if (rank == 0) {
-
+        // ensure sized for ALL nodes (root, children, strong-branch temp nodes, etc.)
+        if ((int)node->scenario_LBDs.size() != S) {
+            node->scenario_LBDs.assign(S, -std::numeric_limits<double>::infinity());
+        }
 
         totalLBD = 0.0;
         for (int si = 0; si < S; ++si) {
-
-
             double scenario_LBD = all_vals[si];
 
-            if (node->node_id == 1) {
-                node->scenario_LBDs.push_back(scenario_LBD);
-            } else {
-                // monotonic scenario LBD update
-                assert(node->scenario_LBDs.size() == S);
-                if (scenario_LBD < node->scenario_LBDs[si]) {
-                    scenario_LBD = node->scenario_LBDs[si];
-                } else {
-                    node->scenario_LBDs[si] = scenario_LBD;
-                }
-            }
+            // monotone nondecreasing scenario LBD across revisits
+            scenario_LBD = std::max(scenario_LBD, node->scenario_LBDs[si]);
+            node->scenario_LBDs[si] = scenario_LBD;
 
             totalLBD += scenario_LBD;
         }
     }
 
-    node->LBD = totalLBD;
+    // IMPORTANT: only rank 0 has the real totalLBD; others should not overwrite node->LBD meaningfully
+    if (rank == 0) node->LBD = totalLBD;
     return totalLBD;
-}
 
+}
+double outsideAlgo::calculateLBD_MPI(BBNode* node, double tolerance, withinStrongBranching flag)
+{
+    int rank=0, size=1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // Broadcast command
+    int cmd = (int)OutsideCmd::CALC_LBD;
+    MPI_Bcast(&cmd, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Broadcast payload: tol, flag, sizes, bounds
+    int flag_i = (int)flag;
+    int n1 = (int)node->first_stage_IX.size();
+    int n2 = (int)node->second_stage_IX.size();
+
+    MPI_Bcast(&tolerance, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&flag_i, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&n1, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&n2, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    std::vector<double> buf;
+    pack_bounds(node->first_stage_IX, node->second_stage_IX, buf);
+    int buf_n = (int)buf.size();
+    MPI_Bcast(&buf_n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(buf.data(), buf_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    // Now all ranks enter the existing compute (rank 0 uses the real node)
+    return this->calculateLBD(node, tolerance, (withinStrongBranching)flag_i);
+}
+void outsideAlgo::mpi_worker_loop()
+{
+    int rank=0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    while (true) {
+        int cmd = 0;
+        MPI_Bcast(&cmd, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        if (cmd == (int)OutsideCmd::STOP) {
+            break;
+        }
+
+        if (cmd != (int)OutsideCmd::CALC_LBD) {
+            // unknown command: safest is to abort
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+
+        double tolerance = 0.0;
+        int flag_i = 0;
+        int n1 = 0, n2 = 0, buf_n = 0;
+
+        MPI_Bcast(&tolerance, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&flag_i, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&n1, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&n2, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&buf_n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        std::vector<double> buf(buf_n);
+        MPI_Bcast(buf.data(), buf_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        // Build a local temporary node with the bounds from rank 0
+        BBNode tmp;                    // requires BBNode default ctor OR provide one
+        tmp.node_id = 999999;          // doesn't matter for workers
+        unpack_bounds(n1, n2, buf, tmp.first_stage_IX, tmp.second_stage_IX);
+
+        // Participate in the Allreduce-based LBD computation
+        this->calculateLBD(&tmp, tolerance, (withinStrongBranching)flag_i);
+    }
+}
 double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
+        int rank=0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (rank != 0) {
+        this->mpi_worker_loop();
+        return 0.0; // workers don't own the final objective
+    }
+
     auto start = std::chrono::high_resolution_clock::now();
 
     std::cout<<"Calculating LBD for root node..."<<std::endl;
-    this->worstLBD=this->calculateLBD(&(this->activeNodes[0]), tolerance,flag);
+    this->worstLBD = this->calculateLBD_MPI(&(this->activeNodes[0]), tolerance, flag);
     std::cout<<"Finished calculating LBD for root node."<<std::endl;
+
+
+
     std::vector<std::pair<double, double>> initial_first_stage_IX_record;  // record first stage variable bound
     for (const auto& interval : this->activeNodes[0].first_stage_IX) {
         initial_first_stage_IX_record.push_back({interval.l(), interval.u()});
@@ -326,8 +429,11 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
     std::cout<<"Algorithm terminated after "<<iterations<<" iterations."<<std::endl;
     std::cout<<"Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
     std::cout<<"Best Solution: " << this->bestUBD << std::endl;
+    int cmd = (int)OutsideCmd::STOP;
+    MPI_Bcast(&cmd, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     return this->bestUBD;
+
 }
 
 insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD,solveFullmodel solve_full_model_flag,UBDSolver solver) : Algo<xBBNode>(model) {
