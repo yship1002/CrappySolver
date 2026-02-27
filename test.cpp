@@ -10,6 +10,17 @@
 #include <cereal/types/map.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
+int Tracker::total_ubd_calculation_count=0;
+std::vector<double> Tracker::total_ubd_calculation_time;
+int Tracker::strong_branching_ubd_calculation_count=0;
+std::vector<double> Tracker::strong_branching_ubd_calculation_time;
+
+int Tracker::total_lbd_calculation_count=0;
+std::vector<double> Tracker::total_lbd_calculation_time;
+int Tracker::strong_branching_lbd_calculation_count=0;
+std::vector<double> Tracker::strong_branching_lbd_calculation_time;
+std::vector<double> Tracker::LBD_value_records;
+std::string Tracker::file_name="test.json";
 long long Tracker::global_total_lbd_count=0;
 long long Tracker::global_total_ubd_count=0;
 long long Tracker::global_sb_lbd_count=0;
@@ -19,7 +30,7 @@ double Tracker::global_total_lbd_time_sum=0.0;
 double Tracker::global_total_ubd_time_sum=0.0;
 double Tracker::global_sb_lbd_time_sum=0.0;
 double Tracker::global_sb_ubd_time_sum=0.0;
-static volatile std::sig_atomic_t terminate_flag = 0;
+volatile std::sig_atomic_t terminate_flag = 0;
 void handle_signal(int)
 {
     terminate_flag = 1;

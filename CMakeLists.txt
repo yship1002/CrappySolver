@@ -65,6 +65,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CPLEX_INC_CPLEX}"
     "${GUROBI_INC}"
     "${IPOPT_INC}"
+
 )
 
 # ---- Library search paths (match your -L list) ----
@@ -73,6 +74,7 @@ target_link_directories(${EXECUTABLE_NAME} PRIVATE
     "${CPLEX_LIB_CPLEX}"
     "${GUROBI_LIB}"
     "${IPOPT_LIB}"
+
 )
 
 # ---- Link libs (match your -l list) ----
