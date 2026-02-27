@@ -215,8 +215,15 @@ double outsideAlgo::calculateUBD(BBNode* node,double tolerance,withinStrongBranc
 double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranching flag) {
     // this is the inner layer
     double totalLBD = 0.0;
-    
-    for (auto scenario_name : this->model->scenario_names) {
+    int rank=0, size=1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    const int S = (int)this->model->scenario_names.size();
+    const double inner_tol = tolerance / (2.0 * S);
+    std::vector<double> local_vals(S, 0.0);
+    std::vector<int>    local_has(S, 0);
+    for (int si = rank; si < S; si += size) {
+        auto scenario_name = this->model->scenario_names[si];
 
         this->model->scenario_name = scenario_name;
         this->model->first_stage_IX = node->first_stage_IX;
@@ -224,32 +231,34 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
         insideAlgo inneralgo(this->model,scenario_name,INFINITY,solveFullmodel::no,this->ubd_solver);
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
 
-        double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size()),flag); // set inner tolerance to be eps/2s
+        double scenario_LBD=inneralgo.solve(inner_tol,flag); // set inner tolerance to be eps/2s
+        local_vals[si] = scenario_LBD;
+    }
+    std::vector<double> all_vals(S, 0.0);
+    MPI_Allreduce(local_vals.data(), all_vals.data(), S, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    // only rank 0 mutates node state
+    if (rank == 0) {
 
-        if (node->node_id==1) { // root node calculation
-            node->scenario_LBDs.push_back(scenario_LBD);
-        } else { // regular node
-            if (scenario_LBD<node->scenario_LBDs[static_cast<int>(scenario_name)]){
-                scenario_LBD=node->scenario_LBDs[static_cast<int>(scenario_name)];
-            }else{
-                node->scenario_LBDs[static_cast<int>(scenario_name)] = scenario_LBD;
+
+        totalLBD = 0.0;
+        for (int si = 0; si < S; ++si) {
+
+
+            double scenario_LBD = all_vals[si];
+
+            if (node->node_id == 1) {
+                node->scenario_LBDs[si] = scenario_LBD;
+            } else {
+                // monotonic scenario LBD update
+                if (scenario_LBD < node->scenario_LBDs[si]) {
+                    scenario_LBD = node->scenario_LBDs[si];
+                } else {
+                    node->scenario_LBDs[si] = scenario_LBD;
+                }
             }
-        }
-        
-        
-        if (scenario_LBD == INFINITY) {
-            // if any scenario is infeasible, then the node is infeasible
-            totalLBD = INFINITY;
-            break;
-        }else{
+
             totalLBD += scenario_LBD;
         }
-    }
-    if (node->node_id!=1){ //if not root node
-        if (totalLBD < node->LBD) {
-            throw std::runtime_error("LBD should not decrease after calculation");
-        }
-
     }
 
     node->LBD = totalLBD;

@@ -1,6 +1,7 @@
 #ifndef ALGO_H
 #define ALGO_H
 #include <string>
+#include <mpi.h>
 #include <cmath>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
