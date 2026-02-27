@@ -106,7 +106,7 @@ struct Tracker{
           CEREAL_NVP(global_sb_ubd_time_sum)
         );
     }
-}
+};
 template<typename T>
 class Algo {
     public:
