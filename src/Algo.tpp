@@ -218,6 +218,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
     int rank=0, size=1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
     const int S = (int)this->model->scenario_names.size();
     const double inner_tol = tolerance / (2.0 * S);
     std::vector<double> local_vals(S, 0.0);
@@ -796,10 +797,10 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         Tracker::LBD_value_records.push_back(this->worstLBD);
-        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << std::endl;
+        //std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << std::endl;
         iterations++;
         
     
