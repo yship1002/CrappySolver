@@ -28,6 +28,7 @@ if (IS_ARM64_OSX)
     set(CPLEX_LIB_CONCERT "${CPLEX_ROOT}/concert/lib/arm64_osx/static_pic")
     set(CPLEX_LIB_CPLEX   "${CPLEX_ROOT}/cplex/lib/arm64_osx/static_pic")
 
+
 else()
     message(STATUS "This CMakeLists.txt is configured for x86-64_linux builds.")
     set(CPLEX_LIB_CONCERT "${CPLEX_ROOT}/concert/lib/x86-64_linux/static_pic")
