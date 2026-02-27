@@ -247,7 +247,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
             double scenario_LBD = all_vals[si];
 
             if (node->node_id == 1) {
-                node->scenario_LBDs[si] = scenario_LBD;
+                node->scenario_LBDs.push_back(scenario_LBD);
             } else {
                 // monotonic scenario LBD update
                 if (scenario_LBD < node->scenario_LBDs[si]) {
