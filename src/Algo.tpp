@@ -317,7 +317,9 @@ double outsideAlgo::calculateLBD_MPI(BBNode* node, double tolerance, withinStron
     MPI_Bcast(buf.data(), buf_n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     // Now all ranks enter the existing compute (rank 0 uses the real node)
-    return this->calculateLBD(node, tolerance, (withinStrongBranching)flag_i);
+    double result = this->calculateLBD(node, tolerance, (withinStrongBranching)flag_i);
+    Tracker::mpi_reduce_to_root(MPI_COMM_WORLD, 0);
+    return result;
 }
 void outsideAlgo::mpi_worker_loop()
 {
@@ -358,6 +360,7 @@ void outsideAlgo::mpi_worker_loop()
         // Participate in the Allreduce-based LBD computation
         this->calculateLBD(&tmp, tolerance, (withinStrongBranching)flag_i);
     }
+    Tracker::mpi_reduce_to_root(MPI_COMM_WORLD, 0);
 }
 double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         int rank=0;
@@ -420,6 +423,7 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+        std::cout<<"Total LBD calculations so far: "<<Tracker::global_total_lbd_count<<std::endl;
 
         iterations++;
     }

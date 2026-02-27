@@ -25,32 +25,88 @@ enum class UBDSolver
 struct Tracker{
     static int total_ubd_calculation_count;
     static std::vector<double> total_ubd_calculation_time;
-    static int strong_branching_ubd_calculation_count; // onlyfor CZ
-    static std::vector<double> strong_branching_ubd_calculation_time; // only for CZ
+    static int strong_branching_ubd_calculation_count;
+    static std::vector<double> strong_branching_ubd_calculation_time;
 
-    // LBD related bookeeping variables
-    static int total_lbd_calculation_count; // include strong branching calculations
+    static int total_lbd_calculation_count;
     static std::vector<double> total_lbd_calculation_time;
     static int strong_branching_lbd_calculation_count;
     static std::vector<double> strong_branching_lbd_calculation_time;
-    static std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
-    static std::string file_name; // for output file name
-    template<class Archive>
+    static std::vector<double> LBD_value_records;
+    static std::string file_name;
+
+    // NEW: global aggregated scalars (rank 0 will fill these)
+    static long long global_total_lbd_count;
+    static long long global_total_ubd_count;
+    static long long global_sb_lbd_count;
+    static long long global_sb_ubd_count;
+
+    static double global_total_lbd_time_sum;
+    static double global_total_ubd_time_sum;
+    static double global_sb_lbd_time_sum;
+    static double global_sb_ubd_time_sum;
+
+    static void mpi_reduce_to_root(MPI_Comm comm = MPI_COMM_WORLD, int root = 0)
+    {
+        int rank = 0;
+        MPI_Comm_rank(comm, &rank);
+
+        auto sum_vec = [](const std::vector<double>& v){
+            double s = 0.0;
+            for(double x: v) s += x;
+            return s;
+        };
+
+        long long local_counts[4] = {
+            (long long)total_lbd_calculation_count,
+            (long long)total_ubd_calculation_count,
+            (long long)strong_branching_lbd_calculation_count,
+            (long long)strong_branching_ubd_calculation_count
+        };
+
+        double local_sums[4] = {
+            sum_vec(total_lbd_calculation_time),
+            sum_vec(total_ubd_calculation_time),
+            sum_vec(strong_branching_lbd_calculation_time),
+            sum_vec(strong_branching_ubd_calculation_time)
+        };
+
+        long long global_counts[4] = {0,0,0,0};
+        double global_sums[4] = {0,0,0,0};
+
+        MPI_Reduce(local_counts, global_counts, 4, MPI_LONG_LONG, MPI_SUM, root, comm);
+        MPI_Reduce(local_sums,   global_sums,   4, MPI_DOUBLE,    MPI_SUM, root, comm);
+
+        if(rank == root){
+            global_total_lbd_count = global_counts[0];
+            global_total_ubd_count = global_counts[1];
+            global_sb_lbd_count    = global_counts[2];
+            global_sb_ubd_count    = global_counts[3];
+
+            global_total_lbd_time_sum = global_sums[0];
+            global_total_ubd_time_sum = global_sums[1];
+            global_sb_lbd_time_sum    = global_sums[2];
+            global_sb_ubd_time_sum    = global_sums[3];
+        }
+    }
+        template<class Archive>
     static void serialize(Archive& ar)
-    {        
+    {
         ar(
-        CEREAL_NVP(total_ubd_calculation_count),
-           CEREAL_NVP(total_ubd_calculation_time),
-           CEREAL_NVP(strong_branching_ubd_calculation_count),
-           CEREAL_NVP(strong_branching_ubd_calculation_time),
-           CEREAL_NVP(total_lbd_calculation_count),
-           CEREAL_NVP(total_lbd_calculation_time),
-           CEREAL_NVP(strong_branching_lbd_calculation_count),
-           CEREAL_NVP(strong_branching_lbd_calculation_time),
-           CEREAL_NVP(LBD_value_records)
+
+
+          // NEW: global aggregated fields (rank 0 only meaningful)
+          CEREAL_NVP(global_total_lbd_count),
+          CEREAL_NVP(global_total_ubd_count),
+          CEREAL_NVP(global_sb_lbd_count),
+          CEREAL_NVP(global_sb_ubd_count),
+          CEREAL_NVP(global_total_lbd_time_sum),
+          CEREAL_NVP(global_total_ubd_time_sum),
+          CEREAL_NVP(global_sb_lbd_time_sum),
+          CEREAL_NVP(global_sb_ubd_time_sum)
         );
     }
-};
+}
 template<typename T>
 class Algo {
     public:
