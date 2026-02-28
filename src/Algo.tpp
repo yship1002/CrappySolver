@@ -420,7 +420,7 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
-
+        std::cout<<Tracker::total_lbd_calculation_count<<" total LBD calculations, "<<Tracker::total_ubd_calculation_count<<" total UBD calculations."<<std::endl;
         iterations++;
     }
     auto end = std::chrono::high_resolution_clock::now();
