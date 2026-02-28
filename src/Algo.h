@@ -34,7 +34,114 @@ struct Tracker{
     int strong_branching_lbd_calculation_count=0;
     std::vector<double> strong_branching_lbd_calculation_time;
     std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
+    void merge_from(const Tracker& other) {
+        total_lbd_calculation_count += other.total_lbd_calculation_count;
+        total_ubd_calculation_count += other.total_ubd_calculation_count;
+        strong_branching_ubd_calculation_count += other.strong_branching_ubd_calculation_count;
+        strong_branching_lbd_calculation_count += other.strong_branching_lbd_calculation_count;
 
+        total_lbd_calculation_time.insert(
+            total_lbd_calculation_time.end(),
+            other.total_lbd_calculation_time.begin(),
+            other.total_lbd_calculation_time.end()
+        );
+
+        total_ubd_calculation_time.insert(
+            total_ubd_calculation_time.end(),
+            other.total_ubd_calculation_time.begin(),
+            other.total_ubd_calculation_time.end()
+        );
+        strong_branching_ubd_calculation_time.insert(
+            strong_branching_ubd_calculation_time.end(),
+            other.strong_branching_ubd_calculation_time.begin(),
+            other.strong_branching_ubd_calculation_time.end()
+        );
+        strong_branching_lbd_calculation_time.insert(
+            strong_branching_lbd_calculation_time.end(),
+            other.strong_branching_lbd_calculation_time.begin(),
+            other.strong_branching_lbd_calculation_time.end()
+        );
+
+        // repeat for any other fields you care about:
+        // strong_branching_* counts, strong_branching_* times, etc.
+        }
+    };
+    static void gather_vector_double_to_root(
+        const std::vector<double>& local,
+        std::vector<double>& out_on_root,
+        int root,
+        MPI_Comm comm)
+        {
+        int rank, size;
+        MPI_Comm_rank(comm, &rank);
+        MPI_Comm_size(comm, &size);
+
+        int local_n = (int)local.size();
+
+        std::vector<int> recv_counts;
+        if (rank == root) recv_counts.resize(size);
+
+        MPI_Gather(&local_n, 1, MPI_INT,
+                    rank == root ? recv_counts.data() : nullptr, 1, MPI_INT,
+                    root, comm);
+
+        std::vector<int> displs;
+        if (rank == root) {
+            displs.resize(size);
+            int total = 0;
+            for (int r = 0; r < size; ++r) { displs[r] = total; total += recv_counts[r]; }
+            out_on_root.resize(total);
+        }
+
+        MPI_Gatherv(local_n ? local.data() : nullptr, local_n, MPI_DOUBLE,
+                    rank == root ? out_on_root.data() : nullptr,
+                    rank == root ? recv_counts.data() : nullptr,
+                    rank == root ? displs.data() : nullptr,
+                    MPI_DOUBLE,
+                    root, comm);
+    };
+    void merge_across_ranks_to_root(int root, MPI_Comm comm)
+    {
+        int rank;
+        MPI_Comm_rank(comm, &rank);
+
+        // 4a) reduce scalar counts
+        long long lbd_sum = 0, ubd_sum = 0;
+        long long strong_branching_ubd_calculation_count_sum = 0;
+        long long strong_branching_lbd_calculation_count_sum = 0;
+
+        MPI_Reduce(&total_lbd_calculation_count, &lbd_sum,
+                    1, MPI_LONG_LONG, MPI_SUM, root, comm);
+
+        MPI_Reduce(&total_ubd_calculation_count, &ubd_sum,
+                    1, MPI_LONG_LONG, MPI_SUM, root, comm);
+        MPI_Reduce(&strong_branching_ubd_calculation_count, &strong_branching_ubd_calculation_count_sum,
+                    1, MPI_LONG_LONG, MPI_SUM, root, comm);
+        MPI_Reduce(&strong_branching_lbd_calculation_count, &strong_branching_lbd_calculation_count_sum,
+                    1, MPI_LONG_LONG, MPI_SUM, root, comm); 
+
+        // 4b) gather timing vectors
+        std::vector<double> lbd_times_gathered;
+        std::vector<double> ubd_times_gathered;
+        std::vector<double> strong_branching_lbd_times_gathered;
+        std::vector<double> strong_branching_ubd_times_gathered;
+
+        gather_vector_double_to_root(total_lbd_calculation_time, lbd_times_gathered, root, comm);
+        gather_vector_double_to_root(total_ubd_calculation_time, ubd_times_gathered, root, comm);
+        gather_vector_double_to_root(strong_branching_lbd_calculation_time, strong_branching_lbd_times_gathered, root, comm);
+        gather_vector_double_to_root(strong_branching_ubd_calculation_time, strong_branching_ubd_times_gathered, root, comm);
+        // 4c) root becomes the merged tracker; others keep local (or clear)
+        if (rank == root) {
+            total_lbd_calculation_count = lbd_sum;
+            total_ubd_calculation_count = ubd_sum;
+            total_lbd_calculation_time.swap(lbd_times_gathered);
+            total_ubd_calculation_time.swap(ubd_times_gathered);
+            strong_branching_lbd_calculation_count = strong_branching_lbd_calculation_count_sum;
+            strong_branching_ubd_calculation_count = strong_branching_ubd_calculation_count_sum;
+            strong_branching_lbd_calculation_time.swap(strong_branching_lbd_times_gathered);
+            strong_branching_ubd_calculation_time.swap(strong_branching_ubd_times_gathered);
+        }
+    };
     template<class Archive>
     void serialize(Archive& ar)
     {        
