@@ -4,7 +4,7 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
     this->branching_strategy = branching_strategy;
     this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3
      ,ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
-     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10,
+     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
     ,ScenarioNames::SCENARIO11,ScenarioNames::SCENARIO12,
      ScenarioNames::SCENARIO13,ScenarioNames::SCENARIO14,ScenarioNames::SCENARIO15,
     ScenarioNames::SCENARIO16,ScenarioNames::SCENARIO17,ScenarioNames::SCENARIO18,
