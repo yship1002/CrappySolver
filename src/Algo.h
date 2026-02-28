@@ -64,7 +64,7 @@ struct Tracker{
 
         // repeat for any other fields you care about:
         // strong_branching_* counts, strong_branching_* times, etc.
-        }
+        
     };
     static void gather_vector_double_to_root(
         const std::vector<double>& local,
@@ -110,14 +110,14 @@ struct Tracker{
         long long strong_branching_ubd_calculation_count_sum = 0;
         long long strong_branching_lbd_calculation_count_sum = 0;
 
-        MPI_Reduce(&this->total_lbd_calculation_count, &lbd_sum,
+        MPI_Reduce(&total_lbd_calculation_count, &lbd_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm);
 
-        MPI_Reduce(&this->total_ubd_calculation_count, &ubd_sum,
+        MPI_Reduce(&total_ubd_calculation_count, &ubd_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm);
-        MPI_Reduce(&this->strong_branching_ubd_calculation_count, &strong_branching_ubd_calculation_count_sum,
+        MPI_Reduce(&strong_branching_ubd_calculation_count, &strong_branching_ubd_calculation_count_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm);
-        MPI_Reduce(&this->strong_branching_lbd_calculation_count, &strong_branching_lbd_calculation_count_sum,
+        MPI_Reduce(&strong_branching_lbd_calculation_count, &strong_branching_lbd_calculation_count_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm); 
 
         // 4b) gather timing vectors
@@ -126,10 +126,10 @@ struct Tracker{
         std::vector<double> strong_branching_lbd_times_gathered;
         std::vector<double> strong_branching_ubd_times_gathered;
 
-        gather_vector_double_to_root(this->total_lbd_calculation_time, lbd_times_gathered, root, comm);
-        gather_vector_double_to_root(this->total_ubd_calculation_time, ubd_times_gathered, root, comm);
-        gather_vector_double_to_root(this->strong_branching_lbd_calculation_time, strong_branching_lbd_times_gathered, root, comm);
-        gather_vector_double_to_root(this->strong_branching_ubd_calculation_time, strong_branching_ubd_times_gathered, root, comm);
+        gather_vector_double_to_root(total_lbd_calculation_time, lbd_times_gathered, root, comm);
+        gather_vector_double_to_root(total_ubd_calculation_time, ubd_times_gathered, root, comm);
+        gather_vector_double_to_root(strong_branching_lbd_calculation_time, strong_branching_lbd_times_gathered, root, comm);
+        gather_vector_double_to_root(strong_branching_ubd_calculation_time, strong_branching_ubd_times_gathered, root, comm);
         // 4c) root becomes the merged tracker; others keep local (or clear)
         if (rank == root) {
             this->total_lbd_calculation_count = lbd_sum;
