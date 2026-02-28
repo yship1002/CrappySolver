@@ -35,28 +35,28 @@ struct Tracker{
     std::vector<double> strong_branching_lbd_calculation_time;
     std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
     void merge_from(const Tracker& other) {
-        total_lbd_calculation_count += other.total_lbd_calculation_count;
-        total_ubd_calculation_count += other.total_ubd_calculation_count;
-        strong_branching_ubd_calculation_count += other.strong_branching_ubd_calculation_count;
-        strong_branching_lbd_calculation_count += other.strong_branching_lbd_calculation_count;
+        this->total_lbd_calculation_count += other.total_lbd_calculation_count;
+        this->total_ubd_calculation_count += other.total_ubd_calculation_count;
+        this->strong_branching_ubd_calculation_count += other.strong_branching_ubd_calculation_count;
+        this->strong_branching_lbd_calculation_count += other.strong_branching_lbd_calculation_count;
 
-        total_lbd_calculation_time.insert(
+        this->total_lbd_calculation_time.insert(
             total_lbd_calculation_time.end(),
             other.total_lbd_calculation_time.begin(),
             other.total_lbd_calculation_time.end()
         );
 
-        total_ubd_calculation_time.insert(
+        this->total_ubd_calculation_time.insert(
             total_ubd_calculation_time.end(),
             other.total_ubd_calculation_time.begin(),
             other.total_ubd_calculation_time.end()
         );
-        strong_branching_ubd_calculation_time.insert(
+        this->strong_branching_ubd_calculation_time.insert(
             strong_branching_ubd_calculation_time.end(),
             other.strong_branching_ubd_calculation_time.begin(),
             other.strong_branching_ubd_calculation_time.end()
         );
-        strong_branching_lbd_calculation_time.insert(
+        this->strong_branching_lbd_calculation_time.insert(
             strong_branching_lbd_calculation_time.end(),
             other.strong_branching_lbd_calculation_time.begin(),
             other.strong_branching_lbd_calculation_time.end()
@@ -110,14 +110,14 @@ struct Tracker{
         long long strong_branching_ubd_calculation_count_sum = 0;
         long long strong_branching_lbd_calculation_count_sum = 0;
 
-        MPI_Reduce(&total_lbd_calculation_count, &lbd_sum,
+        MPI_Reduce(&this->total_lbd_calculation_count, &lbd_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm);
 
-        MPI_Reduce(&total_ubd_calculation_count, &ubd_sum,
+        MPI_Reduce(&this->total_ubd_calculation_count, &ubd_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm);
-        MPI_Reduce(&strong_branching_ubd_calculation_count, &strong_branching_ubd_calculation_count_sum,
+        MPI_Reduce(&this->strong_branching_ubd_calculation_count, &strong_branching_ubd_calculation_count_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm);
-        MPI_Reduce(&strong_branching_lbd_calculation_count, &strong_branching_lbd_calculation_count_sum,
+        MPI_Reduce(&this->strong_branching_lbd_calculation_count, &strong_branching_lbd_calculation_count_sum,
                     1, MPI_LONG_LONG, MPI_SUM, root, comm); 
 
         // 4b) gather timing vectors
@@ -126,20 +126,20 @@ struct Tracker{
         std::vector<double> strong_branching_lbd_times_gathered;
         std::vector<double> strong_branching_ubd_times_gathered;
 
-        gather_vector_double_to_root(total_lbd_calculation_time, lbd_times_gathered, root, comm);
-        gather_vector_double_to_root(total_ubd_calculation_time, ubd_times_gathered, root, comm);
-        gather_vector_double_to_root(strong_branching_lbd_calculation_time, strong_branching_lbd_times_gathered, root, comm);
-        gather_vector_double_to_root(strong_branching_ubd_calculation_time, strong_branching_ubd_times_gathered, root, comm);
+        gather_vector_double_to_root(this->total_lbd_calculation_time, lbd_times_gathered, root, comm);
+        gather_vector_double_to_root(this->total_ubd_calculation_time, ubd_times_gathered, root, comm);
+        gather_vector_double_to_root(this->strong_branching_lbd_calculation_time, strong_branching_lbd_times_gathered, root, comm);
+        gather_vector_double_to_root(this->strong_branching_ubd_calculation_time, strong_branching_ubd_times_gathered, root, comm);
         // 4c) root becomes the merged tracker; others keep local (or clear)
         if (rank == root) {
-            total_lbd_calculation_count = lbd_sum;
-            total_ubd_calculation_count = ubd_sum;
-            total_lbd_calculation_time.swap(lbd_times_gathered);
-            total_ubd_calculation_time.swap(ubd_times_gathered);
-            strong_branching_lbd_calculation_count = strong_branching_lbd_calculation_count_sum;
-            strong_branching_ubd_calculation_count = strong_branching_ubd_calculation_count_sum;
-            strong_branching_lbd_calculation_time.swap(strong_branching_lbd_times_gathered);
-            strong_branching_ubd_calculation_time.swap(strong_branching_ubd_times_gathered);
+            this->total_lbd_calculation_count = lbd_sum;
+            this->total_ubd_calculation_count = ubd_sum;
+            this->total_lbd_calculation_time.swap(lbd_times_gathered);
+            this->total_ubd_calculation_time.swap(ubd_times_gathered);
+            this->strong_branching_lbd_calculation_count = strong_branching_lbd_calculation_count_sum;
+            this->strong_branching_ubd_calculation_count = strong_branching_ubd_calculation_count_sum;
+            this->strong_branching_lbd_calculation_time.swap(strong_branching_lbd_times_gathered);
+            this->strong_branching_ubd_calculation_time.swap(strong_branching_ubd_times_gathered);
         }
     };
     template<class Archive>
@@ -156,7 +156,7 @@ struct Tracker{
            CEREAL_NVP(strong_branching_lbd_calculation_time),
            CEREAL_NVP(LBD_value_records)
         );
-    }
+    };
 };
 template<typename T>
 class Algo {
