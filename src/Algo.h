@@ -23,20 +23,20 @@ enum class UBDSolver
    IPOPT
 };
 struct Tracker{
-    static int total_ubd_calculation_count;
-    static std::vector<double> total_ubd_calculation_time;
-    static int strong_branching_ubd_calculation_count; // onlyfor CZ
-    static std::vector<double> strong_branching_ubd_calculation_time; // only for CZ
+    int total_ubd_calculation_count=0;
+    std::vector<double> total_ubd_calculation_time;
+    int strong_branching_ubd_calculation_count=0; // onlyfor CZ
+    std::vector<double> strong_branching_ubd_calculation_time; // only for CZ
 
     // LBD related bookeeping variables
-    static int total_lbd_calculation_count; // include strong branching calculations
-    static std::vector<double> total_lbd_calculation_time;
-    static int strong_branching_lbd_calculation_count;
-    static std::vector<double> strong_branching_lbd_calculation_time;
-    static std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
-    static std::string file_name; // for output file name
+    int total_lbd_calculation_count=0; // include strong branching calculations
+    std::vector<double> total_lbd_calculation_time;
+    int strong_branching_lbd_calculation_count=0;
+    std::vector<double> strong_branching_lbd_calculation_time;
+    std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
+
     template<class Archive>
-    static void serialize(Archive& ar)
+    void serialize(Archive& ar)
     {        
         ar(
         CEREAL_NVP(total_ubd_calculation_count),
@@ -57,7 +57,7 @@ class Algo {
         Algo(STModel* model);
         Algo()=default; // default constructor
         Algo(const Algo& other)=default;
-
+        Tracker tracker;
         UBDSolver ubd_solver;
         double worstLBD;
         double bestUBD;

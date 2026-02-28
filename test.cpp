@@ -10,17 +10,7 @@
 #include <cereal/types/map.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
-int Tracker::total_ubd_calculation_count=0;
-std::vector<double> Tracker::total_ubd_calculation_time={};
-int Tracker::strong_branching_ubd_calculation_count=0; // onlyfor CZ
-std::vector<double> Tracker::strong_branching_ubd_calculation_time={}; // only for CZ
 
-int Tracker::total_lbd_calculation_count=0; // include strong branching calculations
-std::vector<double> Tracker::total_lbd_calculation_time={};
-int Tracker::strong_branching_lbd_calculation_count=0;
-std::vector<double> Tracker::strong_branching_lbd_calculation_time={};
-std::vector<double> Tracker::LBD_value_records={}; 
-std::string Tracker::file_name="test.json"; 
 static volatile std::sig_atomic_t terminate_flag = 0;
 void handle_signal(int)
 {
@@ -30,7 +20,7 @@ int BBNode::node_counter=0;
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv); 
     // std::signal(SIGTERM, handle_signal);
-    Tracker::file_name=argv[1];
+
     // std::thread watcher([]{
     //     while (!terminate_flag) {
     //         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -55,9 +45,9 @@ int main(int argc, char* argv[]) {
     CZalgo.solve(1); // relgap=0.1% tolerance, abs=1
 
     {
-        std::ofstream os(Tracker::file_name);
+        std::ofstream os(argv[1]);
         cereal::JSONOutputArchive oarchive(os);
-        Tracker::serialize(oarchive);
+        CZalgo.tracker.serialize(oarchive);
     }
     // watcher.join();
 

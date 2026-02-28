@@ -31,6 +31,7 @@ static inline void unpack_bounds(
 }
 template<typename T>
 Algo<T>::Algo(STModel* model) {
+    this->tracker = Tracker();
     this->model = model;
 }
 template<typename T>
@@ -251,7 +252,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
     const int S = (int)this->model->scenario_names.size();
     const double inner_tol = tolerance / (2.0 * S);
     std::vector<double> local_vals(S, 0.0);
-    std::vector<int>    local_has(S, 0);
+    long long local_lbd_count_sum = 0;
     for (int si = rank; si < S; si += size) {
         auto scenario_name = this->model->scenario_names[si];
 
@@ -263,11 +264,18 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
 
         double scenario_LBD=inneralgo.solve(inner_tol,flag); // set inner tolerance to be eps/2s
         local_vals[si] = scenario_LBD;
+        local_lbd_count_sum += inneralgo.tracker.total_lbd_calculation_count;
+
     }
     std::vector<double> all_vals(S, 0.0);
     MPI_Allreduce(local_vals.data(), all_vals.data(), S, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    long long global_lbd_count_sum = 0;
+    MPI_Reduce(&local_lbd_count_sum, &global_lbd_count_sum,
+               1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+
     // only rank 0 mutates node state
     if (rank == 0) {
+        this->tracker.total_lbd_calculation_count += global_lbd_count_sum;
         // ensure sized for ALL nodes (root, children, strong-branch temp nodes, etc.)
         if ((int)node->scenario_LBDs.size() != S) {
             node->scenario_LBDs.assign(S, -std::numeric_limits<double>::infinity());
@@ -420,7 +428,7 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
-        std::cout<<Tracker::total_lbd_calculation_count<<" total LBD calculations, "<<Tracker::total_ubd_calculation_count<<" total UBD calculations."<<std::endl;
+        std::cout<<this->tracker.total_lbd_calculation_count<<" total LBD calculations, "<<this->tracker.total_ubd_calculation_count<<" total UBD calculations."<<std::endl;
         iterations++;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -684,7 +692,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
 }
 double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranching flag) {
     auto start = std::chrono::high_resolution_clock::now();
-    Tracker::total_lbd_calculation_count++;
+    this->tracker.total_lbd_calculation_count++;
 
     this->model->scenario_name = node->scenario_name;
     this->model->first_stage_IX = node->first_stage_IX;
@@ -716,10 +724,10 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranc
         cplex.solve();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        Tracker::total_lbd_calculation_time.push_back(elapsed.count());
+        this->tracker.total_lbd_calculation_time.push_back(elapsed.count());
         if (flag==withinStrongBranching::yes){
-            Tracker::strong_branching_lbd_calculation_count++;
-            Tracker::strong_branching_lbd_calculation_time.push_back(elapsed.count());
+            this->tracker.strong_branching_lbd_calculation_count++;
+            this->tracker.strong_branching_lbd_calculation_time.push_back(elapsed.count());
         }
         if (cplex.getStatus() == IloAlgorithm::Optimal) {
             node->LBD= cplex.getObjValue();
@@ -736,7 +744,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranc
 }
 double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranching flag) {
 
-    Tracker::total_ubd_calculation_count++;
+    this->tracker.total_ubd_calculation_count++;
 
     auto start = std::chrono::high_resolution_clock::now();
     this->model->scenario_name = node->scenario_name;
@@ -776,10 +784,10 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
         status = app->OptimizeTNLP(mynlp);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        Tracker::total_ubd_calculation_time.push_back(elapsed.count());
+        this->tracker.total_ubd_calculation_time.push_back(elapsed.count());
         if (flag==withinStrongBranching::yes){
-            Tracker::strong_branching_ubd_calculation_count++;
-            Tracker::strong_branching_ubd_calculation_time.push_back(elapsed.count());
+            this->tracker.strong_branching_ubd_calculation_count++;
+            this->tracker.strong_branching_ubd_calculation_time.push_back(elapsed.count());
         }
         if( status == Ipopt::Solve_Succeeded )
         {
@@ -807,10 +815,10 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
 
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
-            Tracker::total_ubd_calculation_time.push_back(elapsed.count());
+            this->tracker.total_ubd_calculation_time.push_back(elapsed.count());
             if (flag==withinStrongBranching::yes){
-                Tracker::strong_branching_ubd_calculation_count++;
-                Tracker::strong_branching_ubd_calculation_time.push_back(elapsed.count());
+                this->tracker.strong_branching_ubd_calculation_count++;
+                this->tracker.strong_branching_ubd_calculation_time.push_back(elapsed.count());
             }
 
             int status = grbmodel.get(GRB_IntAttr_Status);
@@ -858,7 +866,7 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
     auto start = std::chrono::high_resolution_clock::now();
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance,flag);
     this->worstLBD = this->calculateLBD(&(this->activeNodes[0]), tolerance,flag);
-    Tracker::LBD_value_records.push_back(this->worstLBD);
+    this->tracker.LBD_value_records.push_back(this->worstLBD);
 
     if (this->bestUBD==INFINITY || this->worstLBD==INFINITY){
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
@@ -902,11 +910,11 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
         this->bestUBD = this->getBestUBD();
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
-        Tracker::LBD_value_records.push_back(this->worstLBD);
+        this->tracker.LBD_value_records.push_back(this->worstLBD);
         //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        //std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << std::endl;
+        //std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << this->tracker.total_lbd_calculation_count-this->tracker.strong_branching_lbd_calculation_count << std::endl;
         iterations++;
         
     
