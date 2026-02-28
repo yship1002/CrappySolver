@@ -269,9 +269,9 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
         double scenario_LBD=inneralgo.solve(inner_tol,flag); // set inner tolerance to be eps/2s
         local_vals[si] = scenario_LBD;
         local_lbd_count_sum += inneralgo.tracker.total_lbd_calculation_count;
-        local_strong_branching_lbd_calculation_count += inneralgo.tracker.total_strong_branching_lbd_calculation_count;
+        local_strong_branching_lbd_calculation_count += inneralgo.tracker.strong_branching_lbd_calculation_count;
         local_ubd_count_sum += inneralgo.tracker.total_ubd_calculation_count;
-        local_strong_branching_ubd_calculation_count += inneralgo.tracker.total_strong_branching_ubd_calculation_count;
+        local_strong_branching_ubd_calculation_count += inneralgo.tracker.strong_branching_ubd_calculation_count;
     }
     std::vector<double> all_vals(S, 0.0);
     MPI_Allreduce(local_vals.data(), all_vals.data(), S, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -292,8 +292,8 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,withinStrongBranc
     if (rank == 0) {
         this->tracker.total_lbd_calculation_count += global_lbd_count_sum;
         this->tracker.total_ubd_calculation_count += global_ubd_count_sum;
-        this->tracker.total_strong_branching_ubd_calculation_count += global_strong_branching_ubd_calculation_count;
-        this->tracker.total_strong_branching_lbd_calculation_count += global_strong_branching_lbd_calculation_count;
+        this->tracker.strong_branching_ubd_calculation_count += global_strong_branching_ubd_calculation_count;
+        this->tracker.strong_branching_lbd_calculation_count += global_strong_branching_lbd_calculation_count;
         // ensure sized for ALL nodes (root, children, strong-branch temp nodes, etc.)
         if ((int)node->scenario_LBDs.size() != S) {
             node->scenario_LBDs.assign(S, -std::numeric_limits<double>::infinity());
