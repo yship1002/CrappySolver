@@ -430,6 +430,12 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
         std::cout<<this->tracker.total_lbd_calculation_count<<" total LBD calculations, "<<this->tracker.strong_branching_lbd_calculation_count<<" total strong branching LBD calculations."<<std::endl;
+        std::cout<<this->tracker.total_UBD_calculation_count<<" total UBD calculations, "<<this->tracker.strong_branching_ubd_calculation_count<<" total strong branching UBD calculations."<<std::endl;
+        std::cout<<"Total UBD calculation time: " << this->tracker.get_total_ubd_calculation_time() << " seconds."<<std::endl;
+        std::cout<<"Total LBD calculation time: " << this->tracker.get_total_lbd_calculation_time() << " seconds."<<std::endl;
+        std::cout<<"Total strong branching UBD calculation time: " << this->tracker.get_strong_branching_ubd_calculation_time() << " seconds."<<std::endl;
+        std::cout<<"Total strong branching LBD calculation time: " << this->tracker.get_strong_branching_lbd_calculation_time() << " seconds."<<std::endl;
+        
         iterations++;
     }
     auto end = std::chrono::high_resolution_clock::now();

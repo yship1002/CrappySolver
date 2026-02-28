@@ -34,6 +34,18 @@ struct Tracker{
     int strong_branching_lbd_calculation_count=0;
     std::vector<double> strong_branching_lbd_calculation_time;
     std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
+    double get_total_ubd_calculation_time() {
+        return std::accumulate(total_ubd_calculation_time.begin(), total_ubd_calculation_time.end(), 0.0);
+    }
+    double get_strong_branching_lbd_calculation_time() {
+        return std::accumulate(strong_branching_lbd_calculation_time.begin(), strong_branching_lbd_calculation_time.end(), 0.0);
+    }
+    double get_total_lbd_calculation_time() {
+        return std::accumulate(total_lbd_calculation_time.begin(), total_lbd_calculation_time.end(), 0.0);
+    }
+    double get_strong_branching_ubd_calculation_time() {
+        return std::accumulate(strong_branching_ubd_calculation_time.begin(), strong_branching_ubd_calculation_time.end(), 0.0);
+    }
     void merge_from(const Tracker& other) {
         this->total_lbd_calculation_count += other.total_lbd_calculation_count;
         this->total_ubd_calculation_count += other.total_ubd_calculation_count;
