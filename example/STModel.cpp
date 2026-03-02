@@ -282,8 +282,8 @@ void STModel::generateFullLP(IloEnv* cplex_env,IloModel* cplexmodel,
         }
     }
 
-    // Env.options.SANDWICH_RTOL=1e-10;
-    //Env.options.SANDWICH_MAXCUT=500;
+    Env.options.SANDWICH_RTOL=1e-10;
+    Env.options.SANDWICH_MAXCUT=500;
     
     std::vector<mc::PolVar<mc::Interval>> PF(this->F[ScenarioNames::SCENARIO1].size());
 
