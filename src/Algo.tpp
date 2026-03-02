@@ -915,7 +915,10 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
         this->fathomNodes(this->bestUBD);
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
-
+        if (this->bestUBD==INFINITY || this->worstLBD==INFINITY){
+            std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible after branching on variable index "<<branch_var_idx<<" at iteration "<<iterations<<"."<<std::endl;
+            return INFINITY;
+        }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         this->tracker.LBD_value_records.push_back(this->worstLBD);
         //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
