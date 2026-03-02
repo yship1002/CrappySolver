@@ -804,7 +804,9 @@ double insideAlgo::solve(double tolerance) {
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
         this->LBD_values_records.push_back(this->worstLBD); // record LBD value for worst node
-
+        if (this->worstLBD==INFINITY || this->bestUBD==INFINITY){
+            return INFINITY;
+        }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
         //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
