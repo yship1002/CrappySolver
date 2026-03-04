@@ -11,7 +11,7 @@ ProcessModel::ProcessModel(BranchingStrategy branching_strategy):STModel() {
     ScenarioNames::SCENARIO19,ScenarioNames::SCENARIO20
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
-    this->probability = 0.1; // equal probability for each scenario
+    this->probability = 0.05; // equal probability for each scenario
     this->perturb = {
         {ScenarioNames::SCENARIO1, 1.0976270078546495},// orignal
         {ScenarioNames::SCENARIO2, 9.430378732744838},
