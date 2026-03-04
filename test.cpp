@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     //ProcessMode: -1134.15(20s) -1134.15 (10s) -1126.4218270121305. (3s)
     //Ex844:0.332724(3s) 0.325313529673937(10s) 0.325313529673937(20s)
     //CrudeModel:-23273.75(5s)
-    Ex844 model(BranchingStrategy::pseudo);
+    Ex844Model model(BranchingStrategy::pseudo);
 
     outsideAlgo CZalgo(&model,0.325313529673937*1000,UBDSolver::IPOPT); // provide UBD for outer layer
     
