@@ -5,13 +5,13 @@ Ex844Model::Ex844Model(BranchingStrategy branching_strategy):STModel() {
     this->branching_strategy = branching_strategy;
     this->scenario_names = { ScenarioNames::SCENARIO1, ScenarioNames::SCENARIO2,ScenarioNames::SCENARIO3,
      ScenarioNames::SCENARIO4, ScenarioNames::SCENARIO5,ScenarioNames::SCENARIO6,
-     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10
-    //  ScenarioNames::SCENARIO11, ScenarioNames::SCENARIO12,ScenarioNames::SCENARIO13,
-    //  ScenarioNames::SCENARIO14, ScenarioNames::SCENARIO15,ScenarioNames::SCENARIO16,
-    //  ScenarioNames::SCENARIO17,ScenarioNames::SCENARIO18,ScenarioNames::SCENARIO19,ScenarioNames::SCENARIO20
+     ScenarioNames::SCENARIO7,ScenarioNames::SCENARIO8,ScenarioNames::SCENARIO9,ScenarioNames::SCENARIO10,
+     ScenarioNames::SCENARIO11, ScenarioNames::SCENARIO12,ScenarioNames::SCENARIO13,
+     ScenarioNames::SCENARIO14, ScenarioNames::SCENARIO15,ScenarioNames::SCENARIO16,
+     ScenarioNames::SCENARIO17,ScenarioNames::SCENARIO18,ScenarioNames::SCENARIO19,ScenarioNames::SCENARIO20
     };
     this->scenario_name = ScenarioNames::SCENARIO1; //default
-    this->probability = 0.1; // equal probability for each scenario
+    this->probability = 0.05; // equal probability for each scenario
     this->perturb = {
         {ScenarioNames::SCENARIO1, 0.05488135039273248}, 
         {ScenarioNames::SCENARIO2, 0.17151893663724196}, 
@@ -22,17 +22,17 @@ Ex844Model::Ex844Model(BranchingStrategy branching_strategy):STModel() {
         {ScenarioNames::SCENARIO7, 0.05488135039273248}, 
         {ScenarioNames::SCENARIO8, 0.17151893663724196}, 
         {ScenarioNames::SCENARIO9, 0.2602763376071644},
-        {ScenarioNames::SCENARIO10, 0.05488135039273248}
-        // {ScenarioNames::SCENARIO11, 0.05488135039273248}, 
-        // {ScenarioNames::SCENARIO12, 0.17151893663724196}, 
-        // {ScenarioNames::SCENARIO13, 0.2602763376071644},
-        // {ScenarioNames::SCENARIO14, 0.05488135039273248}, 
-        // {ScenarioNames::SCENARIO15, 0.17151893663724196}, 
-        // {ScenarioNames::SCENARIO16, 0.2602763376071644},
-        // {ScenarioNames::SCENARIO17, 0.05488135039273248}, 
-        // {ScenarioNames::SCENARIO18, 0.17151893663724196}, 
-        // {ScenarioNames::SCENARIO19, 0.2602763376071644},
-        // {ScenarioNames::SCENARIO20, 0.05488135039273248}
+        {ScenarioNames::SCENARIO10, 0.05488135039273248},
+        {ScenarioNames::SCENARIO11, 0.05488135039273248}, 
+        {ScenarioNames::SCENARIO12, 0.17151893663724196}, 
+        {ScenarioNames::SCENARIO13, 0.2602763376071644},
+        {ScenarioNames::SCENARIO14, 0.05488135039273248}, 
+        {ScenarioNames::SCENARIO15, 0.17151893663724196}, 
+        {ScenarioNames::SCENARIO16, 0.2602763376071644},
+        {ScenarioNames::SCENARIO17, 0.05488135039273248}, 
+        {ScenarioNames::SCENARIO18, 0.17151893663724196}, 
+        {ScenarioNames::SCENARIO19, 0.2602763376071644},
+        {ScenarioNames::SCENARIO20, 0.05488135039273248}
 
 
     };
