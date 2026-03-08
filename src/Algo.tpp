@@ -942,7 +942,7 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
         }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         this->tracker.LBD_value_records.push_back(this->worstLBD);
-        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         //std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << this->tracker.total_lbd_calculation_count-this->tracker.strong_branching_lbd_calculation_count << std::endl;
