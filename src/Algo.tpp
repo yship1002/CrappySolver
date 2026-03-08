@@ -597,12 +597,26 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             min_weight=lower_weight;
         }
     }
+
     // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
+    iterator=0;
     for (auto& weight: this->activeNodes[0].branchheuristic.weights){
         if (weight[0].first==0 && weight[0].second==0){
-            weight[0].first=min_weight;
-            weight[0].second=min_weight;
+            if (iterator<node->first_stage_IX.size()){
+                // first stage variable
+                 if (this->activeNodes[0].first_stage_IX[iterator].u() - this->activeNodes[0].first_stage_IX[iterator].l() >= 1e-5){
+                    weight[0].first=min_weight;
+                    weight[0].second=min_weight;
+                }
+            }else{
+                // second stage variable
+                if (this->activeNodes[0].second_stage_IX[iterator-this->activeNodes[0].first_stage_IX.size()].u() - this->activeNodes[0].second_stage_IX[iterator-this->activeNodes[0].first_stage_IX.size()].l() >= 1e-5){
+                    weight[0].first=min_weight;
+                    weight[0].second=min_weight;
+                }
+            }
         };
+        iterator++;
     }
     
 }
@@ -637,8 +651,15 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
     this->calculateLBD(&child1, tolerance,flag);
     this->calculateLBD(&child2, tolerance,flag);
 
+    auto start = std::chrono::high_resolution_clock::now();
     this->calculateUBD(&child1, tolerance,flag);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout<<"UBD calculation time for child1: "<<std::chrono::duration<double>(end - start).count()<<" seconds."<<std::endl;
+
+    start = std::chrono::high_resolution_clock::now();
     this->calculateUBD(&child2, tolerance,flag);
+    end = std::chrono::high_resolution_clock::now();
+    std::cout<<"UBD calculation time for child2: "<<std::chrono::duration<double>(end - start).count()<<" seconds."<<std::endl;
 
 
     if (child1.LBD == INFINITY){
