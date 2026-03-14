@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     //CrudeModel: old -23270(5s) -22661(3s) -22658.2(5s)
     CrudeModel model(BranchingStrategy::pseudo);
 
-    outsideAlgo CZalgo(&model,-22658.2,UBDSolver::IPOPT); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,-23270,UBDSolver::IPOPT); // provide UBD for outer layer
     
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-23273.75,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible

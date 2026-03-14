@@ -10,9 +10,9 @@ CrudeModel::CrudeModel(BranchingStrategy branching_strategy):STModel() {
     this->probability = 0.2; //default
     this->perturb={
         {ScenarioNames::SCENARIO1, 700},
-        {ScenarioNames::SCENARIO2, 600},
+        {ScenarioNames::SCENARIO2, 700},
         {ScenarioNames::SCENARIO3, 700},
-        {ScenarioNames::SCENARIO4, 600},
+        {ScenarioNames::SCENARIO4, 700},
         {ScenarioNames::SCENARIO5, 700}
     };
 
