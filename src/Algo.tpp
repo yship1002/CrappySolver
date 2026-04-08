@@ -320,6 +320,7 @@ double outsideAlgo::solve(double tolerance) {
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+        std::cout<<"Total LBD time: "<<insideAlgo::lbd_calculation_time<<std::endl;
         std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
 
         iterations++;
