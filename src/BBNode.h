@@ -5,7 +5,7 @@
 #include <mcpp/include/polimage.hpp>
 #include "ilcplex/ilocplex.h"
 #include <vector>
-#include <example/STModel.h>
+#include <Crappy_Fuzzy_Problem_Library/STModel.h>
 #include <src/BBHeuristic.h>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
