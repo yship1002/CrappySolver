@@ -39,14 +39,10 @@ file(GLOB src_SOURCES
     "${PROJ_ROOT}/src/*.cpp"
 )
 file(GLOB EXAMPLE_SOURCES
-    "${PROJ_ROOT}/example/STModel.cpp"
-    "${PROJ_ROOT}/example/Ex844.cpp"
-    "${PROJ_ROOT}/example/CrudeModel.cpp"
-    "${PROJ_ROOT}/example/ProcessModel.cpp"
-
-
-
-
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/STModel.cpp"
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/Ex844.cpp"
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/CrudeModel.cpp"
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/ProcessModel.cpp"
 )
 
 add_executable(${EXECUTABLE_NAME}
@@ -58,6 +54,7 @@ add_executable(${EXECUTABLE_NAME}
 # ---- Include directories (match your -I list) ----
 target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${PROJ_ROOT}"
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library"
     "${PROJ_ROOT}/cereal/include"
     "${PROJ_ROOT}/mcpp/src/3rdparty/fadbad++"
     "${CPLEX_INC_CONCERT}"

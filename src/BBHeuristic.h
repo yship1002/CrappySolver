@@ -1,7 +1,7 @@
 #ifndef BBHEURISTIC_H
 #define BBHEURISTIC_H
 #include <mcpp/include/interval.hpp>
-#include <example/STModel.h>
+#include <Crappy_Fuzzy_Problem_Library/STModel.h>
 #include <vector>
 enum class SCORE_FUNCTION {SUM,MULTIPLY};
 class BBHeuristic {

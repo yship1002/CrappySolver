@@ -9,7 +9,7 @@
 #include <cereal/archives/json.hpp>
 #include <src/BBHeuristic.h>
 #include <src/BBNode.h>
-#include <example/STModel.h>
+#include <Crappy_Fuzzy_Problem_Library/STModel.h>
 #include "ilcplex/ilocplex.h"
 #include "gurobi_c++.h"
 #include <chrono>
