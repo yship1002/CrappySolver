@@ -85,6 +85,7 @@ class STModel:public Ipopt::TNLP{
         BranchingStrategy branching_strategy;
         std::vector<ScenarioNames> scenario_names;
         std::map<ScenarioNames, double> perturb;
+        std::map<ScenarioNames, std::vector<double>> perturb_coeffs;
         /// initial variable intervals for first stage variables
         std::vector<mc::Interval> first_stage_IX;
         /// initial variable intervals for second stage variables

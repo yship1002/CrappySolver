@@ -639,6 +639,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 
     if (this->solvefullModel){
         // if solvefullModel is true, we solve the full MINLP to get the UBD, otherwise we just use the provided UBD for this node
+        // used for nodecomposition approach only
         node->UBD = this->provided_UBD;
         return this->provided_UBD;
     }
