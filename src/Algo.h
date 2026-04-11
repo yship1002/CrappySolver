@@ -16,6 +16,7 @@
 #include <chrono>
 
 enum class withinStrongBranching { yes, no };
+enum class solveFullmodel { yes, no };
 enum class UBDSolver
 {
     GUROBI,

@@ -635,7 +635,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
     }
 
     if (this->ubd_solver == UBDSolver::IPOPT){
-        Ipopt::SmartPtr<Ipopt::TNLP> mynlp = this->model->clone(this->solve_full_model_flag);
+        Ipopt::SmartPtr<Ipopt::TNLP> mynlp = this->model->clone();
         STModel* sm = dynamic_cast<STModel*>(Ipopt::GetRawPtr(mynlp));
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
