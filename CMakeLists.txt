@@ -40,10 +40,7 @@ file(GLOB src_SOURCES
     "${PROJ_ROOT}/src/*.cpp"
 )
 file(GLOB EXAMPLE_SOURCES
-    "${PROJ_ROOT}/example/STModel.cpp"
-    "${PROJ_ROOT}/example/Ex844.cpp"
-    "${PROJ_ROOT}/example/CrudeModel.cpp"
-    "${PROJ_ROOT}/example/ProcessModel.cpp"
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/*.cpp"
 
 
 

@@ -3,7 +3,7 @@
 #include <thread>
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <example/CrudeModel.h>
+#include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -32,9 +32,9 @@ int main(int argc, char* argv[]) {
 
     //ProcessMode: -1134.15(20s) -1134.15 (10s) -1126.4218270121305. (3s)
     //Ex844:0.332724(3s) 0.325313529673937(10s) 0.325313529673937(20s)
-    //CrudeModel: old -23270(5s) -22661(3s) -22658.2(5s)
-    CrudeModel model(BranchingStrategy::pseudo);
+    //CrudeModel: -19658.3 (121) -19204.1(12121)    CrudeModel model(BranchingStrategy::pseudo);
 
+    CrudeModel model(BranchingStrategy::pseudo);
     outsideAlgo CZalgo(&model,-23270,UBDSolver::IPOPT); // provide UBD for outer layer
     
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-23273.75,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer

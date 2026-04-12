@@ -6,3 +6,6 @@
 	path = cereal
 	url = https://github.com/yship1002/cereal.git
 	branch = master
+[submodule "Crappy_Fuzzy_Problem_Library"]
+	path = Crappy_Fuzzy_Problem_Library
+	url = https://github.com/yship1002/Crappy_Fuzzy_Problem_Library.git
