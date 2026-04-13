@@ -704,12 +704,6 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 
             grbmodel.optimize();
 
-            double gap = grbmodel.get(GRB_DoubleAttr_MIPGap);
-            double obj = grbmodel.get(GRB_DoubleAttr_ObjVal);
-            double bound = grbmodel.get(GRB_DoubleAttr_ObjBound);
-
-
-
             int status = grbmodel.get(GRB_IntAttr_Status);
 
             if (status == GRB_OPTIMAL) {
