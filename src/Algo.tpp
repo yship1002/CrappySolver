@@ -631,7 +631,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
     }else{
         node->UBD = this->provided_UBD;
         return node->UBD;
-        //this->model->buildFullModelDAG();
+        // this->model->buildFullModelDAG();
     }
 
     if (this->ubd_solver == UBDSolver::IPOPT){
