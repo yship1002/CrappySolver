@@ -483,7 +483,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
     xBBNode child2 = this->activeNodes[idx]; // Copy current node
     double range;
     int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-    
+    std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
     if(branch_idx<this->activeNodes[idx].first_stage_IX.size()){
 
         // first stage branching
