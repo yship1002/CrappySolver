@@ -525,8 +525,8 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
 
-    //this->calculateUBD(&child1, tolerance);
-    //this->calculateUBD(&child2, tolerance);
+    this->calculateUBD(&child1, tolerance);
+    this->calculateUBD(&child2, tolerance);
 
 
     if (child1.LBD == INFINITY){
@@ -615,7 +615,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
 
-        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
         cplex.solve();
