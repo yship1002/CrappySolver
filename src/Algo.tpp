@@ -326,6 +326,7 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
     this->ubd_solver = solver;
     if (this->solve_full_model_flag==solveFullmodel::yes){
         this->model->convertToCentralizedModel();
+        this->model->full_model_built=true;
     }
     this->activeNodes.push_back(xBBNode(this->model->first_stage_IX,this->model->second_stage_IX,
         this->model->branching_strategy,this->scenario_name));
@@ -703,15 +704,15 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
             if (status == GRB_OPTIMAL) {
                 double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
                 node->UBD = objval;
-                // std::cout << "Optimized solution values: "<<objval<<std::endl;
-                // for (int i = 0; i <200; ++i) {
-                //     std::string auxName = "x" + std::to_string(i);
+                std::cout << "Optimized solution values: "<<objval<<std::endl;
+                for (int i = 0; i <200; ++i) {
+                    std::string auxName = "x" + std::to_string(i);
                         
-                //         // 1. Get the variable object
-                //     GRBVar auxVar = grbmodel.getVarByName(auxName);
-                //     double value = auxVar.get(GRB_DoubleAttr_X);
-                //     std::cout << "Variable " << auxName << " = " << value << "\n";
-                // }
+                        // 1. Get the variable object
+                    GRBVar auxVar = grbmodel.getVarByName(auxName);
+                    double value = auxVar.get(GRB_DoubleAttr_X);
+                    std::cout << "Variable " << auxName << " = " << value << "\n";
+                }
 
                 return objval;
             }else if(status == GRB_SUBOPTIMAL){
