@@ -242,7 +242,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
             }
         }
         
-        
+        std::cout<<"Scenario "<<static_cast<int>(scenario_name)<<" LBD: "<<scenario_LBD<<std::endl;
         if (scenario_LBD == INFINITY) {
             // if any scenario is infeasible, then the node is infeasible
             totalLBD = INFINITY;
@@ -476,16 +476,38 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
         // if there are 0 0 improve in any first stage weigts
     double min_weight=INFINITY;
     for (auto& weight: this->activeNodes[0].branchheuristic.weights){
-        double lower_weight=std::min(weight[0].first,weight[0].second);
-        if (lower_weight!=0 && lower_weight<min_weight){
-            min_weight=lower_weight;
+        if (weight[0].first!=0 && weight[0].first<min_weight){
+            min_weight=weight[0].first;
+        }
+        if (weight[0].second!=0 && weight[0].second<min_weight){
+            min_weight=weight[0].second;
         }
     }
-    // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
+    std::cout<<"Minimum non-zero improve among all branches: "<<min_weight<<std::endl;
+    if (min_weight!=INFINITY){
+    
+        // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
+        for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+            if (weight[0].first==0 && weight[0].second==0){
+                weight[0].first=min_weight;
+                weight[0].second=min_weight;
+            };
+        }
+    }else{
+        // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+
+        //     weight[0].first=0.01; // if all branches have 0 improve, set the weight to a small value to encourage branching on that variable, this is a very rare case but we want to avoid 0 weight which will cause no branching on that variable in the future
+        //     weight[0].second=0.01;
+            
+        // }
+    }
+    if ((node->UBD-node->LBD)<=tolerance){
+        std::cout<<"Warning: The gap between UBD and LBD is already smaller than tolerance before branching, no need to branch, exiting strong branching."<<std::endl;
+        return;
+    }
     for (auto& weight: this->activeNodes[0].branchheuristic.weights){
         if (weight[0].first==0 && weight[0].second==0){
-            weight[0].first=min_weight;
-            weight[0].second=min_weight;
+            throw std::runtime_error("Error: All branches of the root node have 0 improve, this should not happen, please check the model formulation or consider setting bestUBDforInfinity to true to avoid this issue.");
         };
     }
     
@@ -525,9 +547,12 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
 
-    this->calculateUBD(&child1, tolerance);
-    this->calculateUBD(&child2, tolerance);
-
+    if (child1.LBD != INFINITY){
+        this->calculateUBD(&child1, tolerance);
+    }
+    if (child2.LBD != INFINITY){
+        this->calculateUBD(&child2, tolerance);
+    }
 
     if (child1.LBD == INFINITY){
         // left child is infeasible, right child infeasible
