@@ -145,6 +145,11 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     // processing left child
     int initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double initial_lbd_calculation_time=insideAlgo::lbd_calculation_time;
+
+    
+    //this->printFirstStageIX(&child1); // print first stage IX for child1 before calculating LBD
+
+
     this->calculateLBD(&child1, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-initial_lbd_calculation_time); // record LBD calculation time for child1
     this->LBD_calculation_records.push_back(insideAlgo::lbd_calculation_count-initial_lbd_calculation_count); // record LBD calculation count for child1
@@ -158,6 +163,11 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     // processing right child
     initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     initial_lbd_calculation_time=insideAlgo::lbd_calculation_time;
+
+
+    //this->printFirstStageIX(&child2); // print first stage IX for child2 before calculating LBD
+
+
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-initial_lbd_calculation_time); // record LBD calculation time for child2
     this->LBD_calculation_records.push_back(insideAlgo::lbd_calculation_count-initial_lbd_calculation_count);
@@ -235,7 +245,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
         if (node->node_id==1) { // root node calculation
             node->scenario_LBDs.push_back(scenario_LBD);
         } else { // regular node
-            if (scenario_LBD<node->scenario_LBDs[static_cast<int>(scenario_name)]){
+            if (scenario_LBD<node->scenario_LBDs[static_cast<int>(scenario_name)]){ // scenario LBD should be improved otherwise there is a numercial issue
                 scenario_LBD=node->scenario_LBDs[static_cast<int>(scenario_name)];
             }else{
                 node->scenario_LBDs[static_cast<int>(scenario_name)] = scenario_LBD;
@@ -261,7 +271,13 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
     node->LBD = totalLBD;
     return totalLBD;
 }
-
+void outsideAlgo::printFirstStageIX(BBNode* node){
+    std::cout<<"First stage IX for node "<<node->node_id<<": ";
+    for (const auto& interval : node->first_stage_IX) {
+        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] ";
+    }
+    std::cout<<std::endl;
+}
 double outsideAlgo::solve(double tolerance) {
     auto start = std::chrono::high_resolution_clock::now();
     int initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
@@ -381,7 +397,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 continue; // rebranch on the same variable again further split
             }else{
                 // left child is infeasible, right child improve
-                if (this->bestUBDforInfinity){
+                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
                     node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range);
                 }else{
                     node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range);
@@ -397,7 +413,8 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 continue; // rebranch on the same variable again further split
             }else{
                 // right child is infeasible, left child improve
-                if (this->bestUBDforInfinity){
+                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
+                    // right child is infeasible, left child UBD is inf then we have to do zero improve
                     node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 }else{
                     node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range);
@@ -443,7 +460,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
 
             }else{
                 // left child is infeasible, right child improve
-                if (this->bestUBDforInfinity){
+                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
                     node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), original_UBD-original_LBD, right_LBD-original_LBD,range);
                 }else{
                     node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, right_LBD-original_LBD,range);
@@ -458,8 +475,9 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 continue; // rebranch on the same variable again further split
             }else{
                 // right child is infeasible, left child improve
-                if (this->bestUBDforInfinity){
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, original_UBD-original_LBD,range);
+                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
+                    // right child is infeasible, left child UBD is inf then we have to do zero improve
+                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, original_UBD-original_LBD,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 }else{
                     node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, 0,range);
                 }
@@ -483,7 +501,6 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             min_weight=weight[0].second;
         }
     }
-    std::cout<<"Minimum non-zero improve among all branches: "<<min_weight<<std::endl;
     if (min_weight!=INFINITY){
     
         // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
@@ -501,13 +518,10 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             
         // }
     }
-    if ((node->UBD-node->LBD)<=tolerance){
-        std::cout<<"Warning: The gap between UBD and LBD is already smaller than tolerance before branching, no need to branch, exiting strong branching."<<std::endl;
-        return;
-    }
+    // final check to make sure there is no 0 0 weight in the root node after strong branching, if there is still 0 0 weight then there must be a bug in the code because that means all branches of the root node have 0 improve which should not happen
     for (auto& weight: this->activeNodes[0].branchheuristic.weights){
         if (weight[0].first==0 && weight[0].second==0){
-            throw std::runtime_error("Error: All branches of the root node have 0 improve, this should not happen, please check the model formulation or consider setting bestUBDforInfinity to true to avoid this issue.");
+            throw std::runtime_error("Error: All branches of the root node have 0 improve, this should not happen");
         };
     }
     
@@ -541,36 +555,43 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     
     }
     double before_LBD_time=insideAlgo::lbd_calculation_time;
+
+
+  
+
+
     this->calculateLBD(&child1, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time); // record LBD calculation time for child1
     double before_LBD_time2=insideAlgo::lbd_calculation_time;
+
+
+
+
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
 
     if (child1.LBD != INFINITY){
         this->calculateUBD(&child1, tolerance);
+    }else{
+        child1.UBD=INFINITY;
     }
     if (child2.LBD != INFINITY){
         this->calculateUBD(&child2, tolerance);
+    }else{
+        child2.UBD=INFINITY;
     }
 
     if (child1.LBD == INFINITY){
         // left child is infeasible, right child infeasible
         if (child2.LBD == INFINITY){
             // no need to update heuristic if both child are infeasible
-            std::cout<<"Both child are infeasible after branching on variable index "<<branch_idx<<std::endl;
             this->activeNodes.erase(this->activeNodes.begin() + idx);
             return branch_idx;
         }else{
             // left child is infeasible, right child improve
 
-            if (this->bestUBDforInfinity){
-                if (this->bestUBD == INFINITY){ // if bestUBD is infinity, we cannot update heuristic with bestUBD, no idea why this happend
-                    this->activeNodes.erase(this->activeNodes.begin() + idx);
-                    std::cout<<"Warning: bestUBD is infinity, cannot update heuristic with bestUBD, exiting"<<std::endl;
-                    return branch_idx;
+            if (this->bestUBDforInfinity && this->bestUBD!=INFINITY){ // if bestUBDforInfinity is true and bestUBD is not infinity, then we can update heuristic with bestUBD, otherwise we cannot update heuristic with bestUBD because it is infinity which will cause numerical issue
 
-                }
                 child1.branchheuristic.updateWeights(branch_idx,
                     this->bestUBD-original_LBD, (child2.LBD - original_LBD),range);
                 child2.branchheuristic.updateWeights(branch_idx,
@@ -585,7 +606,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
         
     }else if (child2.LBD == INFINITY){
         // right child is infeasible, left child improve
-        if (this->bestUBDforInfinity){
+        if (this->bestUBDforInfinity && this->bestUBD!=INFINITY){
             child1.branchheuristic.updateWeights(branch_idx,
             (child1.LBD - original_LBD), this->bestUBD-original_LBD,range);
             child2.branchheuristic.updateWeights(branch_idx,
@@ -639,6 +660,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-8);
 
         //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
@@ -650,7 +672,9 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         if (cplex.getStatus() == IloAlgorithm::Optimal) {
             node->LBD= cplex.getObjValue();
         }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
-                node->LBD=INFINITY; // assign big number for infeasibility
+            node->LBD=INFINITY; // assign big number for infeasibility
+        } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+            node->LBD = INFINITY;
         }
         env.end();
     } catch (IloException& e) {
@@ -724,7 +748,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             GRBModel grbmodel = GRBModel(env);
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
+            grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-9);
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-9); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
@@ -769,7 +794,16 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         throw std::runtime_error("Unsupported UBD solver");
     }
 }
+void insideAlgo::printFirstStageIX(xBBNode* node){
+    //leave empty for inside algo since we don't have first stage IX record for inside algo, we can add this in the future if needed
+}
+void insideAlgo::printSecondStageIX(xBBNode* node){
 
+    for (const auto& interval : node->second_stage_IX) {
+        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] ";
+    }
+    std::cout<<std::endl;
+}
 double insideAlgo::solve(double tolerance) {
 
     // std::cout<<"Calculating LBD for Scenario "<<static_cast<int>(this->scenario_name)<<std::endl;
@@ -779,7 +813,7 @@ double insideAlgo::solve(double tolerance) {
 
 
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time - before_root_lbd_calculation_time); // record LBD calculation time for root node
-    if (this->bestUBD==INFINITY || this->worstLBD==INFINITY){
+    if (this->worstLBD==INFINITY){
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
         return INFINITY;
     }
@@ -819,13 +853,16 @@ double insideAlgo::solve(double tolerance) {
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance);
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
-        //std::cout<<"Branching variable index: "<<branch_var_idx<<std::endl;
+        if (this->worstLBD>this->bestUBD){
+            throw std::runtime_error("Warning: Worst LBD is greater than best UBD, this should not happen, there might be a bug in the code");
+        }
 
         this->fathomNodes(this->bestUBD);
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
         this->LBD_values_records.push_back(this->worstLBD); // record LBD value for worst node
-        if (this->worstLBD==INFINITY || this->bestUBD==INFINITY){
+        if (this->worstLBD==INFINITY){
+            std::cout<<"asd"<<std::endl;
             return INFINITY;
         }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
