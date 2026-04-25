@@ -73,12 +73,14 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
         std::vector<double> score_list;
         for (size_t i = 0; i < first_stage_IX.size(); ++i) {
             double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i);
+            pseudo_cost=std::round(pseudo_cost * 1e2) / 1e2; // round to 2 decimal places
             score_list.push_back(pseudo_cost);
             if (largest_score < pseudo_cost){
                 largest_score = pseudo_cost;
                 max_idx = i;
             }
-        }
+
+        }   
     }else if (this->strategy == BranchingStrategy::relwidth) {
         // Relative width branching logic can be implemented here
 
