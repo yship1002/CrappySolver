@@ -571,12 +571,12 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
 
     if (child1.LBD != INFINITY){
-        //this->calculateUBD(&child1, tolerance);
+        //this->calculateUBD(&child1, tolerance); // just use global gurobi if ipopt just commetn in
     }else{
         child1.UBD=INFINITY;
     }
     if (child2.LBD != INFINITY){
-        //this->calculateUBD(&child2, tolerance);
+        //this->calculateUBD(&child2, tolerance); // just use global gurobi
     }else{
         child2.UBD=INFINITY;
     }
@@ -813,7 +813,7 @@ double insideAlgo::solve(double tolerance) {
 
 
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time - before_root_lbd_calculation_time); // record LBD calculation time for root node
-    if (this->worstLBD==INFINITY){
+    if (this->worstLBD==INFINITY || this->bestUBD==INFINITY){ // if root node is infeasible or the provided UBD is infeasible, then we can terminate immediately
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
         return INFINITY;
     }
@@ -862,7 +862,6 @@ double insideAlgo::solve(double tolerance) {
         this->bestUBD = this->getBestUBD();
         this->LBD_values_records.push_back(this->worstLBD); // record LBD value for worst node
         if (this->worstLBD==INFINITY){
-            std::cout<<"asd"<<std::endl;
             return INFINITY;
         }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
