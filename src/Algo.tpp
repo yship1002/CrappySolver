@@ -52,7 +52,6 @@ outsideAlgo::outsideAlgo(STModel* model,double provided_UBD,UBDSolver solver) : 
     this->bestUBD = provided_UBD;
     this->activeNodes.push_back(BBNode(model->first_stage_IX,model->second_stage_IX,model->branching_strategy));
 
-
 }
 double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
     double new_LBD=0.0;
@@ -66,8 +65,8 @@ double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
     return new_LBD;
 }
 void outsideAlgo::strongbranching(BBNode* node,double tolerance){
-    double original_LBD=node->LBD;
-    double original_UBD=node->UBD;
+    double original_LBD=this->worstLBD;
+    double original_UBD=this->bestUBD;
     int iterator=0;
     while (iterator < node->first_stage_IX.size()) { // use while loop to allow restrongbranching when infeasibility detected
         BBNode child1 = *node;
