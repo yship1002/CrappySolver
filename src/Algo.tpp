@@ -630,9 +630,9 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
     if (this->solve_full_model_flag == solveFullmodel::no){
         this->model->buildDAG();
     }else{
-        node->UBD = this->provided_UBD;
-        return node->UBD;
-        // this->model->buildFullModelDAG();
+        // node->UBD = this->provided_UBD;
+        // return node->UBD;
+        this->model->buildFullModelDAG();
     }
 
     if (this->ubd_solver == UBDSolver::IPOPT){
@@ -673,6 +673,11 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
             return node->UBD;
         }
         else if (status == Ipopt::Infeasible_Problem_Detected)
+        {
+            node->UBD = INFINITY;
+            return node->UBD;
+        }
+        else
         {
             node->UBD = INFINITY;
             return node->UBD;

@@ -3,7 +3,7 @@
 #include <thread>
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/Ex844.h>
+#include <Crappy_Fuzzy_Problem_Library/CHPModel.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -43,16 +43,16 @@ int main(int argc, char* argv[]) {
     //Ex844:0.332724(3s) 0.325313529673937(10s) 0.325313529673937(20s,30s) 200
     //CrudeModel: -19658.3 (121) -19204.1(12121) -18842.4(1212121212) 500
     // Ex722:   -0.352759(10s) 200
-    Ex844Model model(BranchingStrategy::pseudo);
+    CHPModel model(BranchingStrategy::pseudo);
 
     //outsideAlgo CZalgo(&model,0.325313529673937*1000,UBDSolver::IPOPT); // provide UBD for outer layer
     
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,0.325313529673937*1000,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
-    //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,0.325313529673937*1000,solveFullmodel::yes,UBDSolver:: GUROBI); // provide UBD for outer layer
+    std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
-    CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(0.3); // relgap=0.1% tolerance, abs=1
+    //CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
+    //CZalgo.solve(0.3); // relgap=0.1% tolerance, abs=1
 
     // {
     //     std::ofstream os(Tracker::file_name);
