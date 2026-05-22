@@ -39,13 +39,8 @@ file(GLOB src_SOURCES
     "${PROJ_ROOT}/src/*.cpp"
 )
 file(GLOB EXAMPLE_SOURCES
-    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/STModel.cpp"
-    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/Ex844.cpp"
-    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/CrudeModel.cpp"
-    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/ProcessModel.cpp"
-    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/Ex722.cpp"
+    "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/*.cpp"
 )
-
 add_executable(${EXECUTABLE_NAME}
     "${PROJ_ROOT}/test.cpp"
     ${src_SOURCES}

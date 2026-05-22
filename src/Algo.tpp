@@ -759,7 +759,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
                 double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
                 node->UBD = objval;
                 // std::cout << "Optimized solution values: "<<objval<<std::endl;
-                // for (int i = 0; i <200; ++i) {
+                // for (int i = 0; i <6; ++i) {
                 //     std::string auxName = "x" + std::to_string(i);
                         
                 //         // 1. Get the variable object
