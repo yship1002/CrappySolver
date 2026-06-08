@@ -44,12 +44,12 @@ int main(int argc, char* argv[]) {
     //CrudeModel: -19658.3 (121) -19204.1(12121) -18842.4(1212121212) 500
     // Ex722:   -0.352759(10s) 200
     // CHPsize: 3.03*1000 (8s)
-    // EDUnits:UBD:57608.7
+    // EDUnits:UBD:66235.6
     EDUnits model(BranchingStrategy::relwidth);
 
     //outsideAlgo CZalgo(&model,3.03*1000,UBDSolver::GUROBI); // provide UBD for outer layer
     
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,3.03*1000,solveFullmodel::yes,UBDSolver:: GUROBI); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,3.03*1000,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
     std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
