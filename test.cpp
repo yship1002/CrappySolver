@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     //CrudeModel: -19658.3 (121) -19204.1(12121) -18842.4(1212121212) 500
     // Ex722:   -0.352759(10s) 200
     // CHPsize: 3.03*1000 (8s)
-    // EDUnits:UBD:66235.6
+    // EDUnits:UBD:59363
     EDUnits model(BranchingStrategy::relwidth);
 
     //outsideAlgo CZalgo(&model,3.03*1000,UBDSolver::GUROBI); // provide UBD for outer layer
