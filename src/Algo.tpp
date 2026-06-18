@@ -659,9 +659,9 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-8);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-2);
 
-        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
         cplex.solve();
@@ -672,6 +672,27 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
             node->LBD= cplex.getObjValue();
         }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
             node->LBD=INFINITY; // assign big number for infeasibility
+                        // ── Conflict Refiner ──────────────────────────────────────────────
+            // cplex.setOut(std::cout);
+            // IloConstraintArray conflicts(env);
+            // IloNumArray priorities(env);
+            
+            // for (IloInt i = 0; i < c.getSize(); ++i) { conflicts.add(c[i]); priorities.add(1.0); }
+
+            // if (cplex.refineConflict(conflicts, priorities)) {
+            //     std::cerr << "===== CONFLICT REPORT =====\n";
+ 
+            //     for (IloInt i = 0; i < c.getSize(); ++i) {
+            //         auto st = cplex.getConflict(c[i]);
+            //         if (st == IloCplex::ConflictMember || st == IloCplex::ConflictPossibleMember)
+            //             std::cerr << "  CON [" << i+1 << "] " << (c[i].getName() ? c[i].getName() : "?")
+            //                     << " lb=" << c[i].getLB() << " ub=" << c[i].getUB() << "\n";
+            //     }
+            //     std::cerr << "===========================\n";
+            // } else {
+            //     std::cerr << "[ConflictRefiner] Could not identify conflict (likely numerical).\n";
+            // }
+            // ─────────────────────────────────────────────────────────────────
         } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
             node->LBD = INFINITY;
         }
