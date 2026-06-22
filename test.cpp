@@ -1,6 +1,6 @@
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/EDUnits.h>
+#include <Crappy_Fuzzy_Problem_Library/EDUnits_nocp.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -19,7 +19,8 @@ int main(int argc, char* argv[]) {
     //Ex722:   -0.352759(10s)
     // CHPSIze:3.03*1000
     //Edunits:59363
-    EDUnits model(BranchingStrategy::pseudo);
+    //edunits_nocp:56844
+    EDUnits_nocp model(BranchingStrategy::pseudo);
 
     //outsideAlgo CZalgo(&model,59363,UBDSolver::IPOPT); // provide UBD for outer layer
     insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-9,false,UBDSolver:: IPOPT); // provide UBD for outer layer

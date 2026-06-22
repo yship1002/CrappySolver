@@ -729,7 +729,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
         app->Options()->SetNumericValue("tol", 1e-9);           // Optimality tolerance
-        app->Options()->SetNumericValue("constr_viol_tol", 1e-9);  // Constraint feasibility
+        app->Options()->SetNumericValue("constr_viol_tol", 1e-2);  // Constraint feasibility
         app->Options()->SetNumericValue("compl_inf_tol", 1e-9);    // Complementarity tolerance
         app->Options()->SetIntegerValue("print_level", 0);
         app->Options()->SetStringValue("sb", "yes");
