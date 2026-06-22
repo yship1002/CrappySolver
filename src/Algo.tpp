@@ -653,9 +653,9 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
     if (this->solve_full_model_flag == solveFullmodel::no){
         this->model->buildDAG();
     }else{
-        //node->UBD = this->provided_UBD;
-        //return node->UBD;
-        this->model->buildFullModelDAG();
+        node->UBD = this->provided_UBD;
+        return node->UBD;
+        //this->model->buildFullModelDAG();
     }
 
     if (this->ubd_solver == UBDSolver::IPOPT){
@@ -664,8 +664,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
         app->Options()->SetNumericValue("tol", 1e-9);           // Optimality tolerance
-        app->Options()->SetNumericValue("constr_viol_tol", 1e-9);  // Constraint feasibility
-        app->Options()->SetNumericValue("compl_inf_tol", 1e-9);    // Complementarity tolerance
+        app->Options()->SetNumericValue("constr_viol_tol", 1e-2);  // Constraint feasibility
+        app->Options()->SetNumericValue("compl_inf_tol", 1e-2);    // Complementarity tolerance
         app->Options()->SetIntegerValue("print_level", 0);
         app->Options()->SetStringValue("sb", "yes");
         app->Options()->SetStringValue("hessian_approximation", "limited-memory");
