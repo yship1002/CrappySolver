@@ -661,7 +661,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-2);
 
-        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
         cplex.solve();
@@ -728,7 +728,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         STModel* sm = dynamic_cast<STModel*>(Ipopt::GetRawPtr(mynlp));
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
-        app->Options()->SetNumericValue("tol", 1e-9);           // Optimality tolerance
+        app->Options()->SetNumericValue("tol", 1e-4);           // Optimality tolerance
         app->Options()->SetNumericValue("constr_viol_tol", 1e-2);  // Constraint feasibility
         app->Options()->SetNumericValue("compl_inf_tol", 1e-9);    // Complementarity tolerance
         app->Options()->SetIntegerValue("print_level", 0);
@@ -886,7 +886,7 @@ double insideAlgo::solve(double tolerance) {
         }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
         
-        //std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
     }
