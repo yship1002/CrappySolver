@@ -596,7 +596,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranc
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-2);
 
-        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
         cplex.solve();
 
