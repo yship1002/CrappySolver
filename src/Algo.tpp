@@ -730,11 +730,12 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
         app->Options()->SetNumericValue("tol", 1e-4);           // Optimality tolerance
         app->Options()->SetNumericValue("constr_viol_tol", 1e-2);  // Constraint feasibility
-        app->Options()->SetNumericValue("compl_inf_tol", 1e-9);    // Complementarity tolerance
+        app->Options()->SetNumericValue("compl_inf_tol", 1e-4);    // Complementarity tolerance
         app->Options()->SetIntegerValue("print_level", 0);
+        app->Options()->SetIntegerValue("max_iter", 10000); 
         app->Options()->SetStringValue("sb", "yes");
         app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-        app->Options()->SetStringValue("mu_strategy", "monotone");
+        app->Options()->SetStringValue("mu_strategy", "adaptive");
 
         //app->Options()->SetStringValue("output_file", "/Users/jyang872/Desktop/CrappySolver/ipopt.out");
         Ipopt::ApplicationReturnStatus status;
@@ -752,6 +753,15 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         if( status == Ipopt::Solve_Succeeded )
         {
             node->UBD = sm->solution.f[0];
+
+            // <--------------- print solution
+            // int i=0;
+            // for (auto v: sm->solution.x) {
+            //     std::cout <<"x["<<i<<"]: "<<v<<std::endl;
+            //     i++;
+            // }
+
+
             return node->UBD;
         }
         else if (status == Ipopt::Infeasible_Problem_Detected)
