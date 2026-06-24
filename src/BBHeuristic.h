@@ -14,6 +14,7 @@ class BBHeuristic {
         BBHeuristic(const BBHeuristic& other)=default;
         BBHeuristic()=default; // default constructor
         BranchingStrategy strategy;
+        int static branch_counter;
 
         std::vector<mc::Interval> initial_first_stage_IX;
         std::vector<mc::Interval> initial_second_stage_IX;

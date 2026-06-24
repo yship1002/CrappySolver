@@ -16,6 +16,23 @@ BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX){
     int max_idx = 0;
+    // if  (BBHeuristic::branch_counter>33)
+    // {   
+    //     std::cout<<"Now force branching on first stage variable with largest relative width"<<std::endl;
+    //     double largest_ratio=0;
+    //     for (size_t i = 0; i < first_stage_IX.size(); ++i) {
+    //         double ratio = (first_stage_IX[i].u() - first_stage_IX[i].l()) / (this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
+    //         if (ratio > largest_ratio) {
+    //             largest_ratio = ratio;
+    //             max_idx = static_cast<int>(i);
+    //         }
+    //     }
+    //     BBHeuristic::branch_counter=0;
+    //     return max_idx;
+    // }else{
+    //     BBHeuristic::branch_counter++;
+    // }
+    
 
     std::vector<double> score_list;
     if (this->strategy == BranchingStrategy::pseudo) {

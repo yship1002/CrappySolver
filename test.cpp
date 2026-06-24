@@ -22,6 +22,8 @@ std::vector<double> Tracker::strong_branching_lbd_calculation_time={};
 std::vector<double> Tracker::LBD_value_records={}; 
 std::string Tracker::file_name="test.json"; 
 static volatile std::sig_atomic_t terminate_flag = 0;
+
+int BBHeuristic::branch_counter=0;
 void handle_signal(int)
 {
     terminate_flag = 1;
