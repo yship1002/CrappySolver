@@ -473,6 +473,12 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             weight[0].second=min_weight;
         };
     }
+    // <-------------------- print weights for debugging
+    // int i=0;
+    // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    //     std::cout<<"Idx: "<<i<<" Weight: "<<weight[0].first<<" "<<weight[0].second<<std::endl;
+    //     i++;
+    // }
     
 }
 int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag) {
