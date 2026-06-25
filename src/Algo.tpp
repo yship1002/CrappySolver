@@ -392,6 +392,13 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
         }else{
             // both child are feasible
+            // only for EDUnits when both child show 0 improve use UBD to update pseudocost
+            // if (left_LBD-original_LBD<1e-4 && right_LBD-original_LBD<1e-4){
+            //     node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, original_UBD-original_LBD,range);
+            // }else{
+            //     node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range);
+            // }
+
             node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range);
         }
 
@@ -453,12 +460,20 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             node->second_stage_IX[iterator] = mc::Interval(node->second_stage_IX[iterator].l(),branch_point);
         }else{
             // both child are feasible
+            // only for EDUnits when both child show 0 improve use UBD to update pseudocost
+            // if (left_LBD-original_LBD<1e-4 && right_LBD-original_LBD<1e-4){
+            //     node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), original_UBD-original_LBD, original_UBD-original_LBD,range);
+            // }else{
+            //     node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, right_LBD-original_LBD,range);
+            // }
             node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, right_LBD-original_LBD,range);
+
+
         }
 
         iterator++;
     }
-        // if there are 0 0 improve in any first stage weigts
+    // if there are 0 0 improve in any first stage weigts
     double min_weight=INFINITY;
     for (auto& weight: this->activeNodes[0].branchheuristic.weights){
         double lower_weight=std::min(weight[0].first,weight[0].second);
@@ -576,6 +591,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
     this->activeNodes.erase(this->activeNodes.begin() + idx);
     this->activeNodes.push_back(child1);
     this->activeNodes.push_back(child2);
+    std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl;
     return branch_idx;
 }
 double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranching flag) {
