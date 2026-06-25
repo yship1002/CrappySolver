@@ -53,14 +53,6 @@ int main(int argc, char* argv[]) {
     //outsideAlgo CZalgo(&model,3.03*1000,UBDSolver::GUROBI); // provide UBD for outer layer
     
     insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,56844,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
-    
-    // <--------------------------- strong branching
-    // CZalgo.strongbranching(&(CZalgo.activeNodes[0]), 0.1);
-    // int i=0;
-    // for (const auto& weight : CZalgo.activeNodes[0].branchheuristic.weights) {
-    //     std::cout << "idx: " << i << ", First: " << weight[0].first << ", Second: " << weight[0].second << std::endl;
-    //     i++;
-    // }
 
 
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible

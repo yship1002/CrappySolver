@@ -511,6 +511,12 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
     }
     this->calculateLBD(&child1, tolerance,flag);
     this->calculateLBD(&child2, tolerance,flag);
+    if (child1.LBD< original_LBD){
+        child1.LBD=original_LBD; // if child LBD is less than parent LBD, set it to parent LBD, this is to avoid negative improve which will cause negative pseudocost update
+    }
+    if (child2.LBD< original_LBD){
+        child2.LBD=original_LBD; // if child LBD is less than parent LBD, set it to parent LBD, this is to avoid negative improve which will cause negative pseudocost update
+    }
 
     this->calculateUBD(&child1, tolerance,flag);
     this->calculateUBD(&child2, tolerance,flag);
@@ -669,13 +675,14 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
         STModel* sm = dynamic_cast<STModel*>(Ipopt::GetRawPtr(mynlp));
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
-        app->Options()->SetNumericValue("tol", 1e-9);           // Optimality tolerance
+        app->Options()->SetNumericValue("tol", 1e-4);           // Optimality tolerance
         app->Options()->SetNumericValue("constr_viol_tol", 1e-2);  // Constraint feasibility
         app->Options()->SetNumericValue("compl_inf_tol", 1e-2);    // Complementarity tolerance
+        app->Options()->SetIntegerValue("max_iter", 10000); 
         app->Options()->SetIntegerValue("print_level", 0);
         app->Options()->SetStringValue("sb", "yes");
         app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-        app->Options()->SetStringValue("mu_strategy", "monotone");
+        app->Options()->SetStringValue("mu_strategy", "adaptive");
 
         Ipopt::ApplicationReturnStatus status;
         status = app->Initialize();
@@ -698,11 +705,11 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
         if( status == Ipopt::Solve_Succeeded )
         {
             node->UBD = sm->solution.f[0];
-            // int i=0;
-            // for (auto x : sm->solution.x) {
-            //     std::cout << "x[" << i << "]: " << x << std::endl;
-            //     i++;
-            // }
+            int i=0;
+            for (auto x : sm->solution.x) {
+                std::cout << "x[" << i << "]: " << x << std::endl;
+                i++;
+            }
             return node->UBD;
         }
         else if (status == Ipopt::Infeasible_Problem_Detected)
@@ -724,8 +731,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
             GRBModel grbmodel = GRBModel(env);
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
-            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-2); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
+            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-4);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
 
