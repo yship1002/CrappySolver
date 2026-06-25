@@ -569,6 +569,17 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
 
+
+
+    if (child1.LBD<original_LBD){
+        child1.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
+    }
+    if (child2.LBD<original_LBD){
+        child2.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
+    }
+
+
+    
     if (child1.LBD != INFINITY){
         //this->calculateUBD(&child1, tolerance); // just use global gurobi if ipopt just commetn in
     }else{
