@@ -492,7 +492,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     }
         // if there are 0 0 improve in any first stage weigts
     double min_weight=INFINITY;
-    for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    for (auto& weight: node->branchheuristic.weights){
         if (weight[0].first!=0 && weight[0].first<min_weight){
             min_weight=weight[0].first;
         }
@@ -503,7 +503,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     if (min_weight!=INFINITY){
     
         // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
-        for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+        for (auto& weight: node->branchheuristic.weights){
             if (weight[0].first==0 && weight[0].second==0){
                 weight[0].first=min_weight;
                 weight[0].second=min_weight;
@@ -518,11 +518,14 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
         // }
     }
     // final check to make sure there is no 0 0 weight in the root node after strong branching, if there is still 0 0 weight then there must be a bug in the code because that means all branches of the root node have 0 improve which should not happen
-    for (auto& weight: this->activeNodes[0].branchheuristic.weights){
-        if (weight[0].first==0 && weight[0].second==0){
-            throw std::runtime_error("Error: All branches of the root node have 0 improve, this should not happen");
-        };
-    }
+    // for (auto& weight: node->branchheuristic.weights){
+    //     if (weight[0].first==0 && weight[0].second==0){
+    //         throw std::runtime_error("Error: All branches of the root node have 0 improve, this should not happen");
+    //     };
+    // }
+    // for (auto& weight: node->branchheuristic.weights){
+    //     std::cout<<"Branching variable weights: ("<<weight[0].first<<","<<weight[0].second<<")"<<std::endl;
+    // }
     
 }
 int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {

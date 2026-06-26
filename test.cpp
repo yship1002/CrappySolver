@@ -1,6 +1,6 @@
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/EDUnits_nocp.h>
+#include <Crappy_Fuzzy_Problem_Library/EDUnits.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -20,10 +20,10 @@ int main(int argc, char* argv[]) {
     // CHPSIze:3.03*1000
     //Edunits:59363
     //edunits_nocp:56844
-    EDUnits_nocp model(BranchingStrategy::pseudo);
+    EDUnits model(BranchingStrategy::pseudo);
 
-    outsideAlgo CZalgo(&model,56844,UBDSolver::IPOPT); // provide UBD for outer layer
-    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO3,-9,false,UBDSolver:: IPOPT); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,59363,UBDSolver::IPOPT); // provide UBD for outer layer
+    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO2,-9,false,UBDSolver:: IPOPT); // provide UBD for outer layer
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
