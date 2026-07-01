@@ -330,10 +330,15 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
     }
     this->activeNodes.push_back(xBBNode(this->model->first_stage_IX,this->model->second_stage_IX,
         this->model->branching_strategy,this->scenario_name));
+    BBHeuristic::weights.resize(this->model->first_stage_IX.size()+this->model->second_stage_IX.size());
+    for (auto& weight_vector : BBHeuristic::weights) {
+        weight_vector.push_back(std::make_pair(0.0, 0.0));
+    }
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
-
+    // initialize original LBD and UBD for the node
+    
     double original_LBD=node->LBD;
     double original_UBD=node->UBD;
     int iterator=0;
@@ -474,20 +479,20 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
         iterator++;
     }
     // if there are 0 0 improve in any first stage weigts
-    double min_weight=INFINITY;
-    for (auto& weight: this->activeNodes[0].branchheuristic.weights){
-        double lower_weight=std::min(weight[0].first,weight[0].second);
-        if (lower_weight!=0 && lower_weight<min_weight){
-            min_weight=lower_weight;
-        }
-    }
-    // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
-    for (auto& weight: this->activeNodes[0].branchheuristic.weights){
-        if (weight[0].first==0 && weight[0].second==0){
-            weight[0].first=min_weight;
-            weight[0].second=min_weight;
-        };
-    }
+    // double min_weight=INFINITY;
+    // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    //     double lower_weight=std::min(weight[0].first,weight[0].second);
+    //     if (lower_weight!=0 && lower_weight<min_weight){
+    //         min_weight=lower_weight;
+    //     }
+    // }
+    // // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
+    // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    //     if (weight[0].first==0 && weight[0].second==0){
+    //         weight[0].first=min_weight;
+    //         weight[0].second=min_weight;
+    //     };
+    // }
     // <-------------------- print weights for debugging
     // int i=0;
     // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
@@ -501,6 +506,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
     if (original_LBD==INFINITY){
         throw std::runtime_error("Should not branch on infeasible node");
     }
+    std::cout<<"Branching on node idx: "<<idx<<" Size: "<<this->activeNodes.size()<<std::endl;
     xBBNode child1 = this->activeNodes[idx]; // Copy current node
     xBBNode child2 = this->activeNodes[idx]; // Copy current node
     double range;

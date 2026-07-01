@@ -14,12 +14,14 @@ class BBHeuristic {
         BBHeuristic(const BBHeuristic& other)=default;
         BBHeuristic()=default; // default constructor
         BranchingStrategy strategy;
-        int static branch_counter;
+        static int branch_counter;
 
         std::vector<mc::Interval> initial_first_stage_IX;
         std::vector<mc::Interval> initial_second_stage_IX;
+        std::vector<double> score_list; // store the score for each variable in the current node
 
-        std::vector<std::vector<std::pair<double,double>>> weights;// combing first stage and second stage(if has)
+        static std::vector<std::vector<std::pair<double,double>>> weights;// combing first stage and second stage(if has)
+
 
         double mu=1.0/6.0;  // percentage of bigger improvement to consider in pseudo cost update(0-1)
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,

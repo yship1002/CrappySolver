@@ -22,7 +22,7 @@ std::vector<double> Tracker::strong_branching_lbd_calculation_time={};
 std::vector<double> Tracker::LBD_value_records={}; 
 std::string Tracker::file_name="test.json"; 
 static volatile std::sig_atomic_t terminate_flag = 0;
-
+std::vector<std::vector<std::pair<double,double>>> BBHeuristic::weights;
 int BBHeuristic::branch_counter=0;
 void handle_signal(int)
 {
@@ -53,8 +53,7 @@ int main(int argc, char* argv[]) {
     //outsideAlgo CZalgo(&model,3.03*1000,UBDSolver::GUROBI); // provide UBD for outer layer
     
     insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,56844,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
-
-
+    
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
