@@ -65,6 +65,7 @@ double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
     return new_LBD;
 }
 void outsideAlgo::strongbranching(BBNode* node,double tolerance){
+    BBHeuristic::outside_weights.resize(node->first_stage_IX.size());
     double original_LBD=this->worstLBD;
     double original_UBD=this->bestUBD;
     int iterator=0;
@@ -95,9 +96,9 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
             }else{
                 // left child is infeasible, right child improve
                 if (this->bestUBDforInfinity){
-                    node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::NO);
                 }else{
-                    node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range,USE_inside_weights::NO);
                 }
             }
             // reduce range
@@ -110,16 +111,16 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
             }else{
                 // right child is infeasible, left child improve
                 if (this->bestUBDforInfinity){
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range,USE_inside_weights::NO);
                 }else{
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range);
+                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range,USE_inside_weights::NO);
                 }
             }
             // reduce range
             node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
         }else{
             // both child are feasible
-            node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range);
+            node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::NO);
         }
 
         iterator++;
@@ -186,14 +187,14 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
             // left child is infeasible, right child improve
             if (this->bestUBDforInfinity){
                 child1.branchheuristic.updateWeights(branch_idx,
-                            this->bestUBD-original_LBD, (child2.LBD - original_LBD),range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                            this->bestUBD-original_LBD, (child2.LBD - original_LBD),range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 child2.branchheuristic.updateWeights(branch_idx,
-                            this->bestUBD-original_LBD, (child2.LBD - original_LBD),range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                            this->bestUBD-original_LBD, (child2.LBD - original_LBD),range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
             }else{
                 child1.branchheuristic.updateWeights(branch_idx,
-                    0, (child2.LBD - original_LBD),range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                    0, (child2.LBD - original_LBD),range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 child2.branchheuristic.updateWeights(branch_idx,
-                    0, (child2.LBD - original_LBD),range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                    0, (child2.LBD - original_LBD),range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
         
             }
         }
@@ -201,22 +202,22 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
         // right child is infeasible, left child improve
         if (this->bestUBDforInfinity){
             child1.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
             child2.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
         }else{
 
             child1.branchheuristic.updateWeights(branch_idx,
-                (child1.LBD - original_LBD), 0,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                (child1.LBD - original_LBD), 0,range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
             child2.branchheuristic.updateWeights(branch_idx,
-                (child1.LBD - original_LBD), 0,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                (child1.LBD - original_LBD), 0,range,USE_inside_weights::NO); // set to bestUBD of this subproblem to avoid infitinity pseducost update
         }
     }else{
         // both child are feasible
         child1.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range);
+            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range,USE_inside_weights::NO);
         child2.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range);
+            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range,USE_inside_weights::NO);
     }
 
     this->activeNodes.erase(this->activeNodes.begin() + idx);
@@ -363,6 +364,8 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
+    BBHeuristic::inside_weights.clear(); // clear the inside weights before starting the algorithm
+    BBHeuristic::inside_weights.resize(node->first_stage_IX.size()+node->second_stage_IX.size()); // resize the inside weights to the number of variables in the node
 
     double original_LBD=node->LBD;
     double original_UBD=node->UBD;
@@ -371,7 +374,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     while (iterator < node->first_stage_IX.size()) { 
         if (node->first_stage_IX[iterator].u() - node->first_stage_IX[iterator].l() < 1e-5){
              // if that variable is fixed then skip strong branching on that variable
-            node->branchheuristic.updateWeights(iterator, 0, 0,1); // update pseudocost to avoid branching on this variable again
+            node->branchheuristic.updateWeights(iterator, 0, 0,1,USE_inside_weights::YES); // update pseudocost to avoid branching on this variable again
             iterator++;
             continue;
         }
@@ -397,9 +400,9 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             }else{
                 // left child is infeasible, right child improve
                 if (this->bestUBDforInfinity && original_UBD!=INFINITY){
-                    node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
                 }else{
-                    node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range,USE_inside_weights::YES);
                 }
 
             }
@@ -414,16 +417,16 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 // right child is infeasible, left child improve
                 if (this->bestUBDforInfinity && original_UBD!=INFINITY){
                     // right child is infeasible, left child UBD is inf then we have to do zero improve
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range,USE_inside_weights::YES); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 }else{
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range);
+                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range,USE_inside_weights::YES);
                 }
             }
             // reduce range
             node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
         }else{
             // both child are feasible
-            node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range);
+            node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
         }
 
         iterator++;
@@ -433,7 +436,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     while (iterator < node->second_stage_IX.size()) { 
         if (node->second_stage_IX[iterator].u() - node->second_stage_IX[iterator].l() < 1e-5){
              // if that variable is fixed then skip strong branching on that variable
-            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, 0,1); // update pseudocost to avoid branching on this variable again
+            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, 0,1,USE_inside_weights::YES); // update pseudocost to avoid branching on this variable again
             iterator++;
             continue;
         }
@@ -460,9 +463,9 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             }else{
                 // left child is infeasible, right child improve
                 if (this->bestUBDforInfinity && original_UBD!=INFINITY){
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), original_UBD-original_LBD, right_LBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), original_UBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
                 }else{
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, right_LBD-original_LBD,range);
+                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, right_LBD-original_LBD,range,USE_inside_weights::YES);
                 }
             }
             // reduce range
@@ -476,47 +479,47 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 // right child is infeasible, left child improve
                 if (this->bestUBDforInfinity && original_UBD!=INFINITY){
                     // right child is infeasible, left child UBD is inf then we have to do zero improve
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, original_UBD-original_LBD,range); // set to bestUBD of this subproblem to avoid infitinity pseducost update
+                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, original_UBD-original_LBD,range,USE_inside_weights::YES); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 }else{
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, 0,range);
+                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, 0,range,USE_inside_weights::YES);
                 }
             }
             // reduce range
             node->second_stage_IX[iterator] = mc::Interval(node->second_stage_IX[iterator].l(),branch_point);
         }else{
             // both child are feasible
-            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, right_LBD-original_LBD,range);
+            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
         }
 
         iterator++;
     }
         // if there are 0 0 improve in any first stage weigts
-    double min_weight=INFINITY;
-    for (auto& weight: node->branchheuristic.weights){
-        if (weight[0].first!=0 && weight[0].first<min_weight){
-            min_weight=weight[0].first;
-        }
-        if (weight[0].second!=0 && weight[0].second<min_weight){
-            min_weight=weight[0].second;
-        }
-    }
-    if (min_weight!=INFINITY){
+    // double min_weight=INFINITY;
+    // for (auto& weight: node->branchheuristic.weights){
+    //     if (weight[0].first!=0 && weight[0].first<min_weight){
+    //         min_weight=weight[0].first;
+    //     }
+    //     if (weight[0].second!=0 && weight[0].second<min_weight){
+    //         min_weight=weight[0].second;
+    //     }
+    // }
+    // if (min_weight!=INFINITY){
     
-        // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
-        for (auto& weight: node->branchheuristic.weights){
-            if (weight[0].first==0 && weight[0].second==0){
-                weight[0].first=min_weight;
-                weight[0].second=min_weight;
-            };
-        }
-    }else{
+    //     // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
+    //     for (auto& weight: node->branchheuristic.weights){
+    //         if (weight[0].first==0 && weight[0].second==0){
+    //             weight[0].first=min_weight;
+    //             weight[0].second=min_weight;
+    //         };
+    //     }
+    // }else{
         // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
 
         //     weight[0].first=0.01; // if all branches have 0 improve, set the weight to a small value to encourage branching on that variable, this is a very rare case but we want to avoid 0 weight which will cause no branching on that variable in the future
         //     weight[0].second=0.01;
             
         // }
-    }
+    //}
     // final check to make sure there is no 0 0 weight in the root node after strong branching, if there is still 0 0 weight then there must be a bug in the code because that means all branches of the root node have 0 improve which should not happen
     // for (auto& weight: node->branchheuristic.weights){
     //     if (weight[0].first==0 && weight[0].second==0){
@@ -537,7 +540,8 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     xBBNode child2 = this->activeNodes[idx]; // Copy current node
     double range;
     int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-    
+    std::cout<<"Branching on node index: "<<idx<<" out of "<<this->activeNodes.size()<<std::endl;
+    std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
     if(branch_idx<this->activeNodes[idx].first_stage_IX.size()){
 
         // first stage branching
@@ -559,21 +563,13 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     double before_LBD_time=insideAlgo::lbd_calculation_time;
 
 
-  
-
-
     this->calculateLBD(&child1, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time); // record LBD calculation time for child1
     double before_LBD_time2=insideAlgo::lbd_calculation_time;
 
-
-
-
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
-
-
-
+    std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl;
     if (child1.LBD<original_LBD){
         child1.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
     }
@@ -606,14 +602,14 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
             if (this->bestUBDforInfinity && this->bestUBD!=INFINITY){ // if bestUBDforInfinity is true and bestUBD is not infinity, then we can update heuristic with bestUBD, otherwise we cannot update heuristic with bestUBD because it is infinity which will cause numerical issue
 
                 child1.branchheuristic.updateWeights(branch_idx,
-                    this->bestUBD-original_LBD, (child2.LBD - original_LBD),range);
+                    this->bestUBD-original_LBD, (child2.LBD - original_LBD),range,USE_inside_weights::YES); // set to bestUBD of this subproblem to avoid infitinity pseducost update
                 child2.branchheuristic.updateWeights(branch_idx,
-                    this->bestUBD-original_LBD, (child2.LBD - original_LBD),range);
+                    this->bestUBD-original_LBD, (child2.LBD - original_LBD),range,USE_inside_weights::YES);
             }else{
                 child1.branchheuristic.updateWeights(branch_idx,
-                    0, (child2.LBD - original_LBD),range);
+                    0, (child2.LBD - original_LBD),range,USE_inside_weights::YES);
                 child2.branchheuristic.updateWeights(branch_idx,
-                    0, (child2.LBD - original_LBD),range);
+                    0, (child2.LBD - original_LBD),range,USE_inside_weights::YES);
             }
         }
         
@@ -621,22 +617,22 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
         // right child is infeasible, left child improve
         if (this->bestUBDforInfinity && this->bestUBD!=INFINITY){
             child1.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range);
+            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range,  USE_inside_weights::YES); // set to bestUBD of this subproblem to avoid infitinity pseducost update
             child2.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range);
+            (child1.LBD - original_LBD), this->bestUBD-original_LBD,range,USE_inside_weights::YES);
         }else{
 
             child1.branchheuristic.updateWeights(branch_idx,
-                (child1.LBD - original_LBD), 0,range); 
+                (child1.LBD - original_LBD), 0,range,USE_inside_weights::YES); 
             child2.branchheuristic.updateWeights(branch_idx,
-                (child1.LBD - original_LBD), 0,range);
+                (child1.LBD - original_LBD), 0,range,USE_inside_weights::YES);
         }
     }else{
         // both child are feasible
         child1.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range);
+            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range,USE_inside_weights::YES);
         child2.branchheuristic.updateWeights(branch_idx,
-            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range);
+            (child1.LBD - original_LBD), (child2.LBD - original_LBD),range,USE_inside_weights::YES);
     }
 
 

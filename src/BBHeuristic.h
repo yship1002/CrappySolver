@@ -4,6 +4,7 @@
 #include <Crappy_Fuzzy_Problem_Library/STModel.h>
 #include <vector>
 enum class SCORE_FUNCTION {SUM,MULTIPLY};
+enum class USE_inside_weights { YES, NO };
 class BBHeuristic {
     public:
         BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
@@ -17,8 +18,8 @@ class BBHeuristic {
 
         std::vector<mc::Interval> initial_first_stage_IX;
         std::vector<mc::Interval> initial_second_stage_IX;
-
-        std::vector<std::vector<std::pair<double,double>>> weights;// combing first stage and second stage(if has)
+        static std::vector<std::vector<std::pair<double,double>>> outside_weights;
+        static std::vector<std::vector<std::pair<double,double>>> inside_weights;// combing first stage and second stage(if has)
 
         double mu=1.0/6.0;  // percentage of bigger improvement to consider in pseudo cost update(0-1)
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
@@ -26,9 +27,9 @@ class BBHeuristic {
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX);
         double getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX );
-        void updateWeights(int idx_branched, double left_improve,double right_improv,double range);
+        void updateWeights(int idx_branched, double left_improve,double right_improve,double range,USE_inside_weights use_inside_weights);
         
-        double getPseudoCost(int idx_branched,SCORE_FUNCTION score_function=SCORE_FUNCTION::SUM);
+        double getPseudoCost(int idx_branched,USE_inside_weights use_inside_weights,SCORE_FUNCTION score_function=SCORE_FUNCTION::SUM);
 
 
 
