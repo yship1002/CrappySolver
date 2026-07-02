@@ -71,7 +71,6 @@ class outsideAlgo:public Algo<BBNode>{
 class insideAlgo:public Algo<xBBNode>{
     public:
         insideAlgo(STModel* model,ScenarioNames scenario_name,double provided_UBD=INFINITY,bool solvefullModel=false,UBDSolver solver=UBDSolver::IPOPT);
-        int stuck_counter=0;
         double provided_UBD;
         bool solvefullModel;
         ScenarioNames scenario_name;

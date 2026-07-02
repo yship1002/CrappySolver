@@ -15,17 +15,14 @@ BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX){
     int max_idx = 0;
-    if (BBHeuristic::branching_count>=50){
-        // initialize inside_weights and outside_weights
-        this->strategy=BranchingStrategy::relwidth; // switch to relative width branching after 50 branching
-        BBHeuristic::branching_count=-1; // reset branching count
-    }
+
     std::vector<double> score_list;
     if (this->strategy == BranchingStrategy::pseudo) {
         // Pseudo cost branching logic can be implemented here
         double largest_score=0;
 
         for (size_t i = 0; i < first_stage_IX.size(); ++i) { // go through first stage to get scores
+
             double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i,USE_inside_weights::YES);
             score_list.push_back(pseudo_cost);
             if (largest_score < pseudo_cost){
@@ -35,9 +32,10 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
         }
 
         for (size_t i = 0; i < second_stage_IX.size(); ++i) { // go through second stage to get scores
+            
             double pseudo_cost = (second_stage_IX[i].u() - second_stage_IX[i].l())*this->getPseudoCost(i+first_stage_IX.size(),USE_inside_weights::YES);
             score_list.push_back(pseudo_cost);
-            if (pseudo_cost > largest_score) {
+            if (largest_score < pseudo_cost){
                 largest_score = pseudo_cost;
                 max_idx = static_cast<int>(first_stage_IX.size() + i);
             }
@@ -67,10 +65,7 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
     }
     //std::cout<<"Branching on variable index: "<<max_idx<<std::endl;
     this->score_list=score_list; // store the score list for debugging
-    if (BBHeuristic::branching_count<0){
-        BBHeuristic::branching_count=0;
-        this->strategy=BranchingStrategy::pseudo; // switch back to pseudo cost branching after 50 branching
-    }
+
     return max_idx;
 };
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
@@ -109,11 +104,26 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
 
 
 double BBHeuristic::getBranchingPoint(int idx,std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX ){
+    //return this->LBD_opt_pt[idx]; // return the optimal solution value for the branching variable
     if (idx < first_stage_IX.size()) {
-        return (first_stage_IX[idx].l() + first_stage_IX[idx].u()) / 2.0;
+        if (this->LBD_opt_pt[idx]-first_stage_IX[idx].l() >= 1e-3) {
+            if (first_stage_IX[idx].u()-this->LBD_opt_pt[idx] >= 1e-3){
+                return this->LBD_opt_pt[idx]; // return the optimal solution value for the branching variable
+            }
+            
+        }else{
+            return (first_stage_IX[idx].l() + first_stage_IX[idx].u()) / 2.0; // if the optimal solution is too close to the lower bound, then branch at the midpoint
+        }
     } else {
         int second_stage_idx = idx - first_stage_IX.size();
-        return (second_stage_IX[second_stage_idx].l() + second_stage_IX[second_stage_idx].u()) / 2.0;
+        if (this->LBD_opt_pt[idx]-second_stage_IX[second_stage_idx].l() >= 1e-3) {
+            if (second_stage_IX[second_stage_idx].u()-this->LBD_opt_pt[idx] >= 1e-3){
+                return this->LBD_opt_pt[idx]; // return the optimal solution value for the branching variable
+            }
+            
+        }else{
+            return (second_stage_IX[second_stage_idx].l() + second_stage_IX[second_stage_idx].u()) / 2.0; // if the optimal solution is too close to the lower bound, then branch at the midpoint
+        }
     }
 };
 
@@ -142,7 +152,7 @@ double BBHeuristic::getPseudoCost(int idx_branched,USE_inside_weights use_inside
     double left_sum = 0.0;
     double right_sum = 0.0;
     int counter=0;
-    int memory_limit=INFINITY; // only use the last 5 branching information to calculate the pseudo cost
+    int memory_limit=INFINITY; // or INFINITY to use all available weights, but this may lead to very large memory usage
     if (use_inside_weights==USE_inside_weights::YES){
         for (int i=BBHeuristic::inside_weights[idx_branched].size()-1;i>=0&&counter<=memory_limit;i--){
             left_sum += BBHeuristic::inside_weights[idx_branched][i].first;

@@ -16,12 +16,13 @@ class BBHeuristic {
         BBHeuristic()=default; // default constructor
         BranchingStrategy strategy;
         std::vector<double> score_list;
-        
+        static int refresh_meter;
+        std::vector<double> LBD_opt_pt;
+
         std::vector<mc::Interval> initial_first_stage_IX;
         std::vector<mc::Interval> initial_second_stage_IX;
         static std::vector<std::vector<std::pair<double,double>>> outside_weights;
         static std::vector<std::vector<std::pair<double,double>>> inside_weights;// combing first stage and second stage(if has)
-        static int branching_count; // count the number of times branching is called
         double mu=1.0/6.0;  // percentage of bigger improvement to consider in pseudo cost update(0-1)
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX);

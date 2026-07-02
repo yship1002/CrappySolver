@@ -366,8 +366,6 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
-    //BBHeuristic::inside_weights.clear(); // clear the inside weights before starting the algorithm
-    //BBHeuristic::inside_weights.resize(node->first_stage_IX.size()+node->second_stage_IX.size()); // resize the inside weights to the number of variables in the node
 
     double original_LBD=node->LBD;
     double original_UBD=node->UBD;
@@ -495,43 +493,8 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
 
         iterator++;
     }
-        // if there are 0 0 improve in any first stage weigts
-    // double min_weight=INFINITY;
-    // for (auto& weight: node->branchheuristic.weights){
-    //     if (weight[0].first!=0 && weight[0].first<min_weight){
-    //         min_weight=weight[0].first;
-    //     }
-    //     if (weight[0].second!=0 && weight[0].second<min_weight){
-    //         min_weight=weight[0].second;
-    //     }
-    // }
-    // if (min_weight!=INFINITY){
-    
-    //     // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
-    //     for (auto& weight: node->branchheuristic.weights){
-    //         if (weight[0].first==0 && weight[0].second==0){
-    //             weight[0].first=min_weight;
-    //             weight[0].second=min_weight;
-    //         };
-    //     }
-    // }else{
-        // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
 
-        //     weight[0].first=0.01; // if all branches have 0 improve, set the weight to a small value to encourage branching on that variable, this is a very rare case but we want to avoid 0 weight which will cause no branching on that variable in the future
-        //     weight[0].second=0.01;
-            
-        // }
-    //}
-    // final check to make sure there is no 0 0 weight in the root node after strong branching, if there is still 0 0 weight then there must be a bug in the code because that means all branches of the root node have 0 improve which should not happen
-    // for (auto& weight: node->branchheuristic.weights){
-    //     if (weight[0].first==0 && weight[0].second==0){
-    //         throw std::runtime_error("Error: All branches of the root node have 0 improve, this should not happen");
-    //     };
-    // }
-    // for (auto& weight: node->branchheuristic.weights){
-    //     std::cout<<"Branching variable weights: ("<<weight[0].first<<","<<weight[0].second<<")"<<std::endl;
-    // }
-    
+
 }
 int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     double original_LBD= this->activeNodes[idx].LBD;
@@ -542,17 +505,8 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     xBBNode child2 = this->activeNodes[idx]; // Copy current node
     double range;
     int new_idx=idx;
-    if (this->stuck_counter>5){
-        std::cout<<"Stuck counter is greater than 20, perform strong branching on node index: "<<new_idx<<std::endl;
-        this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
-        // whole pt is to get out of this dump
-        while (this->activeNodes[new_idx].LBD==INFINITY){
-            std::cout<<"Found infeasible node by strong branching at "<<new_idx<<std::endl;
-            new_idx=this->getWorstNodeIdx();
-            this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
-        }
-        this->stuck_counter=0;
-    }
+    this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
+
     int branch_idx = this->activeNodes[new_idx].branchheuristic.getBranchingVarIndex(this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
     std::cout<<"Branching on node index: "<<new_idx<<" out of "<<this->activeNodes.size()<<std::endl;
     std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
@@ -694,6 +648,15 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         insideAlgo::lbd_calculation_time += elapsed.count();
         if (cplex.getStatus() == IloAlgorithm::Optimal) {
             node->LBD= cplex.getObjValue();
+            IloNumArray vals(env);
+            cplex.getValues(vals, x);
+
+            std::vector<double> solution(vals.getSize());
+            for (IloInt i = 0; i < vals.getSize(); ++i) {
+                solution[i] = vals[i];
+            }
+            vals.end(); 
+            node->branchheuristic.LBD_opt_pt=solution; // store the optimal solution for LBD calculation
         }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
             node->LBD=INFINITY; // assign big number for infeasibility
                         // ── Conflict Refiner ──────────────────────────────────────────────
@@ -859,8 +822,10 @@ void insideAlgo::printSecondStageIX(xBBNode* node){
     std::cout<<std::endl;
 }
 double insideAlgo::solve(double tolerance) {
-    this->stuck_counter=0;
-    BBHeuristic::inside_weights.resize(this->activeNodes[0].first_stage_IX.size()+this->activeNodes[0].second_stage_IX.size()); // resize the inside weights to the number of variables in the node
+    BBHeuristic::inside_weights.resize(this->activeNodes[0].first_stage_IX.size()+this->activeNodes[0].second_stage_IX.size());
+    for (int i = 0; i < BBHeuristic::inside_weights.size(); ++i) {
+        BBHeuristic::inside_weights[i].push_back(std::pair<double,double>(0,0)); // initialize the inside_weights for each variable with a pair of zeros
+    }
     // std::cout<<"Calculating LBD for Scenario "<<static_cast<int>(this->scenario_name)<<std::endl;
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
@@ -919,12 +884,8 @@ double insideAlgo::solve(double tolerance) {
         if (this->worstLBD==INFINITY){
             return INFINITY;
         }
-        if (this->bestUBD - this->worstLBD < gap){
-            gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
-            this->stuck_counter=0; // reset stuck counter if gap is improving       
-        }else{
-            this->stuck_counter++;
-        }
+        gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
+
         
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
