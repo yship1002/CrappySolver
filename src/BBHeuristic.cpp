@@ -15,7 +15,11 @@ BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX){
     int max_idx = 0;
-
+    if (BBHeuristic::branching_count>=50){
+        // initialize inside_weights and outside_weights
+        this->strategy=BranchingStrategy::relwidth; // switch to relative width branching after 50 branching
+        BBHeuristic::branching_count=-1; // reset branching count
+    }
     std::vector<double> score_list;
     if (this->strategy == BranchingStrategy::pseudo) {
         // Pseudo cost branching logic can be implemented here
@@ -62,6 +66,11 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
         throw std::invalid_argument("Unknown Branching Strategy");
     }
     //std::cout<<"Branching on variable index: "<<max_idx<<std::endl;
+    this->score_list=score_list; // store the score list for debugging
+    if (BBHeuristic::branching_count<0){
+        BBHeuristic::branching_count=0;
+        this->strategy=BranchingStrategy::pseudo; // switch back to pseudo cost branching after 50 branching
+    }
     return max_idx;
 };
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
@@ -72,7 +81,7 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
         std::vector<double> score_list;
         for (size_t i = 0; i < first_stage_IX.size(); ++i) {
             double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i,USE_inside_weights::NO);
-            pseudo_cost=std::round(pseudo_cost * 1e2) / 1e2; // round to 2 decimal places
+
             score_list.push_back(pseudo_cost);
             if (largest_score < pseudo_cost){
                 largest_score = pseudo_cost;
@@ -162,3 +171,12 @@ double BBHeuristic::getPseudoCost(int idx_branched,USE_inside_weights use_inside
         throw std::invalid_argument("Unknown SCORE_FUNCTION");
     }
 };
+void BBHeuristic::printinsideweights(){
+    for (int i=0;i<BBHeuristic::inside_weights.size();i++){
+        std::cout<<"Inside weights for variable "<<i<<": ";
+        for (const auto& weight: BBHeuristic::inside_weights[i]){
+            std::cout<<"("<<weight.first<<","<<weight.second<<") ";
+        }
+        std::cout<<std::endl;
+    }
+}

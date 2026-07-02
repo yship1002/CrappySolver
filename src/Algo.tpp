@@ -279,6 +279,8 @@ void outsideAlgo::printFirstStageIX(BBNode* node){
     std::cout<<std::endl;
 }
 double outsideAlgo::solve(double tolerance) {
+    BBHeuristic::outside_weights.resize(this->activeNodes[0].first_stage_IX.size()); // resize the outside weights to the number of variables in the node
+
     auto start = std::chrono::high_resolution_clock::now();
     int initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double initial_lbd_calculation_time=insideAlgo::lbd_calculation_time;
@@ -364,8 +366,8 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
-    BBHeuristic::inside_weights.clear(); // clear the inside weights before starting the algorithm
-    BBHeuristic::inside_weights.resize(node->first_stage_IX.size()+node->second_stage_IX.size()); // resize the inside weights to the number of variables in the node
+    //BBHeuristic::inside_weights.clear(); // clear the inside weights before starting the algorithm
+    //BBHeuristic::inside_weights.resize(node->first_stage_IX.size()+node->second_stage_IX.size()); // resize the inside weights to the number of variables in the node
 
     double original_LBD=node->LBD;
     double original_UBD=node->UBD;
@@ -539,25 +541,37 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     xBBNode child1 = this->activeNodes[idx]; // Copy current node
     xBBNode child2 = this->activeNodes[idx]; // Copy current node
     double range;
-    int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-    std::cout<<"Branching on node index: "<<idx<<" out of "<<this->activeNodes.size()<<std::endl;
+    int new_idx=idx;
+    if (this->stuck_counter>5){
+        std::cout<<"Stuck counter is greater than 20, perform strong branching on node index: "<<new_idx<<std::endl;
+        this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
+        // whole pt is to get out of this dump
+        while (this->activeNodes[new_idx].LBD==INFINITY){
+            std::cout<<"Found infeasible node by strong branching at "<<new_idx<<std::endl;
+            new_idx=this->getWorstNodeIdx();
+            this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
+        }
+        this->stuck_counter=0;
+    }
+    int branch_idx = this->activeNodes[new_idx].branchheuristic.getBranchingVarIndex(this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
+    std::cout<<"Branching on node index: "<<new_idx<<" out of "<<this->activeNodes.size()<<std::endl;
     std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
-    if(branch_idx<this->activeNodes[idx].first_stage_IX.size()){
+    if(branch_idx<this->activeNodes[new_idx].first_stage_IX.size()){
 
         // first stage branching
-        double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-        range=branch_point-this->activeNodes[idx].first_stage_IX[branch_idx].l();
-        child1.first_stage_IX[branch_idx] = mc::Interval(this->activeNodes[idx].first_stage_IX[branch_idx].l(), branch_point);
-        child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, this->activeNodes[idx].first_stage_IX[branch_idx].u());
+        double branch_point = this->activeNodes[new_idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
+        range=branch_point-this->activeNodes[new_idx].first_stage_IX[branch_idx].l();
+        child1.first_stage_IX[branch_idx] = mc::Interval(this->activeNodes[new_idx].first_stage_IX[branch_idx].l(), branch_point);
+        child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, this->activeNodes[new_idx].first_stage_IX[branch_idx].u());
       
-    }else if(branch_idx>=this->activeNodes[idx].first_stage_IX.size()){
+    }else if(branch_idx>=this->activeNodes[new_idx].first_stage_IX.size()){
         
         // second stage branching
 
-        double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-        range=branch_point-this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].l();
-        child1.second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()] = mc::Interval(this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].l(), branch_point);
-        child2.second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()] = mc::Interval(branch_point, this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].u());
+        double branch_point = this->activeNodes[new_idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
+        range=branch_point-this->activeNodes[new_idx].second_stage_IX[branch_idx-this->activeNodes[new_idx].first_stage_IX.size()].l();
+        child1.second_stage_IX[branch_idx-this->activeNodes[new_idx].first_stage_IX.size()] = mc::Interval(this->activeNodes[new_idx].second_stage_IX[branch_idx-this->activeNodes[new_idx].first_stage_IX.size()].l(), branch_point);
+        child2.second_stage_IX[branch_idx-this->activeNodes[new_idx].first_stage_IX.size()] = mc::Interval(branch_point, this->activeNodes[new_idx].second_stage_IX[branch_idx-this->activeNodes[new_idx].first_stage_IX.size()].u());
     
     }
     double before_LBD_time=insideAlgo::lbd_calculation_time;
@@ -594,7 +608,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
         // left child is infeasible, right child infeasible
         if (child2.LBD == INFINITY){
             // no need to update heuristic if both child are infeasible
-            this->activeNodes.erase(this->activeNodes.begin() + idx);
+            this->activeNodes.erase(this->activeNodes.begin() + new_idx);
             return branch_idx;
         }else{
             // left child is infeasible, right child improve
@@ -638,7 +652,7 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
 
     this->LBD_values_records.push_back(child1.LBD); // record LBD value for child1
     this->LBD_values_records.push_back(child2.LBD); // record LBD value
-    this->activeNodes.erase(this->activeNodes.begin() + idx);
+    this->activeNodes.erase(this->activeNodes.begin() + new_idx);
     this->activeNodes.push_back(child1);
     this->activeNodes.push_back(child2);
     return branch_idx;
@@ -845,7 +859,8 @@ void insideAlgo::printSecondStageIX(xBBNode* node){
     std::cout<<std::endl;
 }
 double insideAlgo::solve(double tolerance) {
-
+    this->stuck_counter=0;
+    BBHeuristic::inside_weights.resize(this->activeNodes[0].first_stage_IX.size()+this->activeNodes[0].second_stage_IX.size()); // resize the inside weights to the number of variables in the node
     // std::cout<<"Calculating LBD for Scenario "<<static_cast<int>(this->scenario_name)<<std::endl;
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
@@ -904,7 +919,12 @@ double insideAlgo::solve(double tolerance) {
         if (this->worstLBD==INFINITY){
             return INFINITY;
         }
-        gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer
+        if (this->bestUBD - this->worstLBD < gap){
+            gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
+            this->stuck_counter=0; // reset stuck counter if gap is improving       
+        }else{
+            this->stuck_counter++;
+        }
         
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
