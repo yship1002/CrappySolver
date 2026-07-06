@@ -19,6 +19,7 @@ class Node{
         BBHeuristic branchheuristic;
         std::vector<mc::Interval> first_stage_IX;
         std::vector<mc::Interval> second_stage_IX;
+        void printBound();
         double LBD;
         double UBD;
 };
