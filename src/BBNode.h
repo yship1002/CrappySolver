@@ -19,7 +19,6 @@ class Node{
         BBHeuristic branchheuristic;
         std::vector<mc::Interval> first_stage_IX;
         std::vector<mc::Interval> second_stage_IX;
-        void printBound();
         double LBD;
         double UBD;
 };
@@ -40,6 +39,8 @@ class xBBNode: public Node {
             BranchingStrategy strategy,ScenarioNames scenario_name);
         xBBNode()=default; // default constructor
         xBBNode(const xBBNode& other)=default;
+        void printBound();
+        std::vector<std::pair<double,double>> strong_branching_storage;
         ScenarioNames scenario_name;
 
 };

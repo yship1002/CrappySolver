@@ -21,8 +21,8 @@ class BBHeuristic {
 
         std::vector<mc::Interval> initial_first_stage_IX;
         std::vector<mc::Interval> initial_second_stage_IX;
-        static std::vector<std::vector<std::pair<double,double>>> outside_weights;
-        static std::vector<std::vector<std::pair<double,double>>> inside_weights;// combing first stage and second stage(if has)
+        std::vector<std::vector<std::pair<double,double>>> outside_weights;
+        std::vector<std::vector<std::pair<double,double>>> inside_weights;// combing first stage and second stage(if has)
         double mu=1.0/6.0;  // percentage of bigger improvement to consider in pseudo cost update(0-1)
         int getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX);
@@ -33,6 +33,12 @@ class BBHeuristic {
         
         double getPseudoCost(int idx_branched,USE_inside_weights use_inside_weights,SCORE_FUNCTION score_function=SCORE_FUNCTION::SUM);
         void printinsideweights();
+        std::vector<double> normalize(const std::vector<double>& values);
+        // Element-wise addition
+        std::vector<double> addVectors(const std::vector<double>& a, const std::vector<double>& b);
+
+        // Find index of max element
+        size_t argMax(const std::vector<double>& values);
 
 
 

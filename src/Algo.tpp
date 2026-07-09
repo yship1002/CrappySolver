@@ -65,7 +65,6 @@ double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
     return new_LBD;
 }
 void outsideAlgo::strongbranching(BBNode* node,double tolerance){
-    BBHeuristic::outside_weights.resize(node->first_stage_IX.size());
     double original_LBD=this->worstLBD;
     double original_UBD=this->bestUBD;
     int iterator=0;
@@ -279,7 +278,6 @@ void outsideAlgo::printFirstStageIX(BBNode* node){
     std::cout<<std::endl;
 }
 double outsideAlgo::solve(double tolerance) {
-    BBHeuristic::outside_weights.resize(this->activeNodes[0].first_stage_IX.size()); // resize the outside weights to the number of variables in the node
 
     auto start = std::chrono::high_resolution_clock::now();
     int initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
@@ -366,147 +364,146 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
-
+    node->strong_branching_storage.clear();
+    node->strong_branching_storage.resize(node->first_stage_IX.size()+node->second_stage_IX.size());
+    int first_stage_size=node->first_stage_IX.size();
+    int second_stage_size=node->second_stage_IX.size();
     double original_LBD=node->LBD;
     double original_UBD=node->UBD;
     int iterator=0;
-    // first stage strong branching
-    while (iterator < node->first_stage_IX.size()) { 
-        if (node->first_stage_IX[iterator].u() - node->first_stage_IX[iterator].l() < 1e-5){
-             // if that variable is fixed then skip strong branching on that variable
-            node->branchheuristic.updateWeights(iterator, 0, 0,1,USE_inside_weights::YES); // update pseudocost to avoid branching on this variable again
-            iterator++;
-            continue;
-        }
-        xBBNode child1 = *node;
-        xBBNode child2 = *node;
-        double branch_point = (node->first_stage_IX[iterator].l() + node->first_stage_IX[iterator].u()) / 2.0;
-        double range=branch_point - node->first_stage_IX[iterator].l();
-        child1.first_stage_IX[iterator] = mc::Interval(child1.first_stage_IX[iterator].l(), branch_point);
-        child2.first_stage_IX[iterator] = mc::Interval(branch_point, child2.first_stage_IX[iterator].u());
-        
-        double left_LBD=this->calculateLBD(&child1, tolerance); 
-        double right_LBD=this->calculateLBD(&child2, tolerance);
-
-        if (left_LBD == INFINITY){
-            if (right_LBD == INFINITY){
-                node->LBD=INFINITY; // if both child are infeasible, then the node is infeasible
-                return;
+    std::vector<std::pair<double,double>> temp_weights;
+    // continue SB until no variable has infinity weight
+    while (iterator < first_stage_size+second_stage_size) {
+        if (iterator<first_stage_size) {
+            if (node->first_stage_IX[iterator].u() - node->first_stage_IX[iterator].l() < 1e-5){
+                // if that variable is fixed then skip strong branching on that variable
+                temp_weights.push_back(std::pair(0,0));
+                iterator++;
+                continue;
             }
-            if (right_LBD==node->LBD){
-                // left child is infeasible, right child no improve, further split the range
+
+            xBBNode child1 = *node;
+            xBBNode child2 = *node;
+            double branch_point = (node->first_stage_IX[iterator].l() + node->first_stage_IX[iterator].u()) / 2.0;
+            double range=branch_point - node->first_stage_IX[iterator].l();
+            child1.first_stage_IX[iterator] = mc::Interval(child1.first_stage_IX[iterator].l(), branch_point);
+            child2.first_stage_IX[iterator] = mc::Interval(branch_point, child2.first_stage_IX[iterator].u());
+            
+            double left_LBD=this->calculateLBD(&child1, tolerance);
+            double right_LBD=this->calculateLBD(&child2, tolerance);
+
+            if (left_LBD == INFINITY){
+                if (right_LBD == INFINITY){
+                    node->LBD=INFINITY; // if both child are infeasible, then the node is infeasible
+                    return;
+                }
+                // reduce range
                 node->first_stage_IX[iterator] = mc::Interval(branch_point,node->first_stage_IX[iterator].u());
-                continue; // rebranch on the same variable again further split
+                iterator=0;
+                temp_weights.clear();
+                continue;
+            }else if (right_LBD == INFINITY){
+                // reduce range
+                node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
+                iterator=0;
+                temp_weights.clear();
+                continue;
             }else{
-                // left child is infeasible, right child improve
-                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
-                    node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
-                }else{
-                    node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range,USE_inside_weights::YES);
+                // both child are feasible
+                if (left_LBD < original_LBD ){
+                    left_LBD=original_LBD;
                 }
+                if (right_LBD < original_LBD){
+                    right_LBD=original_LBD;
+                }
+                temp_weights.push_back(std::pair(left_LBD-original_LBD, right_LBD-original_LBD));
+            }
 
-            }
-            // reduce range
-            node->first_stage_IX[iterator] = mc::Interval(branch_point,node->first_stage_IX[iterator].u());
-        }else if (right_LBD == INFINITY){
-            if (left_LBD==node->LBD){
-                // right child is infeasible, left child no improve, further split the range
-                node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(), branch_point);
-                continue; // rebranch on the same variable again further split
-            }else{
-                // right child is infeasible, left child improve
-                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
-                    // right child is infeasible, left child UBD is inf then we have to do zero improve
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range,USE_inside_weights::YES); // set to bestUBD of this subproblem to avoid infitinity pseducost update
-                }else{
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range,USE_inside_weights::YES);
-                }
-            }
-            // reduce range
-            node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
         }else{
-            // both child are feasible
-            node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
+            // second stage variable strong branching
+            if (node->second_stage_IX[iterator-first_stage_size].u() - node->second_stage_IX[iterator-first_stage_size].l() < 1e-5){
+                // if that variable is fixed then skip strong branching on that variable
+                temp_weights.push_back(std::pair(0,0));                
+                iterator++;
+                continue;
+            }
+            xBBNode child3 = *node;
+            xBBNode child4 = *node;
+            double branch_point = (node->second_stage_IX[iterator-first_stage_size].l() + node->second_stage_IX[iterator-first_stage_size].u()) / 2.0;
+            double range=branch_point - node->second_stage_IX[iterator-first_stage_size].l();
+            child3.second_stage_IX[iterator-first_stage_size] = mc::Interval(child3.second_stage_IX[iterator-first_stage_size].l(), branch_point);
+            child4.second_stage_IX[iterator-first_stage_size] = mc::Interval(branch_point, child4.second_stage_IX[iterator-first_stage_size].u());
+            
+            double left_LBD=this->calculateLBD(&child3, tolerance); 
+            double right_LBD=this->calculateLBD(&child4, tolerance);
+
+            if (left_LBD == INFINITY){
+                if (right_LBD == INFINITY){
+                    node->LBD=INFINITY; // if both child are infeasible, then the node is infeasible
+                    return;
+                }
+                // reduce range
+                node->second_stage_IX[iterator-first_stage_size] = mc::Interval(branch_point,node->second_stage_IX[iterator-first_stage_size].u());
+                iterator=0;
+                temp_weights.clear();
+                continue;
+            }else if (right_LBD == INFINITY){
+
+                // reduce range
+                node->second_stage_IX[iterator-first_stage_size] = mc::Interval(node->second_stage_IX[iterator-first_stage_size].l(),branch_point);
+                iterator=0;
+                temp_weights.clear();
+                continue;
+            }else{
+                // both child are feasible
+                if (left_LBD < original_LBD ){
+                    left_LBD=original_LBD;
+                }
+                if (right_LBD < original_LBD){
+                    right_LBD=original_LBD;
+                }
+                temp_weights.push_back(std::pair(left_LBD-original_LBD, right_LBD-original_LBD));            
+            }
+
         }
 
         iterator++;
     }
-    iterator=0;
-    // second stage strong branching
-    while (iterator < node->second_stage_IX.size()) { 
-        if (node->second_stage_IX[iterator].u() - node->second_stage_IX[iterator].l() < 1e-5){
-             // if that variable is fixed then skip strong branching on that variable
-            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, 0,1,USE_inside_weights::YES); // update pseudocost to avoid branching on this variable again
-            iterator++;
-            continue;
-        }
-        xBBNode child3 = *node;
-        xBBNode child4 = *node;
-        double branch_point = (node->second_stage_IX[iterator].l() + node->second_stage_IX[iterator].u()) / 2.0;
-        double range=branch_point - node->second_stage_IX[iterator].l();
-        child3.second_stage_IX[iterator] = mc::Interval(child3.second_stage_IX[iterator].l(), branch_point);
-        child4.second_stage_IX[iterator] = mc::Interval(branch_point, child4.second_stage_IX[iterator].u());
-        
-        double left_LBD=this->calculateLBD(&child3, tolerance); 
-        double right_LBD=this->calculateLBD(&child4, tolerance);
-
-        if (left_LBD == INFINITY){
-            if (right_LBD == INFINITY){
-                node->LBD=INFINITY; // if both child are infeasible, then the node is infeasible
-                return;
-            }
-            if (right_LBD==node->LBD){
-                // left child is infeasible, right child no improve, further split the range
-                node->second_stage_IX[iterator] = mc::Interval(branch_point,node->second_stage_IX[iterator].u());
-                continue; // rebranch on the same variable again further split
-
-            }else{
-                // left child is infeasible, right child improve
-                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), original_UBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
-                }else{
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), 0, right_LBD-original_LBD,range,USE_inside_weights::YES);
-                }
-            }
-            // reduce range
-            node->second_stage_IX[iterator] = mc::Interval(branch_point,node->second_stage_IX[iterator].u());
-        }else if (right_LBD == INFINITY){
-            if (left_LBD==node->LBD){
-                // right child is infeasible, left child no improve
-                node->second_stage_IX[iterator] = mc::Interval(node->second_stage_IX[iterator].l(), branch_point);
-                continue; // rebranch on the same variable again further split
-            }else{
-                // right child is infeasible, left child improve
-                if (this->bestUBDforInfinity && original_UBD!=INFINITY){
-                    // right child is infeasible, left child UBD is inf then we have to do zero improve
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, original_UBD-original_LBD,range,USE_inside_weights::YES); // set to bestUBD of this subproblem to avoid infitinity pseducost update
-                }else{
-                    node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, 0,range,USE_inside_weights::YES);
-                }
-            }
-            // reduce range
-            node->second_stage_IX[iterator] = mc::Interval(node->second_stage_IX[iterator].l(),branch_point);
+    
+    // there should be no infinity in any varibale weights update weights with lastest result
+    for (int i=0;i<temp_weights.size();i++){
+        std::cout<<"Variable index "<<i<<"Left: "<<temp_weights[i].first+original_LBD<<", Right "<<temp_weights[i].second+original_LBD<<std::endl;
+        if (i<first_stage_size){
+            node->branchheuristic.updateWeights(i,temp_weights[i].first,temp_weights[i].second,
+                node->first_stage_IX[i].u()-node->first_stage_IX[i].l(),USE_inside_weights::YES);
+            node->strong_branching_storage[i].first = temp_weights[i].first+original_LBD;
+            node->strong_branching_storage[i].second = temp_weights[i].second+original_LBD;
         }else{
-            // both child are feasible
-            node->branchheuristic.updateWeights(iterator+node->first_stage_IX.size(), left_LBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::YES);
+            node->branchheuristic.updateWeights(i,temp_weights[i].first,temp_weights[i].second,
+                node->second_stage_IX[i-first_stage_size].u()-node->second_stage_IX[i-first_stage_size].l(),USE_inside_weights::YES);
+            node->strong_branching_storage[i].first = temp_weights[i].first+original_LBD;
+            node->strong_branching_storage[i].second = temp_weights[i].second+original_LBD;
         }
-
-        iterator++;
     }
+
 
 
 }
-int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
-    double original_LBD= this->activeNodes[idx].LBD;
+int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
+    double original_LBD= this->activeNodes[new_idx].LBD;
     if (original_LBD==INFINITY){
-        throw std::runtime_error("Should not branch on infeasible node");
+        std::cout<<"Infeasible node detected, skipping strong branching."<<std::endl;
+        return 0;
     }
-    xBBNode child1 = this->activeNodes[idx]; // Copy current node
-    xBBNode child2 = this->activeNodes[idx]; // Copy current node
-    double range;
-    int new_idx=idx;
-    this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
 
+    double range;
+
+    this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
+    if (this->activeNodes[new_idx].LBD==INFINITY){
+        return 0;
+    }
+    xBBNode child1 = this->activeNodes[new_idx]; // Copy current node
+    xBBNode child2 = this->activeNodes[new_idx]; // Copy current node
     int branch_idx = this->activeNodes[new_idx].branchheuristic.getBranchingVarIndex(this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
     std::cout<<"Branching on node index: "<<new_idx<<" out of "<<this->activeNodes.size()<<std::endl;
     std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
@@ -540,13 +537,18 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl;
     if (child1.LBD<original_LBD){
         child1.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
+
     }
     if (child2.LBD<original_LBD){
         child2.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
     }
+    // if (std::abs(this->activeNodes[new_idx].strong_branching_storage[branch_idx].first-child1.LBD)>1e-3){ 
+    //     throw std::runtime_error("Child LBDs are too close to parent LBD, this should not happen");
+    // }
+    // if (std::abs(this->activeNodes[new_idx].strong_branching_storage[branch_idx].second-child2.LBD)>1e-3){
+    //     throw std::runtime_error("Child LBDs are too close to parent LBD, this should not happen");
+    // }
 
-
-    
     if (child1.LBD != INFINITY){
         //this->calculateUBD(&child1, tolerance); // just use global gurobi if ipopt just commetn in
     }else{
@@ -813,6 +815,10 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 }
 void insideAlgo::printFirstStageIX(xBBNode* node){
     //leave empty for inside algo since we don't have first stage IX record for inside algo, we can add this in the future if needed
+    for (const auto& interval : node->first_stage_IX) {
+        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] ";
+    }
+    std::cout<<std::endl;
 }
 void insideAlgo::printSecondStageIX(xBBNode* node){
 
@@ -822,10 +828,7 @@ void insideAlgo::printSecondStageIX(xBBNode* node){
     std::cout<<std::endl;
 }
 double insideAlgo::solve(double tolerance) {
-    BBHeuristic::inside_weights.resize(this->activeNodes[0].first_stage_IX.size()+this->activeNodes[0].second_stage_IX.size());
-    for (int i = 0; i < BBHeuristic::inside_weights.size(); ++i) {
-        BBHeuristic::inside_weights[i].push_back(std::pair<double,double>(0,0)); // initialize the inside_weights for each variable with a pair of zeros
-    }
+
     // std::cout<<"Calculating LBD for Scenario "<<static_cast<int>(this->scenario_name)<<std::endl;
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
@@ -846,7 +849,7 @@ double insideAlgo::solve(double tolerance) {
         std::cout<<"Started Inside Strong Branching"<<std::endl;
 
         auto start = std::chrono::high_resolution_clock::now();
-        this->strongbranching(&(this->activeNodes[0]), tolerance);
+        //this->strongbranching(&(this->activeNodes[0]), tolerance);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         std::cout<<"Finished Inside Strong Branching"<<std::endl;
@@ -868,7 +871,6 @@ double insideAlgo::solve(double tolerance) {
         if (this->activeNodes.empty()) {
             break;
         }
-        
         int idx = this->getWorstNodeIdx();
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance);
         this->worstLBD = this->getWorstLBD();
@@ -890,6 +892,7 @@ double insideAlgo::solve(double tolerance) {
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         iterations++;
+
     }
 
     std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" terminated after "<<iterations<<" iterations."<<std::endl;

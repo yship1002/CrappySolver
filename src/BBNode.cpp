@@ -3,14 +3,6 @@ Node::Node(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> se
     this->first_stage_IX = first_stage_IX;
     this->second_stage_IX = second_stage_IX;
 }
-void Node::printBound() {
-    for (const auto& interval : this->first_stage_IX) {
-        std::cout << "[" << interval.l() << ", " << interval.u() << "] ";
-    }
-    for (const auto& interval : this->second_stage_IX) {
-        std::cout << "[" << interval.l() << ", " << interval.u() << "] ";
-    }
-}
 BBNode::BBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interval> second_stage_IX,
     BranchingStrategy strategy): Node(first_stage_IX,second_stage_IX) {
     BBNode::node_counter++;
@@ -22,4 +14,12 @@ xBBNode::xBBNode(std::vector<mc::Interval> first_stage_IX,std::vector<mc::Interv
 
     this->branchheuristic = BBHeuristic(first_stage_IX, second_stage_IX, strategy);
     this->scenario_name = scenario_name;
+}
+void xBBNode::printBound() {
+    for (const auto& interval : this->first_stage_IX) {
+        std::cout << "[" << interval.l() << ", " << interval.u() << "] ";
+    }
+    for (const auto& interval : this->second_stage_IX) {
+        std::cout << "[" << interval.l() << ", " << interval.u() << "] ";
+    }
 }
