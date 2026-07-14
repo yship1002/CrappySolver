@@ -32,7 +32,7 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
             pseudo_costs.push_back(pseudo_cost);
             relwidths.push_back(relwidth);
             //pseudo_cost += 1000*(first_stage_IX[i].u() - first_stage_IX[i].l())/(this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l()); // scale by relative width
-            std::cout << "Var index " << i << " Relwidth: "<<relwidth <<std::endl;
+            //std::cout << "Var index " << i << " Relwidth: "<<relwidth <<std::endl;
 
             score_list.push_back(pseudo_cost);
             if (largest_score < pseudo_cost){
@@ -44,14 +44,14 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
         for (size_t i = 0; i < second_stage_IX.size(); ++i) { // go through second stage to get scores
             
             double pseudo_cost = (second_stage_IX[i].u() - second_stage_IX[i].l())*this->getPseudoCost(i+first_stage_IX.size(),USE_inside_weights::YES);
-            if (i==6 || i==7 || i==8 || i==9){
-                pseudo_cost = pseudo_cost*10; // scale up the pseudo cost for second stage variables 6-11 to prioritize branching on them
+            if (i==33){ //please delete
+                pseudo_cost = pseudo_cost*100; // scale up the pseudo cost for second stage variables 6-11 to prioritize branching on them
             }
             double relwidth = (second_stage_IX[i].u() - second_stage_IX[i].l())/(this->initial_second_stage_IX[i].u() - this->initial_second_stage_IX[i].l());
             pseudo_costs.push_back(pseudo_cost);
             relwidths.push_back(relwidth);
             //pseudo_cost += 1000*(second_stage_IX[i].u() - second_stage_IX[i].l())/(this->initial_second_stage_IX[i].u() - this->initial_second_stage_IX[i].l()); // scale by relative width
-            std::cout << "Var index " << i+first_stage_IX.size() << " Relwidth: "<<relwidth <<std::endl;
+            //std::cout << "Var index " << i+first_stage_IX.size() << " Relwidth: "<<relwidth <<std::endl;
 
             score_list.push_back(pseudo_cost);
             if (largest_score < pseudo_cost){
@@ -187,7 +187,7 @@ double BBHeuristic::getPseudoCost(int idx_branched,USE_inside_weights use_inside
     double left_sum = 0.0;
     double right_sum = 0.0;
     int counter=0;
-    int memory_limit=0; // INFINITY to use all available weights, 0 for all strong branching
+    int memory_limit=INFINITY; // INFINITY to use all available weights, 0 for all strong branching
     if (use_inside_weights==USE_inside_weights::YES){
         for (int i=this->inside_weights[idx_branched].size()-1;i>=0&&counter<=memory_limit;i--){
             left_sum += this->inside_weights[idx_branched][i].first;

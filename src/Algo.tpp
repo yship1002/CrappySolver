@@ -51,6 +51,8 @@ outsideAlgo::outsideAlgo(STModel* model,double provided_UBD,UBDSolver solver) : 
     this->ubd_solver = solver;
     this->bestUBD = provided_UBD;
     this->activeNodes.push_back(BBNode(model->first_stage_IX,model->second_stage_IX,model->branching_strategy));
+    // PLEASE DELETE
+    this->activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth;
 
 }
 double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
@@ -59,7 +61,7 @@ double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
         this->model->scenario_name=scenario_name;
         this->model->first_stage_IX=node->first_stage_IX;
         this->model->second_stage_IX=node->second_stage_IX;
-        insideAlgo temp_inside_algo(this->model,scenario_name,INFINITY,false,UBDSolver::GUROBI);
+        insideAlgo temp_inside_algo(this->model,scenario_name,INFINITY,false,this->ubd_solver);
         new_LBD+=temp_inside_algo.calculateUBD(&(temp_inside_algo.activeNodes[0]),tolerance);
     }
     return new_LBD;
@@ -88,35 +90,15 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
                 node->LBD=INFINITY;
                 return;
             }
-            if (right_LBD==node->LBD){
-                // left child is infeasible, right child no improve, further split the range
-                node->first_stage_IX[iterator] = mc::Interval(branch_point,node->first_stage_IX[iterator].u());
-                continue; // rebranch on the same variable again further split
-            }else{
-                // left child is infeasible, right child improve
-                if (this->bestUBDforInfinity){
-                    node->branchheuristic.updateWeights(iterator, original_UBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::NO);
-                }else{
-                    node->branchheuristic.updateWeights(iterator, 0, right_LBD-original_LBD,range,USE_inside_weights::NO);
-                }
-            }
-            // reduce range
+
             node->first_stage_IX[iterator] = mc::Interval(branch_point,node->first_stage_IX[iterator].u());
+            continue; // rebranch on the same variable again further split
+            
         }else if (right_LBD == INFINITY){
-            // right child is infeasible, left child no improve
-            if (left_LBD==node->LBD){
-                node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(), branch_point);
-                continue; // rebranch on the same variable again further split
-            }else{
-                // right child is infeasible, left child improve
-                if (this->bestUBDforInfinity){
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, original_UBD-original_LBD,range,USE_inside_weights::NO);
-                }else{
-                    node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, 0,range,USE_inside_weights::NO);
-                }
-            }
+
             // reduce range
             node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
+            continue;
         }else{
             // both child are feasible
             node->branchheuristic.updateWeights(iterator, left_LBD-original_LBD, right_LBD-original_LBD,range,USE_inside_weights::NO);
@@ -260,12 +242,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
             totalLBD += scenario_LBD;
         }
     }
-    if (node->node_id!=1){ //if not root node
-        if (totalLBD < node->LBD) {
-            throw std::runtime_error("LBD should not decrease after calculation");
-        }
 
-    }
 
     node->LBD = totalLBD;
     return totalLBD;
@@ -273,7 +250,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
 void outsideAlgo::printFirstStageIX(BBNode* node){
     std::cout<<"First stage IX for node "<<node->node_id<<": ";
     for (const auto& interval : node->first_stage_IX) {
-        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] ";
+        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] "<<std::endl;
     }
     std::cout<<std::endl;
 }
@@ -361,6 +338,7 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
     }
     this->activeNodes.push_back(xBBNode(this->model->first_stage_IX,this->model->second_stage_IX,
         this->model->branching_strategy,this->scenario_name));
+    this->activeNodes[0].node_id=0;
 
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
@@ -399,14 +377,14 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 }
                 // reduce range
                 node->first_stage_IX[iterator] = mc::Interval(branch_point,node->first_stage_IX[iterator].u());
-                iterator=0;
-                temp_weights.clear();
+                //iterator=0;   optional: you can reset iterator to 0 to start again
+                //temp_weights.clear();
                 continue;
             }else if (right_LBD == INFINITY){
                 // reduce range
                 node->first_stage_IX[iterator] = mc::Interval(node->first_stage_IX[iterator].l(),branch_point);
-                iterator=0;
-                temp_weights.clear();
+                //iterator=0;
+                //temp_weights.clear();
                 continue;
             }else{
                 // both child are feasible
@@ -444,15 +422,15 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
                 }
                 // reduce range
                 node->second_stage_IX[iterator-first_stage_size] = mc::Interval(branch_point,node->second_stage_IX[iterator-first_stage_size].u());
-                iterator=0;
-                temp_weights.clear();
+                //iterator=0;
+                //temp_weights.clear();
                 continue;
             }else if (right_LBD == INFINITY){
 
                 // reduce range
                 node->second_stage_IX[iterator-first_stage_size] = mc::Interval(node->second_stage_IX[iterator-first_stage_size].l(),branch_point);
-                iterator=0;
-                temp_weights.clear();
+                //iterator=0;
+                //temp_weights.clear();
                 continue;
             }else{
                 // both child are feasible
@@ -472,7 +450,7 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     
     // there should be no infinity in any varibale weights update weights with lastest result
     for (int i=0;i<temp_weights.size();i++){
-        std::cout<<"Variable index "<<i<<"Left: "<<temp_weights[i].first+original_LBD<<", Right "<<temp_weights[i].second+original_LBD<<std::endl;
+        //std::cout<<"Variable index "<<i<<"Left: "<<temp_weights[i].first+original_LBD<<", Right "<<temp_weights[i].second+original_LBD<<std::endl;
         if (i<first_stage_size){
             node->branchheuristic.updateWeights(i,temp_weights[i].first,temp_weights[i].second,
                 node->first_stage_IX[i].u()-node->first_stage_IX[i].l(),USE_inside_weights::YES);
@@ -498,12 +476,16 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
     double range;
 
-    this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
+    //this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
     if (this->activeNodes[new_idx].LBD==INFINITY){
         return 0;
     }
+    int next_idx=this->activeNodes.back().node_id+1; 
     xBBNode child1 = this->activeNodes[new_idx]; // Copy current node
+    child1.node_id = next_idx; // Assign unique ID to child1
+    next_idx++;
     xBBNode child2 = this->activeNodes[new_idx]; // Copy current node
+    child2.node_id = next_idx; // Assign unique ID to child2
     int branch_idx = this->activeNodes[new_idx].branchheuristic.getBranchingVarIndex(this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
     std::cout<<"Branching on node index: "<<new_idx<<" out of "<<this->activeNodes.size()<<std::endl;
     std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
@@ -534,6 +516,14 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
+
+
+    // if (child1.node_id<5){
+    //     this->calculateUBD(&child1, tolerance);
+    //     this->calculateUBD(&child2, tolerance);
+    // }
+
+
     std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl;
     if (child1.LBD<original_LBD){
         child1.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
@@ -636,6 +626,12 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
 
         this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
 
+        IloExpr objExpr(env);
+        objExpr=x[x.getSize()-1]; // objective is always the last variable in our construction
+        obj = IloMinimize(env, objExpr);
+        obj.end();
+
+
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
@@ -718,10 +714,10 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 
         Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
         app->Options()->SetNumericValue("tol", 1e-4);           // Optimality tolerance
-        app->Options()->SetNumericValue("constr_viol_tol", 1e-2);  // Constraint feasibility
-        app->Options()->SetNumericValue("compl_inf_tol", 1e-4);    // Complementarity tolerance
+        app->Options()->SetNumericValue("constr_viol_tol", 1e-4);  // Constraint feasibility
+        app->Options()->SetNumericValue("compl_inf_tol", 1e-2);    // Complementarity tolerance
         app->Options()->SetIntegerValue("print_level", 0);
-        app->Options()->SetIntegerValue("max_iter", 10000); 
+        app->Options()->SetIntegerValue("max_iter", 100000); 
         app->Options()->SetStringValue("sb", "yes");
         app->Options()->SetStringValue("hessian_approximation", "limited-memory");
         app->Options()->SetStringValue("mu_strategy", "adaptive");
@@ -768,7 +764,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-9);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-9); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
@@ -779,7 +775,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
                 double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
                 node->UBD = objval;
                 // std::cout << "Optimized solution values: "<<objval<<std::endl;
-                // for (int i = 0; i <6; ++i) {
+                // for (int i = 0; i <38; ++i) {
                 //     std::string auxName = "x" + std::to_string(i);
                         
                 //         // 1. Get the variable object
@@ -816,14 +812,14 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 void insideAlgo::printFirstStageIX(xBBNode* node){
     //leave empty for inside algo since we don't have first stage IX record for inside algo, we can add this in the future if needed
     for (const auto& interval : node->first_stage_IX) {
-        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] ";
+        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] "<<std::endl;
     }
     std::cout<<std::endl;
 }
 void insideAlgo::printSecondStageIX(xBBNode* node){
 
     for (const auto& interval : node->second_stage_IX) {
-        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] ";
+        std::cout<<"["<<interval.l()<<","<<interval.u()<<"] "<<std::endl;
     }
     std::cout<<std::endl;
 }
@@ -844,12 +840,17 @@ double insideAlgo::solve(double tolerance) {
     this->LBD_values_records.push_back(this->activeNodes[0].LBD); // record LBD value for root node
     int before_strong_branching_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
+
+
+    //this->OBBT(&(this->activeNodes[0]),tolerance);
+
+
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
         std::cout<<"========================================"<<std::endl;
         std::cout<<"Started Inside Strong Branching"<<std::endl;
 
         auto start = std::chrono::high_resolution_clock::now();
-        //this->strongbranching(&(this->activeNodes[0]), tolerance);
+        this->strongbranching(&(this->activeNodes[0]), tolerance);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         std::cout<<"Finished Inside Strong Branching"<<std::endl;
@@ -875,7 +876,7 @@ double insideAlgo::solve(double tolerance) {
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance);
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
-        if (this->worstLBD>this->bestUBD){
+        if (this->worstLBD-this->bestUBD>0.1){
             throw std::runtime_error("Warning: Worst LBD is greater than best UBD, this should not happen, there might be a bug in the code");
         }
 
@@ -887,7 +888,9 @@ double insideAlgo::solve(double tolerance) {
             return INFINITY;
         }
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
-
+        if (iterations>=2000){ // PLEASE DELETE
+            return this->bestUBD; // if the number of iterations exceeds 2000, we terminate the algorithm to avoid infinite loop
+        }
         
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
@@ -897,6 +900,127 @@ double insideAlgo::solve(double tolerance) {
 
     std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" terminated after "<<iterations<<" iterations."<<std::endl;
     return this->worstLBD;
+
+}
+void insideAlgo::OBBT(xBBNode* node,double tolerance){
+
+
+    this->model->scenario_name = node->scenario_name;
+    this->model->first_stage_IX = node->first_stage_IX;
+    this->model->second_stage_IX = node->second_stage_IX;
+    this->model->clearDAG(); // remove the previous DAG to avoid interference
+    if (!this->solvefullModel){
+        this->model->buildDAG();
+    }else{
+        this->model->buildFullModelDAG();
+    }
+    try{
+        ILOSTLBEGIN
+        IloEnv env;
+        env.setOut(env.getNullStream());
+        env.setWarning(env.getNullStream());
+        IloModel cplexmodel(env);
+        IloRangeArray c(env);
+        IloObjective obj (env);
+        IloNumVarArray x(env);
+
+        this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+        IloCplex cplex(cplexmodel);
+        cplex.setParam(IloCplex::Param::ClockType, 2);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-9);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
+        IloExpr obj_cons(env);
+        obj_cons+=x[x.getSize()-1]; // objective is always the last variable in our construction
+        cplexmodel.add(obj_cons >= node->LBD);
+        obj_cons.end();
+
+
+        int var_idx=0;
+        while (var_idx < node->first_stage_IX.size()) {
+            IloExpr objExpr_lower(env);
+            objExpr_lower+=x[var_idx];    // objective is always the last variable in our construction
+            obj.setExpr(objExpr_lower);
+            objExpr_lower.end();
+
+            cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+            cplex.setOut(env.getNullStream());
+            cplex.solve();
+            if (cplex.getStatus() == IloAlgorithm::Optimal) {
+                node->first_stage_IX[var_idx].l()=std::max(node->first_stage_IX[var_idx].l(), cplex.getObjValue());
+            }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible, this should not happen");
+            } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible or unbounded, this should not happen");
+            }
+            var_idx++;
+
+        }
+        var_idx=0;
+        while (var_idx < node->first_stage_IX.size()) {
+            IloExpr objExpr_upper(env);
+            objExpr_upper+=-x[var_idx];    // objective is always the last variable in our construction
+            obj.setExpr(objExpr_upper);
+            objExpr_upper.end();
+
+
+            //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+            cplex.setOut(env.getNullStream());
+            cplex.solve();
+            if (cplex.getStatus() == IloAlgorithm::Optimal) {
+                node->first_stage_IX[var_idx].u()=std::min(node->first_stage_IX[var_idx].u(), -cplex.getObjValue());
+
+            }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible, this should not happen");
+            } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible or unbounded, this should not happen");
+            }
+            var_idx++;
+        }
+        var_idx=0;        
+        while (var_idx < node->second_stage_IX.size()) {
+            IloExpr objExpr_lower(env);
+            objExpr_lower+=x[var_idx+node->first_stage_IX.size()];    // objective is always the last variable in our construction
+            obj.setExpr(objExpr_lower);
+            objExpr_lower.end();
+
+            //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+            cplex.setOut(env.getNullStream());
+            cplex.solve();
+            if (cplex.getStatus() == IloAlgorithm::Optimal) {
+                node->second_stage_IX[var_idx].l()=std::max(node->second_stage_IX[var_idx].l(), cplex.getObjValue());
+
+            }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible, this should not happen");
+            } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible or unbounded, this should not happen");
+            }
+            var_idx++;
+        }
+        var_idx=0;
+        while (var_idx < node->second_stage_IX.size()) {
+            IloExpr objExpr_upper(env);
+            objExpr_upper+=-x[var_idx+node->first_stage_IX.size()];    // objective is always the last variable in our construction
+            obj.setExpr(objExpr_upper);
+            objExpr_upper.end();
+
+            //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
+            cplex.setOut(env.getNullStream());
+            cplex.solve();
+            if (cplex.getStatus() == IloAlgorithm::Optimal) {
+                node->second_stage_IX[var_idx].u()=std::min(node->second_stage_IX[var_idx].u(), -cplex.getObjValue());
+
+            }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible, this should not happen");
+            } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+                throw std::runtime_error("OBBT: CPLEX model is infeasible or unbounded, this should not happen");
+            }
+            var_idx++;
+        }
+        env.end();
+    } catch (IloException& e) {
+        std::cerr << "CPLEX exception: " << e << "\n";
+    }
+
 
 }
 #endif

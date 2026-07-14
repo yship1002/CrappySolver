@@ -19,6 +19,7 @@ class Node{
         BBHeuristic branchheuristic;
         std::vector<mc::Interval> first_stage_IX;
         std::vector<mc::Interval> second_stage_IX;
+        int node_id;
         double LBD;
         double UBD;
 };
@@ -29,7 +30,6 @@ class BBNode : public Node {
         BBNode(const BBNode& other)=default;
         std::vector<double> scenario_LBDs; // record LBD for each scenario for this node
         static int node_counter;
-        int node_id;
 
 
 };
