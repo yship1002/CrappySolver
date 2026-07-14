@@ -85,6 +85,7 @@ class insideAlgo:public Algo<xBBNode>{
         double calculateUBD(xBBNode* node,double tolerance) override;
         void printFirstStageIX(xBBNode* node) override;
         void printSecondStageIX(xBBNode* node);
+        void weirdstrongbranching(xBBNode* node,double tolerance);
         void OBBT(xBBNode* node,double tolerance);
         template<class Archive>
         void serialize(Archive& ar) {

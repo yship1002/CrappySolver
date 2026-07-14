@@ -25,28 +25,27 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
         double largest_score=0;
         std::vector<double> pseudo_costs;
         std::vector<double> relwidths;
-        for (size_t i = 0; i < first_stage_IX.size(); ++i) { // go through first stage to get scores
+        // please delete
+        // for (size_t i = 0; i < first_stage_IX.size(); ++i) { // go through first stage to get scores
 
-            double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i,USE_inside_weights::YES);
-            double relwidth = (first_stage_IX[i].u() - first_stage_IX[i].l())/(this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
-            pseudo_costs.push_back(pseudo_cost);
-            relwidths.push_back(relwidth);
-            //pseudo_cost += 1000*(first_stage_IX[i].u() - first_stage_IX[i].l())/(this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l()); // scale by relative width
-            //std::cout << "Var index " << i << " Relwidth: "<<relwidth <<std::endl;
+        //     double pseudo_cost = (first_stage_IX[i].u() - first_stage_IX[i].l())*this->getPseudoCost(i,USE_inside_weights::YES);
+        //     double relwidth = (first_stage_IX[i].u() - first_stage_IX[i].l())/(this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
+        //     pseudo_costs.push_back(pseudo_cost);
+        //     relwidths.push_back(relwidth);
+        //     //pseudo_cost += 1000*(first_stage_IX[i].u() - first_stage_IX[i].l())/(this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l()); // scale by relative width
+        //     //std::cout << "Var index " << i << " Relwidth: "<<relwidth <<std::endl;
 
-            score_list.push_back(pseudo_cost);
-            if (largest_score < pseudo_cost){
-                largest_score = pseudo_cost;
-                max_idx = i;
-            }
-        }
+        //     score_list.push_back(pseudo_cost);
+        //     if (largest_score < pseudo_cost){
+        //         largest_score = pseudo_cost;
+        //         max_idx = i;
+        //     }
+        // }
 
         for (size_t i = 0; i < second_stage_IX.size(); ++i) { // go through second stage to get scores
             
             double pseudo_cost = (second_stage_IX[i].u() - second_stage_IX[i].l())*this->getPseudoCost(i+first_stage_IX.size(),USE_inside_weights::YES);
-            if (i==33){ //please delete
-                pseudo_cost = pseudo_cost*100; // scale up the pseudo cost for second stage variables 6-11 to prioritize branching on them
-            }
+
             double relwidth = (second_stage_IX[i].u() - second_stage_IX[i].l())/(this->initial_second_stage_IX[i].u() - this->initial_second_stage_IX[i].l());
             pseudo_costs.push_back(pseudo_cost);
             relwidths.push_back(relwidth);
@@ -220,9 +219,8 @@ void BBHeuristic::printinsideweights(){
     for (int i=0;i<this->inside_weights.size();i++){
         std::cout<<"Inside weights for variable "<<i<<": ";
         for (const auto& weight: this->inside_weights[i]){
-            std::cout<<"("<<weight.first<<","<<weight.second<<") ";
+            std::cout<<"("<<weight.first<<","<<weight.second<<") "<<std::endl;
         }
-        std::cout<<std::endl;
     }
 }
 std::vector<double> BBHeuristic::normalize(const std::vector<double>& values) {

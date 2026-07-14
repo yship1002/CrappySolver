@@ -25,10 +25,10 @@ int main(int argc, char* argv[]) {
     // 58240 85440
     EDUnits model(BranchingStrategy::pseudo);
 
-    outsideAlgo CZalgo(&model,85417,UBDSolver::GUROBI); // provide UBD for outer layer
-    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver:: GUROBI); // provide UBD for outer layer
-    //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
-    //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    //outsideAlgo CZalgo(&model,58240,UBDSolver::IPOPT); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver:: GUROBI); // provide UBD for outer layer
+    std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     // CZalgo.OBBT(&(CZalgo.activeNodes[0]),1e-2); // perform OBBT for root node to tighten the first stage variable bounds, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
     
@@ -83,7 +83,9 @@ int main(int argc, char* argv[]) {
 // x[37]: 100
 // x[38]: 0.00999999
 
-// limit inside iteration<=2000
+// temp disbale first stage branching please delete
+// weird strong branching seeesm work fine now ned to progpage please delete
+// limit inside iteration<=2000 please delete
 // outisde alwasy relwidth please delete
 // inside branch favor idx33 capex2 please delte
 // 0.01-0.03 interesting
