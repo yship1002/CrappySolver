@@ -19,21 +19,22 @@ int main(int argc, char* argv[]) {
     //CrudeModel: -19658.3 (121) -19204.1(12121)
     //Ex722:   -0.352759(10s)
     // CHPSIze:3.03*1000
-    //Edunits:58240
+    //Edunits:58240 (58216.75904279342+13.16696553855068+10.649036512259626)
+    //(42590.3++10.64)
     //edunits_nocp:56844
 
     // 58240 85440
     EDUnits model(BranchingStrategy::pseudo);
 
-    //outsideAlgo CZalgo(&model,58240,UBDSolver::IPOPT); // provide UBD for outer layer
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver:: GUROBI); // provide UBD for outer layer
+    //outsideAlgo CZalgo(&model,58240,UBDSolver::GUROBI); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO2,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
     std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
-    std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     // CZalgo.OBBT(&(CZalgo.activeNodes[0]),1e-2); // perform OBBT for root node to tighten the first stage variable bounds, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
     
-    CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(58); // relgap=0.1% tolerance, abs=1
+    //CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
+    //CZalgo.solve(58); // relgap=0.1% tolerance, abs=1
 
 
     // {
@@ -83,11 +84,17 @@ int main(int argc, char* argv[]) {
 // x[37]: 100
 // x[38]: 0.00999999
 
+// outsidealgo use UBD please delete
+//calculaUBD too much please delete
+//favor 18,19 membrance please delete
+//sclaefactor please delete
+//avgConcDilIntCem test please delete
+// wreite cuts please delete
+// LBD write LP please delete
+// change sanwidh cuts please delete
+// objective no openx please delete
 // temp disbale first stage branching please delete
-// weird strong branching seeesm work fine now ned to progpage please delete
-// limit inside iteration<=2000 please delete
-// outisde alwasy relwidth please delete
-// inside branch favor idx33 capex2 please delte
+// outside use relwidth please delete
 // 0.01-0.03 interesting
 // strong branching on a very small interval to see improvemen LP solution find optimal
 // objective <  cut to the problem

@@ -45,7 +45,9 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
         for (size_t i = 0; i < second_stage_IX.size(); ++i) { // go through second stage to get scores
             
             double pseudo_cost = (second_stage_IX[i].u() - second_stage_IX[i].l())*this->getPseudoCost(i+first_stage_IX.size(),USE_inside_weights::YES);
-
+            if (i==18 || i==19){
+                pseudo_cost*=1000;  // please delete
+            }
             double relwidth = (second_stage_IX[i].u() - second_stage_IX[i].l())/(this->initial_second_stage_IX[i].u() - this->initial_second_stage_IX[i].l());
             pseudo_costs.push_back(pseudo_cost);
             relwidths.push_back(relwidth);
@@ -170,7 +172,7 @@ void BBHeuristic::updateWeights(int idx_branched, double left_improve,double rig
         right_improve=0;
     }
     if (range == 0){
-        throw std::runtime_error("Range should not be zero");
+        range=1;
     }
 
 
