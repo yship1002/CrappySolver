@@ -1,6 +1,6 @@
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/EDUnits.h>
+#include <Crappy_Fuzzy_Problem_Library/EDUnits_nocp.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -24,17 +24,17 @@ int main(int argc, char* argv[]) {
     //edunits_nocp:56844
 
     // 58240 85440
-    EDUnits model(BranchingStrategy::pseudo);
+    EDUnits_nocp model(BranchingStrategy::pseudo);
 
-    //outsideAlgo CZalgo(&model,58240,UBDSolver::GUROBI); // provide UBD for outer layer
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO2,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
-    std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    //outsideAlgo CZalgo(&model,56844,UBDSolver::IPOPT); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver::IPOPT); // provide UBD for outer layer
+    //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     // CZalgo.OBBT(&(CZalgo.activeNodes[0]),1e-2); // perform OBBT for root node to tighten the first stage variable bounds, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
     
-    //CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    //CZalgo.solve(58); // relgap=0.1% tolerance, abs=1
+    CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
+    CZalgo.solve(56); // relgap=0.1% tolerance, abs=1
 
 
     // {
@@ -84,6 +84,17 @@ int main(int argc, char* argv[]) {
 // x[37]: 100
 // x[38]: 0.00999999
 
+
+
+// have to be use unit if given a first stage interval to verify
+// have to be used unit with CZ with OBBT worth try template let's reuse it.
+// have to use currentdensity = 0
+// weirdSB on a particular pt from feasible solution 
+// weight recent info vs distant info strong branching
+
+
+
+// one of notes that i have return out first stage 
 // outsidealgo use UBD please delete
 //calculaUBD too much please delete
 //favor 18,19 membrance please delete

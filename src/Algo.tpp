@@ -219,7 +219,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
         this->model->second_stage_IX = node->second_stage_IX;
         insideAlgo inneralgo(this->model,scenario_name,INFINITY,false,this->ubd_solver);
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
-        double scenario_LBD = inneralgo.calculateLBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
+        double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
         //double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s please delete
         if (node->node_id==1) { // root node calculation
             node->scenario_LBDs.push_back(scenario_LBD);
@@ -523,8 +523,8 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
 
 
-    this->calculateUBD(&child1, tolerance); // please delete
-    this->calculateUBD(&child2, tolerance);
+    // this->calculateUBD(&child1, tolerance); // please delete
+    // this->calculateUBD(&child2, tolerance);
     if (child1.UBD==INFINITY){
         child1.LBD=INFINITY; // if child UBD is infinity, then set child UBD to best UBD to avoid numerical issue
     }
@@ -647,7 +647,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-4);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-2);
 
-        cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
         cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
         cplex.solve();
@@ -767,15 +767,15 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         }
     }else if (this->ubd_solver == UBDSolver::GUROBI){
         GRBEnv env = GRBEnv(true); // empty environemtn to turn off annoying Gurobi output
-        env.set(GRB_IntParam_OutputFlag, 1);
-        env.set(GRB_IntParam_LogToConsole, 1); // please delete
+        env.set(GRB_IntParam_OutputFlag, 0);
+        env.set(GRB_IntParam_LogToConsole, 0); // please delete
         env.start();
         try {
             GRBModel grbmodel = GRBModel(env);
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-6);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-6); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-2); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
@@ -786,14 +786,14 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
                 double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
                 node->UBD = objval;
                 // std::cout << "Optimized solution values: "<<objval<<std::endl;
-                for (int i = 0; i <node->first_stage_IX.size()+node->second_stage_IX.size(); ++i) {
-                    std::string auxName = "x" + std::to_string(i);
+                // for (int i = 0; i <node->first_stage_IX.size()+node->second_stage_IX.size(); ++i) {
+                //     std::string auxName = "x" + std::to_string(i);
                         
-                        // 1. Get the variable object
-                    GRBVar auxVar = grbmodel.getVarByName(auxName);
-                    double value = auxVar.get(GRB_DoubleAttr_X);
-                    std::cout << "Variable " << auxName << " = " << value << "\n";
-                }
+                //         // 1. Get the variable object
+                //     GRBVar auxVar = grbmodel.getVarByName(auxName);
+                //     double value = auxVar.get(GRB_DoubleAttr_X);
+                //     std::cout << "Variable " << auxName << " = " << value << "\n";
+                // }
 
                 return objval;
             }else if(status == GRB_SUBOPTIMAL){
@@ -942,6 +942,8 @@ double insideAlgo::solve(double tolerance) {
 
 
     this->OBBT(&(this->activeNodes[0]),tolerance);
+    std::cout<<this->calculateUBD(&(this->activeNodes[0]), tolerance)<<std::endl;
+    std::cout<<this->calculateLBD(&(this->activeNodes[0]), tolerance)<<std::endl;
 
 
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
@@ -1044,7 +1046,7 @@ void insideAlgo::OBBT(xBBNode* node,double tolerance){
             cplex.setOut(env.getNullStream());
             cplex.solve();
             if (cplex.getStatus() == IloAlgorithm::Optimal) {
-                node->first_stage_IX[var_idx].l()=std::max(node->first_stage_IX[var_idx].l(), cplex.getObjValue()+1e-4);
+                node->first_stage_IX[var_idx].l()=std::max(node->first_stage_IX[var_idx].l(), cplex.getObjValue()-1e-4);
             }
             var_idx++;
 
@@ -1060,7 +1062,7 @@ void insideAlgo::OBBT(xBBNode* node,double tolerance){
             cplex.setOut(env.getNullStream());
             cplex.solve();
             if (cplex.getStatus() == IloAlgorithm::Optimal) {
-                node->first_stage_IX[var_idx].u()=std::min(node->first_stage_IX[var_idx].u(), -cplex.getObjValue()-1e-4);
+                node->first_stage_IX[var_idx].u()=std::min(node->first_stage_IX[var_idx].u(), -cplex.getObjValue()+1e-4);
 
             }
             var_idx++;
@@ -1076,7 +1078,7 @@ void insideAlgo::OBBT(xBBNode* node,double tolerance){
             cplex.setOut(env.getNullStream());
             cplex.solve();
             if (cplex.getStatus() == IloAlgorithm::Optimal) {
-                node->second_stage_IX[var_idx].l()=std::max(node->second_stage_IX[var_idx].l(), cplex.getObjValue()+1e-4);
+                node->second_stage_IX[var_idx].l()=std::max(node->second_stage_IX[var_idx].l(), cplex.getObjValue()-1e-4);
 
             }
             var_idx++;
@@ -1092,7 +1094,7 @@ void insideAlgo::OBBT(xBBNode* node,double tolerance){
             cplex.setOut(env.getNullStream());
             cplex.solve();
             if (cplex.getStatus() == IloAlgorithm::Optimal) {
-                node->second_stage_IX[var_idx].u()=std::min(node->second_stage_IX[var_idx].u(), -cplex.getObjValue()-1e-4);
+                node->second_stage_IX[var_idx].u()=std::min(node->second_stage_IX[var_idx].u(), -cplex.getObjValue()+1e-4);
 
             }
             var_idx++;
