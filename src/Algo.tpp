@@ -219,8 +219,8 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
         this->model->second_stage_IX = node->second_stage_IX;
         insideAlgo inneralgo(this->model,scenario_name,INFINITY,false,this->ubd_solver);
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
-        double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
-        //double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s please delete
+        //double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
+        double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s 
         if (node->node_id==1) { // root node calculation
             node->scenario_LBDs.push_back(scenario_LBD);
         } else { // regular node
@@ -274,8 +274,6 @@ double outsideAlgo::solve(double tolerance) {
     double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
 
 
-
-    this->activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth; // please delete
 
 
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
@@ -523,8 +521,7 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
 
 
-    // this->calculateUBD(&child1, tolerance); // please delete
-    // this->calculateUBD(&child2, tolerance);
+
     if (child1.UBD==INFINITY){
         child1.LBD=INFINITY; // if child UBD is infinity, then set child UBD to best UBD to avoid numerical issue
     }
@@ -636,10 +633,6 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
 
         this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
 
-        IloExpr objExpr(env);
-        objExpr=x[x.getSize()-1]; // objective is always the last variable in our construction
-        obj = IloMinimize(env, objExpr);
-        obj.end();
 
 
         IloCplex cplex(cplexmodel);
@@ -661,7 +654,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
 
             std::vector<double> solution(vals.getSize());
             for (IloInt i = 0; i < node->second_stage_IX.size()+node->first_stage_IX.size(); ++i) {
-                //std::cout<<"Variable "<<i<<": "<<vals[i]<<std::endl;
+                //std::cout<<"Variable "<<i<<": "<<vals[i]<<std::endl; // please delete
                 solution[i] = vals[i];
             }
             vals.end(); 
@@ -941,9 +934,8 @@ double insideAlgo::solve(double tolerance) {
     double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
 
 
-    this->OBBT(&(this->activeNodes[0]),tolerance);
-    std::cout<<this->calculateUBD(&(this->activeNodes[0]), tolerance)<<std::endl;
-    std::cout<<this->calculateLBD(&(this->activeNodes[0]), tolerance)<<std::endl;
+    //this->OBBT(&(this->activeNodes[0]),tolerance);
+
 
 
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
@@ -957,7 +949,9 @@ double insideAlgo::solve(double tolerance) {
         std::chrono::duration<double> elapsed = end - start;
         std::cout<<"Finished Inside Strong Branching"<<std::endl;
         std::cout<<"========================================"<<std::endl;
-    }
+    }else{
+        std::cout<<"========================================"<<std::endl;}
+
     if (this->activeNodes[0].LBD == INFINITY){ // in rare case when strong branching detects infeasibility
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible after strong branching at root node."<<std::endl;
         return INFINITY;
