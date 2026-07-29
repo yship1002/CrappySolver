@@ -29,6 +29,7 @@ class Algo {
         double bestUBD;
         STModel* model;
         std::vector<T> activeNodes;
+        int iterations;
         int getWorstNodeIdx();
         double getBestUBD();
         double getWorstLBD();   
@@ -86,7 +87,11 @@ class insideAlgo:public Algo<xBBNode>{
         void printFirstStageIX(xBBNode* node) override;
         void printSecondStageIX(xBBNode* node);
         void weirdstrongbranching(xBBNode* node,double tolerance);
-        void OBBT(xBBNode* node,double tolerance);
+        bool validitycheck(xBBNode* node);
+        void printLBDsolution(xBBNode* node);
+        bool OBBT(xBBNode* node,double tolerance);
+        bool getOBBTbounds_lower(xBBNode* node, int var_idx);
+        bool getOBBTbounds_upper(xBBNode* node, int var_idx);
         template<class Archive>
         void serialize(Archive& ar) {
             ar(

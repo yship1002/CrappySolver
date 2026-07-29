@@ -9,3 +9,6 @@
 [submodule "Crappy_Fuzzy_Problem_Library"]
 	path = Crappy_Fuzzy_Problem_Library
 	url = https://github.com/yship1002/Crappy_Fuzzy_Problem_Library
+[submodule "eigen"]
+	path = eigen
+	url = https://gitlab.com/libeigen/eigen

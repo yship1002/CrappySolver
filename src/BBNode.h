@@ -41,6 +41,7 @@ class xBBNode: public Node {
         xBBNode(const xBBNode& other)=default;
         void printBound();
         std::vector<std::pair<double,double>> strong_branching_storage;
+        std::vector<double> UBD_solution;
         ScenarioNames scenario_name;
 
 };
