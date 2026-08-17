@@ -114,7 +114,6 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     BBNode child2 = this->activeNodes[idx]; // Copy current node
     BBNode::node_counter++; // Increment node index for child nodes
     child2.node_id = BBNode::node_counter; // Assign unique ID to child2
-    std::cout<<"Branching on node index: "<<idx<<", out of "<<this->activeNodes.size()<<std::endl;
     int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX);
     std::cout<<"Branching on first stage variable index: "<<branch_idx<<std::endl;
     double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
@@ -311,9 +310,6 @@ double outsideAlgo::solve(double tolerance) {
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
         std::cout<<"Total LBD time: "<<insideAlgo::lbd_calculation_time<<std::endl;
         std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
-
-
-
         this->iterations++;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -491,8 +487,6 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
     branch_idx = this->activeNodes[new_idx].branchheuristic.getBranchingVarIndex(this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
     
-    std::cout<<"Branching on node index: "<<new_idx<<" out of "<<this->activeNodes.size()<<std::endl;
-    std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
     if(branch_idx<this->activeNodes[new_idx].first_stage_IX.size()){
 
         // first stage branching
@@ -513,15 +507,14 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     }
     double before_LBD_time=insideAlgo::lbd_calculation_time;
 
-    if (this->OBBT(&child1, tolerance)){
-        this->calculateLBD(&child1, tolerance);
-    }
+
+    this->calculateLBD(&child1, tolerance);
+
 
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time); // record LBD calculation time for child1
     double before_LBD_time2=insideAlgo::lbd_calculation_time;
-    if (this->OBBT(&child2, tolerance)){
-        this->calculateLBD(&child2, tolerance);
-    }
+
+    this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
     if (child1.UBD==INFINITY){
         child1.LBD=INFINITY; // if child UBD is infinity, then set child UBD to best UBD to avoid numerical issue
@@ -530,7 +523,6 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
         child2.LBD=INFINITY; // if child UBD is infinity, then set child UBD to best UBD to avoid numerical issue
     }
 
-    std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl;
     if (child1.LBD<original_LBD){
         child1.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
 
@@ -604,162 +596,164 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     return branch_idx;
 }
 double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
-    // insideAlgo::lbd_calculation_count++;
-    // this->model->scenario_name = node->scenario_name;
-    // this->model->first_stage_IX = node->first_stage_IX;
-    // this->model->second_stage_IX = node->second_stage_IX;
-    // this->model->clearDAG(); // remove the previous DAG to avoid interference
-    // if (!this->solvefullModel){
-    //     this->model->buildDAG();
-    // }else{
-    //     this->model->buildFullModelDAG();
-    // }
-    // try{
-    //     ILOSTLBEGIN
-    //     IloEnv env;
-    //     if (!verbose){
-    //         env.setOut(env.getNullStream());
-    //         env.setWarning(env.getNullStream());
-    //     }
-    //     IloModel cplexmodel(env);
-    //     IloRangeArray c(env);
-    //     IloObjective obj (env);
-    //     IloNumVarArray x(env);
-    //     this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
-    //     IloCplex cplex(cplexmodel);
-    //     cplex.setParam(IloCplex::Param::ClockType, 2);
-    //     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-4);
-    //     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
-    //     cplex.setParam(IloCplex::Param::Read::Scale, 1);
-    //     //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
-    //     cplex.setParam(IloCplex::AggInd, false);
-    //     cplex.setParam(IloCplex::Param::SolutionType, 2);
-
-    //     cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
-    //     auto start = std::chrono::high_resolution_clock::now();
-    //     cplex.solve();
-    //     auto end = std::chrono::high_resolution_clock::now();
-    //     std::chrono::duration<double> elapsed = end - start;
-    //     insideAlgo::lbd_calculation_time += elapsed.count();
-    //     if (cplex.getStatus() == IloAlgorithm::Optimal) {
-    //         node->LBD= cplex.getObjValue();
-    //         IloNumArray vals(env);
-    //         cplex.getValues(vals, x);
-
-    //         std::vector<double> solution(vals.getSize());
-    //         for (IloInt i = 0; i < node->second_stage_IX.size()+node->first_stage_IX.size(); ++i) {
-    //             //std::cout<<"Variable "<<i<<": "<<vals[i]<<std::endl; // please delete
-    //             solution[i] = vals[i];
-    //         }
-    //         vals.end(); 
-    //         node->branchheuristic.LBD_opt_pt=solution; // store the optimal solution for LBD calculation
-            
-    //     }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
-    //         node->LBD=INFINITY; // assign big number for infeasibility
-    //                     // ── Conflict Refiner ──────────────────────────────────────────────
-    //         // cplex.setOut(std::cout);
-    //         // IloConstraintArray conflicts(env);
-    //         // IloNumArray priorities(env);
-            
-    //         // for (IloInt i = 0; i < c.getSize(); ++i) { conflicts.add(c[i]); priorities.add(1.0); }
-
-    //         // if (cplex.refineConflict(conflicts, priorities)) {
-    //         //     std::cerr << "===== CONFLICT REPORT =====\n";
- 
-    //         //     for (IloInt i = 0; i < c.getSize(); ++i) {
-    //         //         auto st = cplex.getConflict(c[i]);
-    //         //         if (st == IloCplex::ConflictMember || st == IloCplex::ConflictPossibleMember)
-    //         //             std::cerr << "  CON [" << i+1 << "] " << (c[i].getName() ? c[i].getName() : "?")
-    //         //                     << " lb=" << c[i].getLB() << " ub=" << c[i].getUB() << "\n";
-    //         //     }
-    //         //     std::cerr << "===========================\n";
-    //         // } else {
-    //         //     std::cerr << "[ConflictRefiner] Could not identify conflict (likely numerical).\n";
-    //         // }
-    //         // ─────────────────────────────────────────────────────────────────
-    //     } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
-    //         node->LBD = INFINITY;
-    //     }
-    //     env.end();
-    // } catch (IloException& e) {
-    //     std::cerr << "CPLEX exception: " << e << "\n";
-    // }
-
-    // return node->LBD;
-
     insideAlgo::lbd_calculation_count++;
     this->model->scenario_name = node->scenario_name;
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
     this->model->clearDAG(); // remove the previous DAG to avoid interference
-    if (!this->solvefullModel) {
+    if (!this->solvefullModel){
         this->model->buildDAG();
-    } else {
+    }else{
         this->model->buildFullModelDAG();
     }
-    try {
-        GRBEnv env(true);
-
-        if (!verbose) {
-            env.set(GRB_IntParam_OutputFlag, 0);
+    try{
+        ILOSTLBEGIN
+        IloEnv env;
+        if (!verbose){
+            env.setOut(env.getNullStream());
+            env.setWarning(env.getNullStream());
         }
-        env.set(GRB_IntParam_OutputFlag, 0);
-        env.set(GRB_IntParam_LogToConsole, 0); // please delete
-        env.start();
+        IloModel cplexmodel(env);
+        IloRangeArray c(env);
+        IloObjective obj (env);
+        IloNumVarArray x(env);
+        this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+        IloCplex cplex(cplexmodel);
+        cplex.setParam(IloCplex::Param::ClockType, 2);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-4);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
+        cplex.setParam(IloCplex::Param::Read::Scale, 1);
+        //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
+        cplex.setParam(IloCplex::AggInd, false);
+        cplex.setParam(IloCplex::Param::SolutionType, 2);
 
-        GRBModel grb_model(env);
-        std::vector<GRBVar> x;
-        this->model->generateLP(&env, &grb_model, &x);
-
-        // Parameter equivalents to the CPLEX settings above
-        grb_model.set(GRB_IntParam_Method, -1);           // let Gurobi pick root algorithm (analogous to leaving RootAlgorithm default/commented)
-        grb_model.set(GRB_DoubleParam_OptimalityTol, 1e-4);
-        grb_model.set(GRB_DoubleParam_FeasibilityTol, 1e-4);
-        grb_model.set(GRB_IntParam_ScaleFlag, 3);          // ~ IloCplex::Param::Read::Scale
-        grb_model.set(GRB_IntParam_Aggregate, 0);          // ~ IloCplex::AggInd = false
-        grb_model.set(GRB_IntParam_NumericFocus, 3);           // ~ IloCplex::AggInd = false (no presolve)
- 
-
-        grb_model.write("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
-
+        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
         auto start = std::chrono::high_resolution_clock::now();
-        grb_model.optimize();
+        cplex.solve();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         insideAlgo::lbd_calculation_time += elapsed.count();
+        if (cplex.getStatus() == IloAlgorithm::Optimal) {
+            node->LBD= cplex.getObjValue();
+            IloNumArray vals(env);
+            cplex.getValues(vals, x);
 
-        int status = grb_model.get(GRB_IntAttr_Status);
-        if (status == GRB_OPTIMAL) {
-            node->LBD = grb_model.get(GRB_DoubleAttr_ObjVal);
-
-            std::vector<double> solution(x.size());
-            for (size_t i = 0; i < node->second_stage_IX.size() + node->first_stage_IX.size(); ++i) {
-                //std::cout << "Variable " << i << ": " << x[i].get(GRB_DoubleAttr_X) << std::endl; // please delete
-                solution[i] = x[i].get(GRB_DoubleAttr_X);
+            std::vector<double> solution(vals.getSize());
+            for (IloInt i = 0; i < node->second_stage_IX.size()+node->first_stage_IX.size(); ++i) {
+                //std::cout<<"Variable "<<i<<": "<<vals[i]<<std::endl; // please delete
+                solution[i] = vals[i];
             }
-            node->branchheuristic.LBD_opt_pt = solution; // store the optimal solution for LBD calculation
+            vals.end(); 
+            node->branchheuristic.LBD_opt_pt=solution; // store the optimal solution for LBD calculation
+            
+        }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+            node->LBD=INFINITY; // assign big number for infeasibility
+                        // ── Conflict Refiner ──────────────────────────────────────────────
+            // cplex.setOut(std::cout);
+            // IloConstraintArray conflicts(env);
+            // IloNumArray priorities(env);
+            
+            // for (IloInt i = 0; i < c.getSize(); ++i) { conflicts.add(c[i]); priorities.add(1.0); }
 
-        } else if (status == GRB_INFEASIBLE) {
-            node->LBD = INFINITY; // assign big number for infeasibility
-            // ── Conflict Refiner (IIS) ──────────────────────────────────────────
-            // grb_model.computeIIS();
-            // std::cerr << "===== CONFLICT REPORT =====\n";
-            // for (auto& constr : grb_model.getConstrs()) {
-            //     if (constr.get(GRB_IntAttr_IISConstr)) {
-            //         std::cerr << "  CON " << constr.get(GRB_StringAttr_ConstrName) << "\n";
+            // if (cplex.refineConflict(conflicts, priorities)) {
+            //     std::cerr << "===== CONFLICT REPORT =====\n";
+ 
+            //     for (IloInt i = 0; i < c.getSize(); ++i) {
+            //         auto st = cplex.getConflict(c[i]);
+            //         if (st == IloCplex::ConflictMember || st == IloCplex::ConflictPossibleMember)
+            //             std::cerr << "  CON [" << i+1 << "] " << (c[i].getName() ? c[i].getName() : "?")
+            //                     << " lb=" << c[i].getLB() << " ub=" << c[i].getUB() << "\n";
             //     }
+            //     std::cerr << "===========================\n";
+            // } else {
+            //     std::cerr << "[ConflictRefiner] Could not identify conflict (likely numerical).\n";
             // }
-            // std::cerr << "===========================\n";
             // ─────────────────────────────────────────────────────────────────
-        } else if (status == GRB_INF_OR_UNBD) {
+        } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
             node->LBD = INFINITY;
         }
-
-    } catch (GRBException& e) {
-        std::cerr << "Gurobi exception: " << e.getErrorCode() << ": " << e.getMessage() << "\n";
+        env.end();
+    } catch (IloException& e) {
+        std::cerr << "CPLEX exception: " << e << "\n";
     }
 
     return node->LBD;
+
+
+    // GUROBI LBD calculation
+    // insideAlgo::lbd_calculation_count++;
+    // this->model->scenario_name = node->scenario_name;
+    // this->model->first_stage_IX = node->first_stage_IX;
+    // this->model->second_stage_IX = node->second_stage_IX;
+    // this->model->clearDAG(); // remove the previous DAG to avoid interference
+    // if (!this->solvefullModel) {
+    //     this->model->buildDAG();
+    // } else {
+    //     this->model->buildFullModelDAG();
+    // }
+    // try {
+    //     GRBEnv env(true);
+
+    //     if (!verbose) {
+    //         env.set(GRB_IntParam_OutputFlag, 0);
+    //     }
+    //     env.set(GRB_IntParam_OutputFlag, 0);
+    //     env.set(GRB_IntParam_LogToConsole, 0); // please delete
+    //     env.start();
+
+    //     GRBModel grb_model(env);
+    //     std::vector<GRBVar> x;
+    //     this->model->generateLP(&env, &grb_model, &x);
+
+    //     // Parameter equivalents to the CPLEX settings above
+    //     grb_model.set(GRB_IntParam_Method, -1);           // let Gurobi pick root algorithm (analogous to leaving RootAlgorithm default/commented)
+    //     grb_model.set(GRB_DoubleParam_OptimalityTol, 1e-4);
+    //     grb_model.set(GRB_DoubleParam_FeasibilityTol, 1e-4);
+    //     grb_model.set(GRB_IntParam_ScaleFlag, 3);          // ~ IloCplex::Param::Read::Scale
+    //     grb_model.set(GRB_IntParam_Aggregate, 0);          // ~ IloCplex::AggInd = false
+    //     grb_model.set(GRB_IntParam_NumericFocus, 3);           // ~ IloCplex::AggInd = false (no presolve)
+ 
+
+    //     grb_model.write("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+
+    //     auto start = std::chrono::high_resolution_clock::now();
+    //     grb_model.optimize();
+    //     auto end = std::chrono::high_resolution_clock::now();
+    //     std::chrono::duration<double> elapsed = end - start;
+    //     insideAlgo::lbd_calculation_time += elapsed.count();
+
+    //     int status = grb_model.get(GRB_IntAttr_Status);
+    //     if (status == GRB_OPTIMAL) {
+    //         node->LBD = grb_model.get(GRB_DoubleAttr_ObjVal);
+
+    //         std::vector<double> solution(x.size());
+    //         for (size_t i = 0; i < node->second_stage_IX.size() + node->first_stage_IX.size(); ++i) {
+    //             //std::cout << "Variable " << i << ": " << x[i].get(GRB_DoubleAttr_X) << std::endl; // please delete
+    //             solution[i] = x[i].get(GRB_DoubleAttr_X);
+    //         }
+    //         node->branchheuristic.LBD_opt_pt = solution; // store the optimal solution for LBD calculation
+
+    //     } else if (status == GRB_INFEASIBLE) {
+    //         node->LBD = INFINITY; // assign big number for infeasibility
+    //         // ── Conflict Refiner (IIS) ──────────────────────────────────────────
+    //         // grb_model.computeIIS();
+    //         // std::cerr << "===== CONFLICT REPORT =====\n";
+    //         // for (auto& constr : grb_model.getConstrs()) {
+    //         //     if (constr.get(GRB_IntAttr_IISConstr)) {
+    //         //         std::cerr << "  CON " << constr.get(GRB_StringAttr_ConstrName) << "\n";
+    //         //     }
+    //         // }
+    //         // std::cerr << "===========================\n";
+    //         // ─────────────────────────────────────────────────────────────────
+    //     } else if (status == GRB_INF_OR_UNBD) {
+    //         node->LBD = INFINITY;
+    //     }
+
+    // } catch (GRBException& e) {
+    //     std::cerr << "Gurobi exception: " << e.getErrorCode() << ": " << e.getMessage() << "\n";
+    // }
+
+    // return node->LBD;
 
 
 }
@@ -987,7 +981,7 @@ double insideAlgo::solve(double tolerance) {
         return INFINITY;
     }
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
-    this->OBBT(&(this->activeNodes[0]), tolerance);
+
     this->worstLBD = this->calculateLBD(&(this->activeNodes[0]), tolerance);
     this->LBD_values_records.push_back(this->activeNodes[0].LBD); // record LBD value for root node
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time - before_root_lbd_calculation_time); // record LBD calculation time for root node
@@ -1041,7 +1035,8 @@ double insideAlgo::solve(double tolerance) {
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
         if (this->worstLBD>this->bestUBD){
-            throw std::runtime_error("Warning: Worst LBD is greater than best UBD, this should not happen, there might be a bug in the code");
+            return this->bestUBD;
+            //throw std::runtime_error("Warning: Worst LBD is greater than best UBD, this should not happen, there might be a bug in the code");
         }
 
         this->fathomNodes(this->bestUBD);
@@ -1056,7 +1051,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
 
-        std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        //std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         this->iterations++;
     }
