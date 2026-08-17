@@ -39,7 +39,7 @@ class Algo {
 
         virtual int branchNodeAtIdx(int idx,double tolerance)=0;
         virtual double solve(double tolerance)=0;
-        virtual double calculateLBD(T* node,double tolerance)=0;
+        virtual double calculateLBD(T* node,double tolerance,bool verbose=false)=0;
         virtual double calculateUBD(T* node,double tolerance)=0;
         virtual void strongbranching(T* node,double tolerance)=0;
         virtual void printFirstStageIX(T* node)=0;
@@ -56,10 +56,11 @@ class outsideAlgo:public Algo<BBNode>{
         double cheatstrongbranching(BBNode* node,double tolerance);
         int branchNodeAtIdx(int idx,double tolerance) override;
         double solve(double tolerance) override;
-        double calculateLBD(BBNode* node,double tolerance) override;
+        double calculateLBD(BBNode* node,double tolerance,bool verbose=false) override;
         double calculateUBD(BBNode* node,double tolerance) override;
         void strongbranching(BBNode* node,double tolerance) override;
         void printFirstStageIX(BBNode* node) override;
+        bool validitycheck(BBNode* node);
         template<class Archive>
         void serialize(Archive& ar) {
             ar(
@@ -82,7 +83,7 @@ class insideAlgo:public Algo<xBBNode>{
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;
         void strongbranching(xBBNode* node,double tolerance) override;
-        double calculateLBD(xBBNode* node,double tolerance) override;
+        double calculateLBD(xBBNode* node,double tolerance,bool verbose=false) override;
         double calculateUBD(xBBNode* node,double tolerance) override;
         void printFirstStageIX(xBBNode* node) override;
         void printSecondStageIX(xBBNode* node);

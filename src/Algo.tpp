@@ -126,9 +126,6 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     int initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double initial_lbd_calculation_time=insideAlgo::lbd_calculation_time;
 
-    
-    //this->printFirstStageIX(&child1); // print first stage IX for child1 before calculating LBD
-
 
     this->calculateLBD(&child1, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-initial_lbd_calculation_time); // record LBD calculation time for child1
@@ -209,7 +206,7 @@ double outsideAlgo::calculateUBD(BBNode* node,double tolerance) {
     node->UBD = this->bestUBD;
     return node->UBD;
 }
-double outsideAlgo::calculateLBD(BBNode* node,double tolerance) {
+double outsideAlgo::calculateLBD(BBNode* node,double tolerance,bool verbose) {
     // this is the inner layer
     double totalLBD = 0.0;
 
@@ -315,6 +312,8 @@ double outsideAlgo::solve(double tolerance) {
         std::cout<<"Total LBD time: "<<insideAlgo::lbd_calculation_time<<std::endl;
         std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
 
+
+
         this->iterations++;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -376,13 +375,6 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             double left_LBD=this->calculateLBD(&child1, tolerance);
             double right_LBD=this->calculateLBD(&child2, tolerance);
 
-
-            if (this->validitycheck(&child1) && this->validitycheck(&child2)){ // if variable range is too close just fix it
-                node->first_stage_IX[iterator] = mc::Interval(node->UBD_solution[iterator],node->UBD_solution[iterator]);
-                temp_weights.push_back(std::pair(0,0));
-                iterator++;
-                continue;
-            }
             if (left_LBD == INFINITY){
                 if (right_LBD == INFINITY){
                     node->LBD=INFINITY; // if both child are infeasible, then the node is infeasible
@@ -427,13 +419,6 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
             
             double left_LBD=this->calculateLBD(&child3, tolerance); 
             double right_LBD=this->calculateLBD(&child4, tolerance);
-
-            if (this->validitycheck(&child3) && this->validitycheck(&child4)){ // if variable range is too close just fix it
-                node->second_stage_IX[iterator-first_stage_size] = mc::Interval(node->UBD_solution[iterator],node->UBD_solution[iterator]);
-                temp_weights.push_back(std::pair(0,0));
-                iterator++;
-                continue;
-            }
 
             if (left_LBD == INFINITY){
                 if (right_LBD == INFINITY){
@@ -618,93 +603,164 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     this->activeNodes.push_back(child2);
     return branch_idx;
 }
-double insideAlgo::calculateLBD(xBBNode* node,double tolerance) {
+double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
+    // insideAlgo::lbd_calculation_count++;
+    // this->model->scenario_name = node->scenario_name;
+    // this->model->first_stage_IX = node->first_stage_IX;
+    // this->model->second_stage_IX = node->second_stage_IX;
+    // this->model->clearDAG(); // remove the previous DAG to avoid interference
+    // if (!this->solvefullModel){
+    //     this->model->buildDAG();
+    // }else{
+    //     this->model->buildFullModelDAG();
+    // }
+    // try{
+    //     ILOSTLBEGIN
+    //     IloEnv env;
+    //     if (!verbose){
+    //         env.setOut(env.getNullStream());
+    //         env.setWarning(env.getNullStream());
+    //     }
+    //     IloModel cplexmodel(env);
+    //     IloRangeArray c(env);
+    //     IloObjective obj (env);
+    //     IloNumVarArray x(env);
+    //     this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+    //     IloCplex cplex(cplexmodel);
+    //     cplex.setParam(IloCplex::Param::ClockType, 2);
+    //     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-4);
+    //     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
+    //     cplex.setParam(IloCplex::Param::Read::Scale, 1);
+    //     //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
+    //     cplex.setParam(IloCplex::AggInd, false);
+    //     cplex.setParam(IloCplex::Param::SolutionType, 2);
 
+    //     cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+    //     auto start = std::chrono::high_resolution_clock::now();
+    //     cplex.solve();
+    //     auto end = std::chrono::high_resolution_clock::now();
+    //     std::chrono::duration<double> elapsed = end - start;
+    //     insideAlgo::lbd_calculation_time += elapsed.count();
+    //     if (cplex.getStatus() == IloAlgorithm::Optimal) {
+    //         node->LBD= cplex.getObjValue();
+    //         IloNumArray vals(env);
+    //         cplex.getValues(vals, x);
 
+    //         std::vector<double> solution(vals.getSize());
+    //         for (IloInt i = 0; i < node->second_stage_IX.size()+node->first_stage_IX.size(); ++i) {
+    //             //std::cout<<"Variable "<<i<<": "<<vals[i]<<std::endl; // please delete
+    //             solution[i] = vals[i];
+    //         }
+    //         vals.end(); 
+    //         node->branchheuristic.LBD_opt_pt=solution; // store the optimal solution for LBD calculation
+            
+    //     }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
+    //         node->LBD=INFINITY; // assign big number for infeasibility
+    //                     // ── Conflict Refiner ──────────────────────────────────────────────
+    //         // cplex.setOut(std::cout);
+    //         // IloConstraintArray conflicts(env);
+    //         // IloNumArray priorities(env);
+            
+    //         // for (IloInt i = 0; i < c.getSize(); ++i) { conflicts.add(c[i]); priorities.add(1.0); }
 
+    //         // if (cplex.refineConflict(conflicts, priorities)) {
+    //         //     std::cerr << "===== CONFLICT REPORT =====\n";
+ 
+    //         //     for (IloInt i = 0; i < c.getSize(); ++i) {
+    //         //         auto st = cplex.getConflict(c[i]);
+    //         //         if (st == IloCplex::ConflictMember || st == IloCplex::ConflictPossibleMember)
+    //         //             std::cerr << "  CON [" << i+1 << "] " << (c[i].getName() ? c[i].getName() : "?")
+    //         //                     << " lb=" << c[i].getLB() << " ub=" << c[i].getUB() << "\n";
+    //         //     }
+    //         //     std::cerr << "===========================\n";
+    //         // } else {
+    //         //     std::cerr << "[ConflictRefiner] Could not identify conflict (likely numerical).\n";
+    //         // }
+    //         // ─────────────────────────────────────────────────────────────────
+    //     } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+    //         node->LBD = INFINITY;
+    //     }
+    //     env.end();
+    // } catch (IloException& e) {
+    //     std::cerr << "CPLEX exception: " << e << "\n";
+    // }
+
+    // return node->LBD;
 
     insideAlgo::lbd_calculation_count++;
     this->model->scenario_name = node->scenario_name;
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
     this->model->clearDAG(); // remove the previous DAG to avoid interference
-    if (!this->solvefullModel){
+    if (!this->solvefullModel) {
         this->model->buildDAG();
-    }else{
+    } else {
         this->model->buildFullModelDAG();
     }
-    try{
-        ILOSTLBEGIN
-        IloEnv env;
-        env.setOut(env.getNullStream());
-        env.setWarning(env.getNullStream());
-        IloModel cplexmodel(env);
-        IloRangeArray c(env);
-        IloObjective obj (env);
-        IloNumVarArray x(env);
+    try {
+        GRBEnv env(true);
 
-        this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+        if (!verbose) {
+            env.set(GRB_IntParam_OutputFlag, 0);
+        }
+        env.set(GRB_IntParam_OutputFlag, 0);
+        env.set(GRB_IntParam_LogToConsole, 0); // please delete
+        env.start();
 
+        GRBModel grb_model(env);
+        std::vector<GRBVar> x;
+        this->model->generateLP(&env, &grb_model, &x);
 
+        // Parameter equivalents to the CPLEX settings above
+        grb_model.set(GRB_IntParam_Method, -1);           // let Gurobi pick root algorithm (analogous to leaving RootAlgorithm default/commented)
+        grb_model.set(GRB_DoubleParam_OptimalityTol, 1e-4);
+        grb_model.set(GRB_DoubleParam_FeasibilityTol, 1e-4);
+        grb_model.set(GRB_IntParam_ScaleFlag, 3);          // ~ IloCplex::Param::Read::Scale
+        grb_model.set(GRB_IntParam_Aggregate, 0);          // ~ IloCplex::AggInd = false
+        grb_model.set(GRB_IntParam_NumericFocus, 3);           // ~ IloCplex::AggInd = false (no presolve)
+ 
 
-        IloCplex cplex(cplexmodel);
-        cplex.setParam(IloCplex::Param::ClockType, 2);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-4);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-2);
-        cplex.setParam(IloCplex::Param::Read::Scale, 1);
+        grb_model.write("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
 
-        //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
-        cplex.setOut(env.getNullStream());
         auto start = std::chrono::high_resolution_clock::now();
-        cplex.solve();
+        grb_model.optimize();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         insideAlgo::lbd_calculation_time += elapsed.count();
-        if (cplex.getStatus() == IloAlgorithm::Optimal) {
-            node->LBD= cplex.getObjValue();
-            IloNumArray vals(env);
-            cplex.getValues(vals, x);
 
-            std::vector<double> solution(vals.getSize());
-            for (IloInt i = 0; i < node->second_stage_IX.size()+node->first_stage_IX.size(); ++i) {
-                //std::cout<<"Variable "<<i<<": "<<vals[i]<<std::endl; // please delete
-                solution[i] = vals[i];
+        int status = grb_model.get(GRB_IntAttr_Status);
+        if (status == GRB_OPTIMAL) {
+            node->LBD = grb_model.get(GRB_DoubleAttr_ObjVal);
+
+            std::vector<double> solution(x.size());
+            for (size_t i = 0; i < node->second_stage_IX.size() + node->first_stage_IX.size(); ++i) {
+                //std::cout << "Variable " << i << ": " << x[i].get(GRB_DoubleAttr_X) << std::endl; // please delete
+                solution[i] = x[i].get(GRB_DoubleAttr_X);
             }
-            vals.end(); 
-            node->branchheuristic.LBD_opt_pt=solution; // store the optimal solution for LBD calculation
-            
-        }else if (cplex.getStatus() == IloAlgorithm::Infeasible) {
-            node->LBD=INFINITY; // assign big number for infeasibility
-                        // ── Conflict Refiner ──────────────────────────────────────────────
-            // cplex.setOut(std::cout);
-            // IloConstraintArray conflicts(env);
-            // IloNumArray priorities(env);
-            
-            // for (IloInt i = 0; i < c.getSize(); ++i) { conflicts.add(c[i]); priorities.add(1.0); }
+            node->branchheuristic.LBD_opt_pt = solution; // store the optimal solution for LBD calculation
 
-            // if (cplex.refineConflict(conflicts, priorities)) {
-            //     std::cerr << "===== CONFLICT REPORT =====\n";
- 
-            //     for (IloInt i = 0; i < c.getSize(); ++i) {
-            //         auto st = cplex.getConflict(c[i]);
-            //         if (st == IloCplex::ConflictMember || st == IloCplex::ConflictPossibleMember)
-            //             std::cerr << "  CON [" << i+1 << "] " << (c[i].getName() ? c[i].getName() : "?")
-            //                     << " lb=" << c[i].getLB() << " ub=" << c[i].getUB() << "\n";
+        } else if (status == GRB_INFEASIBLE) {
+            node->LBD = INFINITY; // assign big number for infeasibility
+            // ── Conflict Refiner (IIS) ──────────────────────────────────────────
+            // grb_model.computeIIS();
+            // std::cerr << "===== CONFLICT REPORT =====\n";
+            // for (auto& constr : grb_model.getConstrs()) {
+            //     if (constr.get(GRB_IntAttr_IISConstr)) {
+            //         std::cerr << "  CON " << constr.get(GRB_StringAttr_ConstrName) << "\n";
             //     }
-            //     std::cerr << "===========================\n";
-            // } else {
-            //     std::cerr << "[ConflictRefiner] Could not identify conflict (likely numerical).\n";
             // }
+            // std::cerr << "===========================\n";
             // ─────────────────────────────────────────────────────────────────
-        } else if (cplex.getStatus() == IloAlgorithm::InfeasibleOrUnbounded) {
+        } else if (status == GRB_INF_OR_UNBD) {
             node->LBD = INFINITY;
         }
-        env.end();
-    } catch (IloException& e) {
-        std::cerr << "CPLEX exception: " << e << "\n";
+
+    } catch (GRBException& e) {
+        std::cerr << "Gurobi exception: " << e.getErrorCode() << ": " << e.getMessage() << "\n";
     }
 
     return node->LBD;
+
 
 }
 double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
@@ -740,6 +796,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         app->Options()->SetStringValue("hessian_approximation", "limited-memory");
         app->Options()->SetStringValue("mu_strategy", "adaptive");
 
+
         //app->Options()->SetStringValue("output_file", "/Users/jyang872/Desktop/CrappySolver/ipopt.out");
         Ipopt::ApplicationReturnStatus status;
         status = app->Initialize();
@@ -759,6 +816,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 
             // <--------------- print solution
             int i=0;
+            node->UBD_solution.clear();
             for (auto v: sm->solution.x) {
                 node->UBD_solution.push_back(v);
                 //std::cout <<"mc::Interval ("<<v<<","<<v<<"), // x["<<i<<"]"<<std::endl;
@@ -782,15 +840,16 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             GRBModel grbmodel = GRBModel(env);
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
-            grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-6);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-6); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
+            grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-4);
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
             grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
+            grbmodel.set(GRB_DoubleParam_TimeLimit, 60.0);
 
             grbmodel.optimize();
 
             int status = grbmodel.get(GRB_IntAttr_Status);
 
-            if (status == GRB_OPTIMAL) {
+            if (status == GRB_OPTIMAL || status == GRB_TIME_LIMIT || status == GRB_SUBOPTIMAL) {
                 double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
                 node->UBD = objval;
                 // std::cout << "Optimized solution values: "<<objval<<std::endl;
@@ -804,11 +863,6 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
 
                 }
 
-                return objval;
-            }else if(status == GRB_SUBOPTIMAL){
-                double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
-                node->UBD = objval;
-                std::cout << "Suboptimal solution values: "<<objval<<std::endl;
                 return objval;
             }
 
@@ -928,6 +982,10 @@ void insideAlgo::weirdstrongbranching(xBBNode* node,double tolerance){
 double insideAlgo::solve(double tolerance) {
 
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
+    if (this->bestUBD==INFINITY){
+        std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
+        return INFINITY;
+    }
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     this->OBBT(&(this->activeNodes[0]), tolerance);
     this->worstLBD = this->calculateLBD(&(this->activeNodes[0]), tolerance);
@@ -995,18 +1053,6 @@ double insideAlgo::solve(double tolerance) {
         }
 
 
-        // int at_least_one_feasible_node=0;
-        // for(auto& node : this->activeNodes){
-        //     if (this->validitycheck(&node)){
-        //         at_least_one_feasible_node=1;
-        //         break;
-        //     }
-        // }
-        // if (!at_least_one_feasible_node){
-        //     std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" has no feasible active nodes."<<std::endl;
-        //     return INFINITY;
-        // }
-
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
 
@@ -1057,88 +1103,175 @@ bool insideAlgo::OBBT(xBBNode* node,double tolerance){
     return true;
 
 }
-bool insideAlgo::getOBBTbounds_lower(xBBNode* node, int var_idx){
-    xBBNode node_copy = *node; // make a copy of the node to avoid modifying the original node in case of infeasibility
-    bool node_is_valid = this->validitycheck(node);
-    this->model->scenario_name = node->scenario_name;
-    this->model->first_stage_IX = node->first_stage_IX;
-    this->model->second_stage_IX = node->second_stage_IX;
-    this->model->clearDAG(); // remove the previous DAG to avoid interference
-    if (!this->solvefullModel){
-        this->model->buildDAG();
-    }else{
-        this->model->buildFullModelDAG();
-    }
+// bool insideAlgo::getOBBTbounds_lower(xBBNode* node, int var_idx){
+//     xBBNode node_copy = *node; // make a copy of the node to avoid modifying the original node in case of infeasibility
+//     bool node_is_valid = this->validitycheck(node);
+//     this->model->scenario_name = node->scenario_name;
+//     this->model->first_stage_IX = node->first_stage_IX;
+//     this->model->second_stage_IX = node->second_stage_IX;
+//     this->model->clearDAG(); // remove the previous DAG to avoid interference
+//     if (!this->solvefullModel){
+//         this->model->buildDAG();
+//     }else{
+//         this->model->buildFullModelDAG();
+//     }
 
-    ILOSTLBEGIN
-    IloEnv env;
-    env.setOut(env.getNullStream());
-    env.setWarning(env.getNullStream());
-    IloModel cplexmodel(env);
-    IloRangeArray c(env);
-    IloObjective obj (env);
-    IloNumVarArray x(env);
+//     ILOSTLBEGIN
+//     IloEnv env;
+//     env.setOut(env.getNullStream());
+//     env.setWarning(env.getNullStream());
+//     IloModel cplexmodel(env);
+//     IloRangeArray c(env);
+//     IloObjective obj (env);
+//     IloNumVarArray x(env);
 
-    this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
-    IloCplex cplex(cplexmodel);
-    cplex.setParam(IloCplex::Param::ClockType, 2);
-    cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
-    cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
-    cplex.setParam(IloCplex::Param::Read::Scale, 1);
-    cplex.setParam(IloCplex::AggInd, false);
-    IloExpr obj_cons(env);
-    obj_cons+=x[x.getSize()-1]; // objective is always the last variable in our construction
-    cplexmodel.add(obj_cons <= node->UBD*1.01); // add objective constraint to the model
-    obj_cons.end();
+//     this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+//     IloCplex cplex(cplexmodel);
+//     cplex.setParam(IloCplex::Param::ClockType, 2);
+//     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
+//     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
+//     cplex.setParam(IloCplex::Param::Read::Scale, 1);
+//     cplex.setParam(IloCplex::AggInd, false);
+//     //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
+//     cplex.setParam(IloCplex::Param::SolutionType, 2); 
+
+//     IloExpr obj_cons(env);
+//     obj_cons+=x[x.getSize()-1]; // objective is always the last variable in our construction
+//     cplexmodel.add(obj_cons <= node->UBD*1.01); // add objective constraint to the model
+//     obj_cons.end();
     
-    IloExpr objExpr_lower(env);
-    objExpr_lower += (x)[var_idx];    // objective is always the last variable in our construction
-    obj.setExpr(objExpr_lower);
-    objExpr_lower.end();
-    obj.setSense(IloObjective::Minimize);
+//     IloExpr objExpr_lower(env);
+//     objExpr_lower += (x)[var_idx];    // objective is always the last variable in our construction
+//     obj.setExpr(objExpr_lower);
+//     objExpr_lower.end();
+//     obj.setSense(IloObjective::Minimize);
 
-    cplex.setOut(env.getNullStream());
-    cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+//     cplex.setOut(env.getNullStream());
+//     cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
 
-    cplex.solve();
-    double tolerance=1e-2;
-    if (cplex.getStatus() == IloAlgorithm::Optimal) {
-        double lower_candidate = cplex.getObjValue()-tolerance; // subtract tolerance to avoid numerical issue
-        if (var_idx < node->first_stage_IX.size()) {
-            if (lower_candidate <= node->first_stage_IX[var_idx].u()){
-                node->first_stage_IX[var_idx].l() = std::max(node->first_stage_IX[var_idx].l(), lower_candidate-tolerance);
-            } else { // this means either bug or degenerate bound
-                if (std::abs(lower_candidate - node->first_stage_IX[var_idx].u()) < tolerance){ // correct for numerical issue
-                    node->first_stage_IX[var_idx].l() = node->first_stage_IX[var_idx].u();
-                } else {
-                    throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
-                }
-            }
-            if (node_is_valid && !this->validitycheck(node)){
-                throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
-            }
-        }else{
-            if (lower_candidate <= node->second_stage_IX[var_idx - node->first_stage_IX.size()].u()){
-                node->second_stage_IX[var_idx - node->first_stage_IX.size()].l() = std::max(node->second_stage_IX[var_idx - node->first_stage_IX.size()].l(), lower_candidate-tolerance);
-            } else { // this means either bug or degenerate bound
-                if (std::abs(lower_candidate - node->second_stage_IX[var_idx - node->first_stage_IX.size()].u()) < tolerance){ // correct for numerical issue
-                    node->second_stage_IX[var_idx - node->first_stage_IX.size()].l() = node->second_stage_IX[var_idx - node->first_stage_IX.size()].u();
-                } else {
-                    throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
-                }
-            }
-            if (node_is_valid && !this->validitycheck(node)){
-                throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
-            }
-        }
-    } else {
-        node->LBD = INFINITY; // if the lower bound is greater than the upper bound, then the node is infeasible
-        env.end();
-        return false;
-    }
-    env.end();
-    return true;
-}
+//     cplex.solve();
+//     double tolerance=1e-2;
+//     if (cplex.getStatus() == IloAlgorithm::Optimal) {
+//         double lower_candidate = cplex.getObjValue()-tolerance; // subtract tolerance to avoid numerical issue
+//         if (var_idx < node->first_stage_IX.size()) {
+//             if (lower_candidate <= node->first_stage_IX[var_idx].u()){
+//                 node->first_stage_IX[var_idx].l() = std::max(node->first_stage_IX[var_idx].l(), lower_candidate-tolerance);
+//             } else { // this means either bug or degenerate bound
+//                 if (std::abs(lower_candidate - node->first_stage_IX[var_idx].u()) < tolerance){ // correct for numerical issue
+//                     node->first_stage_IX[var_idx].l() = node->first_stage_IX[var_idx].u();
+//                 } else {
+//                     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//                 }
+//             }
+//             if (node_is_valid && !this->validitycheck(node)){
+//                 throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//             }
+//         }else{
+//             if (lower_candidate <= node->second_stage_IX[var_idx - node->first_stage_IX.size()].u()){
+//                 node->second_stage_IX[var_idx - node->first_stage_IX.size()].l() = std::max(node->second_stage_IX[var_idx - node->first_stage_IX.size()].l(), lower_candidate-tolerance);
+//             } else { // this means either bug or degenerate bound
+//                 if (std::abs(lower_candidate - node->second_stage_IX[var_idx - node->first_stage_IX.size()].u()) < tolerance){ // correct for numerical issue
+//                     node->second_stage_IX[var_idx - node->first_stage_IX.size()].l() = node->second_stage_IX[var_idx - node->first_stage_IX.size()].u();
+//                 } else {
+//                     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//                 }
+//             }
+//             if (node_is_valid && !this->validitycheck(node)){
+//                 throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//             }
+//         }
+//     } else {
+//         node->LBD = INFINITY; // if the lower bound is greater than the upper bound, then the node is infeasible
+//         env.end();
+//         return false;
+//     }
+//     env.end();
+//     return true;
+// }
+// bool insideAlgo::getOBBTbounds_upper(xBBNode* node, int var_idx){
+//     xBBNode node_copy = *node; // make a copy of the node to avoid modifying the original node in case of infeasibility
+//     bool node_is_valid = this->validitycheck(node);
+//     this->model->scenario_name = node->scenario_name;
+//     this->model->first_stage_IX = node->first_stage_IX;
+//     this->model->second_stage_IX = node->second_stage_IX;
+//     this->model->clearDAG(); // remove the previous DAG to avoid interference
+//     if (!this->solvefullModel){
+//         this->model->buildDAG();
+//     }else{
+//         this->model->buildFullModelDAG();
+//     }
+
+//     ILOSTLBEGIN
+//     IloEnv env;
+//     env.setOut(env.getNullStream());
+//     env.setWarning(env.getNullStream());
+//     IloModel cplexmodel(env);
+//     IloRangeArray c(env);
+//     IloObjective obj (env);
+//     IloNumVarArray x(env);
+
+//     this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
+//     IloCplex cplex(cplexmodel);
+//     cplex.setParam(IloCplex::Param::ClockType, 2);
+//     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
+//     cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
+//     cplex.setParam(IloCplex::Param::Read::Scale, 1);
+//     cplex.setParam(IloCplex::AggInd, false);
+//     //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
+//     cplex.setParam(IloCplex::Param::SolutionType, 2); 
+//     IloExpr obj_cons(env);
+//     obj_cons+=x[x.getSize()-1]; // objective is always the last variable in our construction
+//     cplexmodel.add(obj_cons <= node->UBD*1.01); // add objective constraint to the model
+//     obj_cons.end();
+
+//     IloExpr objExpr_upper(env);
+//     objExpr_upper += (x)[var_idx];    // objective is always the last variable in our construction
+//     obj.setExpr(objExpr_upper);
+//     objExpr_upper.end();
+//     obj.setSense(IloObjective::Maximize);
+//     cplex.setOut(env.getNullStream());
+//     cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+
+//     cplex.solve();
+//     double tolerance=1e-2;
+//     if (cplex.getStatus() == IloAlgorithm::Optimal) {
+//         double upper_candidate = cplex.getObjValue()+tolerance;
+//         if (var_idx < node->first_stage_IX.size()) {
+//             if (upper_candidate >= node->first_stage_IX[var_idx].l()){
+//                 node->first_stage_IX[var_idx].u() = std::min(node->first_stage_IX[var_idx].u(), upper_candidate+tolerance);
+//             } else { // this means either bug or degenerate bound
+//                 if (std::abs(upper_candidate - node->first_stage_IX[var_idx].l()) < tolerance){ // correct for numerical issue
+//                     node->first_stage_IX[var_idx].u() = node->first_stage_IX[var_idx].l();
+//                 } else {
+//                     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//                 }
+//             }
+//             if (node_is_valid && !this->validitycheck(node)){
+//                 throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//             }
+//         }else{
+//             if (upper_candidate >= node->second_stage_IX[var_idx - node->first_stage_IX.size()].l()){
+//                 node->second_stage_IX[var_idx - node->first_stage_IX.size()].u() = std::min(node->second_stage_IX[var_idx - node->first_stage_IX.size()].u(), upper_candidate+tolerance);
+//             } else { // this means either bug or degenerate bound
+//                 if (std::abs(upper_candidate - node->second_stage_IX[var_idx - node->first_stage_IX.size()].l()) < tolerance){ // correct for numerical issue
+//                     node->second_stage_IX[var_idx - node->first_stage_IX.size()].u() = node->second_stage_IX[var_idx - node->first_stage_IX.size()].l();
+//                 } else {
+//                     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//                 }
+//             }
+//             if (node_is_valid && !this->validitycheck(node)){
+//                 throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+//             }
+//         }
+//     } else {
+//         node->LBD = INFINITY; // if the lower bound is greater than the upper bound, then the node is infeasible
+//         env.end();
+//         return false;
+//     }
+//     env.end();
+//     return true;
+// }
+
 bool insideAlgo::getOBBTbounds_upper(xBBNode* node, int var_idx){
     xBBNode node_copy = *node; // make a copy of the node to avoid modifying the original node in case of infeasibility
     bool node_is_valid = this->validitycheck(node);
@@ -1152,74 +1285,169 @@ bool insideAlgo::getOBBTbounds_upper(xBBNode* node, int var_idx){
         this->model->buildFullModelDAG();
     }
 
-    ILOSTLBEGIN
-    IloEnv env;
-    env.setOut(env.getNullStream());
-    env.setWarning(env.getNullStream());
-    IloModel cplexmodel(env);
-    IloRangeArray c(env);
-    IloObjective obj (env);
-    IloNumVarArray x(env);
+    try {
+        GRBEnv env = GRBEnv(true);
+        env.set(GRB_IntParam_OutputFlag, 1); // suppress solver output
+        env.start();
+        GRBModel grbmodel(env);
 
-    this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
-    IloCplex cplex(cplexmodel);
-    cplex.setParam(IloCplex::Param::ClockType, 2);
-    cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
-    cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
-    cplex.setParam(IloCplex::Param::Read::Scale, 1);
-    cplex.setParam(IloCplex::AggInd, false);
-    IloExpr obj_cons(env);
-    obj_cons+=x[x.getSize()-1]; // objective is always the last variable in our construction
-    cplexmodel.add(obj_cons <= node->UBD*1.01); // add objective constraint to the model
-    obj_cons.end();
+        std::vector<GRBVar> x;
+        this->model->generateLP(&env, &grbmodel, &x); // builds vars/constraints and sets a MINIMIZE objective on x.back()
 
-    IloExpr objExpr_upper(env);
-    objExpr_upper += (x)[var_idx];    // objective is always the last variable in our construction
-    obj.setExpr(objExpr_upper);
-    objExpr_upper.end();
-    obj.setSense(IloObjective::Maximize);
-    cplex.setOut(env.getNullStream());
-    cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+        // --- solver parameters ---
+        grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-6);   // Simplex::Tolerances::Optimality
+        grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4);  // Simplex::Tolerances::Feasibility
+        grbmodel.set(GRB_IntParam_ScaleFlag, 3);              // Read::Scale (approximate)
+        grbmodel.set(GRB_IntParam_Aggregate, 0);              // AggInd = false
+        grbmodel.set(GRB_IntParam_NumericFocus, 3);           // ~ IloCplex::AggInd = false (no presolve)
 
-    cplex.solve();
-    double tolerance=1e-2;
-    if (cplex.getStatus() == IloAlgorithm::Optimal) {
-        double upper_candidate = cplex.getObjValue()+tolerance;
-        if (var_idx < node->first_stage_IX.size()) {
-            if (upper_candidate >= node->first_stage_IX[var_idx].l()){
-                node->first_stage_IX[var_idx].u() = std::min(node->first_stage_IX[var_idx].u(), upper_candidate+tolerance);
-            } else { // this means either bug or degenerate bound
-                if (std::abs(upper_candidate - node->first_stage_IX[var_idx].l()) < tolerance){ // correct for numerical issue
-                    node->first_stage_IX[var_idx].u() = node->first_stage_IX[var_idx].l();
-                } else {
-                    throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+
+        // objective cutoff constraint: obj <= UBD*1.01
+        // (generateLP already put the "objective variable" at x.back())
+        GRBLinExpr obj_cons = x.back();
+        grbmodel.addConstr(obj_cons <= node->UBD * 1.01, "obj_cutoff");
+
+        // OBBT objective: maximize x[var_idx] (overrides the MINIMIZE objective generateLP set)
+        GRBLinExpr objExpr_upper = x[var_idx];
+        grbmodel.setObjective(objExpr_upper, GRB_MAXIMIZE);
+
+        grbmodel.update(); // push the new constraint + objective before solving
+        grbmodel.write("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+
+        grbmodel.optimize();
+
+        double tolerance = 1e-2;
+        int status = grbmodel.get(GRB_IntAttr_Status);
+        if (status == GRB_OPTIMAL) {
+            double upper_candidate = grbmodel.get(GRB_DoubleAttr_ObjVal) + tolerance;
+            if (var_idx < (int)node->first_stage_IX.size()) {
+                if (upper_candidate >= node->first_stage_IX[var_idx].l()){
+                    node->first_stage_IX[var_idx].u() = std::min(node->first_stage_IX[var_idx].u(), upper_candidate+tolerance);
+                } else { // this means either bug or degenerate bound
+                    if (std::abs(upper_candidate - node->first_stage_IX[var_idx].l()) < tolerance){ // correct for numerical issue
+                        node->first_stage_IX[var_idx].u() = node->first_stage_IX[var_idx].l();
+                    } else {
+                        throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                    }
                 }
-            }
-            if (node_is_valid && !this->validitycheck(node)){
-                throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
-            }
-        }else{
-            if (upper_candidate >= node->second_stage_IX[var_idx - node->first_stage_IX.size()].l()){
-                node->second_stage_IX[var_idx - node->first_stage_IX.size()].u() = std::min(node->second_stage_IX[var_idx - node->first_stage_IX.size()].u(), upper_candidate+tolerance);
-            } else { // this means either bug or degenerate bound
-                if (std::abs(upper_candidate - node->second_stage_IX[var_idx - node->first_stage_IX.size()].l()) < tolerance){ // correct for numerical issue
-                    node->second_stage_IX[var_idx - node->first_stage_IX.size()].u() = node->second_stage_IX[var_idx - node->first_stage_IX.size()].l();
-                } else {
-                    throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                // if (node_is_valid && !this->validitycheck(node)){
+                //     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                // }
+            } else {
+                if (upper_candidate >= node->second_stage_IX[var_idx - node->first_stage_IX.size()].l()){
+                    node->second_stage_IX[var_idx - node->first_stage_IX.size()].u() = std::min(node->second_stage_IX[var_idx - node->first_stage_IX.size()].u(), upper_candidate+tolerance);
+                } else { // this means either bug or degenerate bound
+                    if (std::abs(upper_candidate - node->second_stage_IX[var_idx - node->first_stage_IX.size()].l()) < tolerance){ // correct for numerical issue
+                        node->second_stage_IX[var_idx - node->first_stage_IX.size()].u() = node->second_stage_IX[var_idx - node->first_stage_IX.size()].l();
+                    } else {
+                        throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                    }
                 }
+                // if (node_is_valid && !this->validitycheck(node)){
+                //     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                // }
             }
-            if (node_is_valid && !this->validitycheck(node)){
-                throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
-            }
+        } else {
+            node->LBD = INFINITY; // if the lower bound is greater than the upper bound, then the node is infeasible
+            return false;
         }
-    } else {
-        node->LBD = INFINITY; // if the lower bound is greater than the upper bound, then the node is infeasible
-        env.end();
-        return false;
+        return true;
+
+    } catch (GRBException& e) {
+        std::cerr << "Gurobi error code = " << e.getErrorCode() << ": " << e.getMessage() << std::endl;
+        throw;
     }
-    env.end();
-    return true;
 }
+bool insideAlgo::getOBBTbounds_lower(xBBNode* node, int var_idx){
+    xBBNode node_copy = *node; // make a copy of the node to avoid modifying the original node in case of infeasibility
+    bool node_is_valid = this->validitycheck(node);
+    this->model->scenario_name = node->scenario_name;
+    this->model->first_stage_IX = node->first_stage_IX;
+    this->model->second_stage_IX = node->second_stage_IX;
+    this->model->clearDAG(); // remove the previous DAG to avoid interference
+    if (!this->solvefullModel){
+        this->model->buildDAG();
+    }else{
+        this->model->buildFullModelDAG();
+    }
+
+    try {
+        GRBEnv env = GRBEnv(true);
+        env.set(GRB_IntParam_OutputFlag, 1); // suppress solver output
+        env.start();
+        GRBModel grbmodel(env);
+
+        std::vector<GRBVar> x;
+        this->model->generateLP(&env, &grbmodel, &x); // builds vars/constraints and sets a MINIMIZE objective on x.back()
+
+        // --- solver parameters ---
+        grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-6);   // Simplex::Tolerances::Optimality
+        grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4);  // Simplex::Tolerances::Feasibility
+        grbmodel.set(GRB_IntParam_ScaleFlag, 3);              // Read::Scale (approximate)
+        grbmodel.set(GRB_IntParam_Aggregate, 0);              // AggInd = false
+        grbmodel.set(GRB_IntParam_NumericFocus, 3);           // ~ IloCplex::AggInd = false (no presolve)
+
+        // objective cutoff constraint: obj <= UBD*1.01
+        GRBLinExpr obj_cons = x.back();
+        grbmodel.addConstr(obj_cons <= node->UBD * 1.01, "obj_cutoff");
+
+        // OBBT objective: minimize x[var_idx] (overrides the MINIMIZE objective generateLP already set,
+        // but on a different variable — x[var_idx] instead of x.back())
+        GRBLinExpr objExpr_lower = x[var_idx];
+        grbmodel.setObjective(objExpr_lower, GRB_MINIMIZE);
+
+        grbmodel.update(); // push the new constraint + objective before solving
+        grbmodel.write("/Users/jyang872/Desktop/CrappySolver/test.lp"); // please delete
+
+        grbmodel.optimize();
+
+        double tolerance = 1e-2;
+        int status = grbmodel.get(GRB_IntAttr_Status);
+        if (status == GRB_OPTIMAL) {
+            double lower_candidate = grbmodel.get(GRB_DoubleAttr_ObjVal) - tolerance; // subtract tolerance to avoid numerical issue
+            if (var_idx < (int)node->first_stage_IX.size()) {
+                if (lower_candidate <= node->first_stage_IX[var_idx].u()){
+                    node->first_stage_IX[var_idx].l() = std::max(node->first_stage_IX[var_idx].l(), lower_candidate-tolerance);
+                } else { // this means either bug or degenerate bound
+                    if (std::abs(lower_candidate - node->first_stage_IX[var_idx].u()) < tolerance){ // correct for numerical issue
+                        node->first_stage_IX[var_idx].l() = node->first_stage_IX[var_idx].u();
+                    } else {
+                        throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                    }
+                }
+                // if (node_is_valid && !this->validitycheck(node)){
+                //     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                // }
+            } else {
+                if (lower_candidate <= node->second_stage_IX[var_idx - node->first_stage_IX.size()].u()){
+                    node->second_stage_IX[var_idx - node->first_stage_IX.size()].l() = std::max(node->second_stage_IX[var_idx - node->first_stage_IX.size()].l(), lower_candidate-tolerance);
+                } else { // this means either bug or degenerate bound
+                    if (std::abs(lower_candidate - node->second_stage_IX[var_idx - node->first_stage_IX.size()].u()) < tolerance){ // correct for numerical issue
+                        node->second_stage_IX[var_idx - node->first_stage_IX.size()].l() = node->second_stage_IX[var_idx - node->first_stage_IX.size()].u();
+                    } else {
+                        throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                    }
+                }
+                // if (node_is_valid && !this->validitycheck(node)){
+                //     throw std::runtime_error("Error: OBBT made the node invalid, this should not happen");
+                // }
+            }
+        } else {
+            node->LBD = INFINITY; // if the lower bound is greater than the upper bound, then the node is infeasible
+            return false;
+        }
+        return true;
+
+    } catch (GRBException& e) {
+        std::cerr << "Gurobi error code = " << e.getErrorCode() << ": " << e.getMessage() << std::endl;
+        throw;
+    }
+}
+
+
+
+
+
 bool insideAlgo::validitycheck(xBBNode* node){
     if (node->UBD_solution.size()>node->first_stage_IX.size()+node->second_stage_IX.size()){
         throw std::runtime_error("Node is invalid, UBD_solution size is greater than the number of variables. UBD_solution size: " + std::to_string(node->UBD_solution.size()) + ", number of variables: " + std::to_string(node->first_stage_IX.size() + node->second_stage_IX.size()));
