@@ -16,16 +16,6 @@ BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
 int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                                  std::vector<mc::Interval> second_stage_IX){
     int max_idx = 0;
-    // if  (BBHeuristic::branch_counter>100)
-    // {   
-    //     std::cout<<"Now force branching on first stage variable with largest relative width"<<std::endl;
-    //     BBHeuristic::branch_counter=-1;
-    //     this->strategy=BranchingStrategy::relwidth;
-    // }else{
-    //     BBHeuristic::branch_counter++;
-    // }
-    
-    
     std::vector<double> score_list;
     if (this->strategy == BranchingStrategy::pseudo) {
         // Pseudo cost branching logic can be implemented here
@@ -50,8 +40,6 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
                 max_idx = static_cast<int>(first_stage_IX.size() + i);
             }
         }
-
-
     }else if (this->strategy == BranchingStrategy::relwidth) {
         // Relative width branching logic can be implemented here
 
@@ -73,10 +61,7 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX,
     }else{
         throw std::invalid_argument("Unknown Branching Strategy");
     }
-    if (BBHeuristic::branch_counter==-1){
-        this->strategy=BranchingStrategy::pseudo; // reset to pseudo cost branching after force branching on first stage variable
-        BBHeuristic::branch_counter=0; //reset branch counter after force branching on first stage variable
-    }
+
     this->score_list=score_list; // store the score for each variable in the current node
     return max_idx;
 };
@@ -96,7 +81,6 @@ int BBHeuristic::getBranchingVarIndex(std::vector<mc::Interval> first_stage_IX){
         }
     }else if (this->strategy == BranchingStrategy::relwidth) {
         // Relative width branching logic can be implemented here
-
         double largest_ratio=0;
         for (size_t i = 0; i < first_stage_IX.size(); ++i) {
             double ratio = (first_stage_IX[i].u() - first_stage_IX[i].l()) / (this->initial_first_stage_IX[i].u() - this->initial_first_stage_IX[i].l());
