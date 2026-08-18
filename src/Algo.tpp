@@ -754,7 +754,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-2); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
-            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-4);  // temporarily set to tight gap for testing
+            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-2);  // temporarily set to tight gap for testing
 
             grbmodel.optimize();
 
