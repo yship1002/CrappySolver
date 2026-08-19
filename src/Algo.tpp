@@ -338,7 +338,7 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
 }
 void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     xBBNode node_copy=*node;
-    bool node_is_valid=this->validitycheck(&node_copy);
+    //bool node_is_valid=this->validitycheck(&node_copy);
     node->strong_branching_storage.clear();
     node->strong_branching_storage.resize(node->first_stage_IX.size()+node->second_stage_IX.size());
     int first_stage_size=node->first_stage_IX.size();
@@ -1051,9 +1051,9 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
 
-        std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        //std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
-        std::cout<<"Total LBD calculation time: "<<insideAlgo::lbd_calculation_time<<std::endl;
+        //std::cout<<"Total LBD calculation time: "<<insideAlgo::lbd_calculation_time<<std::endl;
         this->iterations++;
     }
 
