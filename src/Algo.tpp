@@ -70,6 +70,7 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
     double original_UBD=this->bestUBD;
     int iterator=0;
     while (iterator < node->first_stage_IX.size()) { // use while loop to allow restrongbranching when infeasibility detected
+        std::cout<<"Strong branching on first stage variable index: "<<iterator<<std::endl;
         BBNode child1 = *node;
         BBNode child2 = *node;
         double branch_point = (node->first_stage_IX[iterator].l() + node->first_stage_IX[iterator].u()) / 2.0;
@@ -472,11 +473,11 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
     double range;
     //this->weirdstrongbranching(&(this->activeNodes[new_idx]), tolerance);
-    this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
-    if (this->activeNodes[new_idx].LBD==INFINITY){
-        std::cout<<"Infeasible node detected after strong branching, skipping branching."<<std::endl;
-        return 0;
-    }
+    //this->strongbranching(&(this->activeNodes[new_idx]), tolerance);
+    // if (this->activeNodes[new_idx].LBD==INFINITY){
+    //     std::cout<<"Infeasible node detected after strong branching, skipping branching."<<std::endl;
+    //     return 0;
+    // }
     int next_idx=this->activeNodes.back().node_id+1; 
     xBBNode child1 = this->activeNodes[new_idx]; // Copy current node
     child1.node_id = next_idx; // Assign unique ID to child1
@@ -974,7 +975,7 @@ void insideAlgo::weirdstrongbranching(xBBNode* node,double tolerance){
 
 
 double insideAlgo::solve(double tolerance) {
-
+    std::cout<<"Solving scenario: "<<static_cast<int>(this->scenario_name)<<std::endl;
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
     if (this->bestUBD==INFINITY){
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
@@ -1051,7 +1052,7 @@ double insideAlgo::solve(double tolerance) {
 
         gap = (this->bestUBD - this->worstLBD); // absolute gap calculation for inner layer 
 
-        //std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
+        std::cout<<"Inside Iteration "<<this->iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         //std::cout<<"Total LBD calculation time: "<<insideAlgo::lbd_calculation_time<<std::endl;
         this->iterations++;

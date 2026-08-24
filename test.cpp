@@ -1,6 +1,6 @@
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
+#include <Crappy_Fuzzy_Problem_Library/EDUnits_nocp.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -21,9 +21,9 @@ int main(int argc, char* argv[]) {
     //Edunits:58240 (58216.75904279342+13.16696553855068+10.649036512259626)
     //edunits_nocp:56844
 
-    CrudeModel model(BranchingStrategy::pseudo);
+    EDUnits_nocp model(BranchingStrategy::pseudo);
 
-    outsideAlgo CZalgo(&model,-18502.5,UBDSolver::GUROBI); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,56844,UBDSolver::IPOPT); // provide UBD for outer layer
     //CZalgo.activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth; // set branching strategy for outer layer
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
     //CZalgo.OBBT(&(CZalgo.activeNodes[0]), 1); // calculate OBBT for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(18.5); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(56); // relgap=0.1% tolerance, abs=1
 
     // {
     //     std::ofstream os(argv[1]);
