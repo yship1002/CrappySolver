@@ -53,6 +53,8 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library"
     "${PROJ_ROOT}/cereal/include"
     "${PROJ_ROOT}/mcpp/src/3rdparty/fadbad++"
+    "${PROJ_ROOT}/mcpp/src/3rdparty/cpplapack-2015.05.11-1/include"
+    "${PROJ_ROOT}/mcpp/include"
     "${CPLEX_INC_CONCERT}"
     "${CPLEX_INC_CPLEX}"
     "${GUROBI_INC}"
