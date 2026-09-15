@@ -773,14 +773,14 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
                 node->UBD = objval;
                 // std::cout << "Optimized solution values: "<<objval<<std::endl;
                 int totalVars = node->first_stage_IX.size() + node->second_stage_IX.size();
-                for (int i = 0; i <totalVars; ++i) {
-                    std::string auxName = "x" + std::to_string(i);
+                // for (int i = 0; i <totalVars; ++i) {
+                //     std::string auxName = "x" + std::to_string(i);
                         
-                        // 1. Get the variable object
-                    GRBVar auxVar = grbmodel.getVarByName(auxName);
-                    double value = auxVar.get(GRB_DoubleAttr_X);
-                    std::cout << "Variable " << auxName << " = " << value << "\n";
-                }
+                //         // 1. Get the variable object
+                //     GRBVar auxVar = grbmodel.getVarByName(auxName);
+                //     double value = auxVar.get(GRB_DoubleAttr_X);
+                //     std::cout << "Variable " << auxName << " = " << value << "\n";
+                // }
 
                 return objval;
             }else if(status == GRB_SUBOPTIMAL){
