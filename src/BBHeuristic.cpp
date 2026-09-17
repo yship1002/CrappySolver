@@ -177,7 +177,7 @@ double BBHeuristic::getPseudoCost(int idx_branched,USE_inside_weights use_inside
     double left_sum = 0.0;
     double right_sum = 0.0;
     int counter=0;
-    int memory_limit=0; // INFINITY to use all available weights, 0 for all strong branching
+    int memory_limit=INFINITY; // INFINITY to use all available weights, 0 for all strong branching
     if (use_inside_weights==USE_inside_weights::YES){
         for (int i=this->inside_weights[idx_branched].size()-1;i>=0&&counter<=memory_limit;i--){
             left_sum += this->inside_weights[idx_branched][i].first;

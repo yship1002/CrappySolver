@@ -1,6 +1,6 @@
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+#include <Crappy_Fuzzy_Problem_Library/Ex844.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     //Edunits:58240 (58216.75904279342+13.16696553855068+10.649036512259626)
     //edunits_nocp:56844
 
-    ProcessModel model(BranchingStrategy::pseudo);
+    Ex844Model model(BranchingStrategy::pseudo);
     // for (auto scenario_name : model.scenario_names) {
     //     insideAlgo CZalgo(&model,scenario_name,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
     //     std::cout<<"("<<CZalgo.model->perturb_coeffs[scenario_name][0]<<", "<<CZalgo.model->perturb_coeffs[scenario_name][1]<<", "<<-CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1,false)<<")"<<std::endl;
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     // }
 
 
-    outsideAlgo CZalgo(&model,-4336.976168536249,UBDSolver::IPOPT); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,2014.79,UBDSolver::IPOPT); // provide UBD for outer layer
     //CZalgo.activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth; // set branching strategy for outer layer
 
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     //CZalgo.OBBT(&(CZalgo.activeNodes[0]), 1); // calculate OBBT for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(4.3); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(2); // relgap=0.1% tolerance, abs=1
 
     // {
     //     std::ofstream os(argv[1]);
