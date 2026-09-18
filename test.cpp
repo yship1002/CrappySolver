@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     // }
 
 
-    outsideAlgo CZalgo(&model,-4336.976168536249,UBDSolver::IPOPT); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,-4336.976168536249,UBDSolver::GUROBI); // provide UBD for outer layer
     //CZalgo.activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth; // set branching strategy for outer layer
 
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
