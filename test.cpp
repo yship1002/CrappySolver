@@ -3,7 +3,7 @@
 #include <thread>
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/Ex844.h>
+#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -41,24 +41,24 @@ int main(int argc, char* argv[]) {
         Tracker::serialize(oarchive);
     });
 
-    //ProcessMode: -4336.976168536249(10s)
+    //ProcessMode: -1060.14(10s)
     //Ex844:2014.79(10s)
     //CrudeModel: -18502.5(3s)
     // Ex722:   -3527.6(3s) -11911
     // CHPsize: 3.03*1000 (8s)
     // EDUnits:UBD:59363
     // ED_nocp :56844
-    Ex844Model model(BranchingStrategy::pseudo);
+    ProcessModel model(BranchingStrategy::pseudo);
 
     //outsideAlgo CZalgo(&model,3.03*1000,UBDSolver::GUROBI); // provide UBD for outer layer
     
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,2014.79,solveFullmodel::yes,UBDSolver:: GUROBI); // provide UBD for outer layer
+    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-1060.14,solveFullmodel::yes,UBDSolver:: GUROBI); // provide UBD for outer layer
     
     //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
 
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(2); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(1); // relgap=0.1% tolerance, abs=1
 
     // {
     //     std::ofstream os(Tracker::file_name);
