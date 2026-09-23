@@ -13,7 +13,7 @@ int BBHeuristic::refresh_meter=0;
 int BBNode::node_counter=0;
 
 int main(int argc, char* argv[]) {
-    //ProcessMode: -4336.976168536249(10s)
+    //ProcessMode: -1060.14(10s)
     //Ex844:2014.79(10s)
     //CrudeModel: -18502.5(3s)
     //Ex722:   -378487.77799786365(5s)
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     // }
 
 
-    outsideAlgo CZalgo(&model,-4336.976168536249,UBDSolver::GUROBI); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,-1060.14,UBDSolver::GUROBI); // provide UBD for outer layer
     //CZalgo.activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth; // set branching strategy for outer layer
 
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     //CZalgo.OBBT(&(CZalgo.activeNodes[0]), 1); // calculate OBBT for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
     
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(4.3); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(1); // relgap=0.1% tolerance, abs=1
 
     // {
     //     std::ofstream os(argv[1]);
