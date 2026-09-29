@@ -27,18 +27,14 @@ int main(int argc, char* argv[]) {
     //     std::cout<<"("<<CZalgo.model->perturb_coeffs[scenario_name][0]<<", "<<CZalgo.model->perturb_coeffs[scenario_name][1]<<", "<<-CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1,false)<<")"<<std::endl;
         
     // }
-
-
-    outsideAlgo CZalgo(&model,-1060.14,UBDSolver::GUROBI); // provide UBD for outer layer
-    //CZalgo.activeNodes[0].branchheuristic.strategy=BranchingStrategy::relwidth; // set branching strategy for outer layer
-
-    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
-    //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
-    //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1,false)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
-    //CZalgo.OBBT(&(CZalgo.activeNodes[0]), 1); // calculate OBBT for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
-    
+    outsideAlgo CZalgo(&model,-4422.39,UBDSolver::GUROBI); // provide UBD for outer layer
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
     CZalgo.solve(1); // relgap=0.1% tolerance, abs=1
+
+    // *************uncooment this part to get the provided_UBD after you change problem
+    //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,true,UBDSolver::GUROBI); // provide UBD for outer layer
+    //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    // ***********************
 
     // {
     //     std::ofstream os(argv[1]);
