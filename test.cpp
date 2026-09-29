@@ -13,7 +13,7 @@ int BBHeuristic::refresh_meter=0;
 int BBNode::node_counter=0;
 
 int main(int argc, char* argv[]) {
-    //ProcessMode: -1060.14(10s)
+    //ProcessMode: -1060.14(10s) -4422.39(20s)
     //Ex844:2014.79(10s)
     //CrudeModel: -18502.5(3s)
     //Ex722:   -378487.77799786365(5s)
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     // }
     outsideAlgo CZalgo(&model,-4422.39,UBDSolver::GUROBI); // provide UBD for outer layer
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(1); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(4.4); // relgap=0.1% tolerance, abs=1
 
     // *************uncooment this part to get the provided_UBD after you change problem
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,true,UBDSolver::GUROBI); // provide UBD for outer layer
