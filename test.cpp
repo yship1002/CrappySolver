@@ -14,7 +14,7 @@ int BBNode::node_counter=0;
 
 int main(int argc, char* argv[]) {
     //ProcessMode: -1060.14(10s) -4422.39(20s)
-    //Ex844:2014.79(10s)
+    //Ex844:2014.79(10s) (20s: UBD 748.34, see run)
     //CrudeModel: -18502.5(3s)
     //Ex722:   -378487.77799786365(5s)
     // CHPSIze:3.03*1000
@@ -27,9 +27,9 @@ int main(int argc, char* argv[]) {
     //     std::cout<<"("<<CZalgo.model->perturb_coeffs[scenario_name][0]<<", "<<CZalgo.model->perturb_coeffs[scenario_name][1]<<", "<<-CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1,false)<<")"<<std::endl;
         
     // }
-    outsideAlgo CZalgo(&model,2014.79,UBDSolver::GUROBI); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,748.34,UBDSolver::GUROBI); // provide UBD for outer layer
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(2); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(0.7); // relgap=0.1% tolerance, abs=1
 
     // *************uncooment this part to get the provided_UBD after you change problem
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,true,UBDSolver::GUROBI); // provide UBD for outer layer
