@@ -52,3 +52,5 @@ build/*
 # dSYMs
 *.dSYM/*
 test.lp
+.cache/*
+.claude/*
