@@ -464,6 +464,43 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
         }
     }
 }
+void insideAlgo::reliabilityProbe(xBBNode* node,double tolerance){
+    const int n1=node->first_stage_IX.size();
+    const int n=n1+node->second_stage_IX.size();
+    const double original_LBD=node->LBD;
+    this->probe_scores.assign(n,std::nan(""));
+    for (int i=0;i<n;i++){
+        mc::Interval cur = i<n1 ? node->first_stage_IX[i] : node->second_stage_IX[i-n1];
+        mc::Interval ini = i<n1 ? node->branchheuristic.initial_first_stage_IX[i] : node->branchheuristic.initial_second_stage_IX[i-n1];
+        double range_initial=ini.u()-ini.l();
+        if (range_initial<1e-5 || (cur.u()-cur.l())/range_initial<1e-5) continue; // variable effectively fixed
+        bool reliable = (int)node->branchheuristic.inside_weights[i].size()>=this->reliability_eta
+                        && node->branchheuristic.getPseudoCost(i,USE_inside_weights::YES)>0;
+        if (reliable && !this->probe_all) continue;
+
+        xBBNode left=*node, right=*node;
+        double mid=(cur.l()+cur.u())/2.0;
+        if (i<n1){
+            left.first_stage_IX[i]=mc::Interval(cur.l(),mid);
+            right.first_stage_IX[i]=mc::Interval(mid,cur.u());
+        }else{
+            left.second_stage_IX[i-n1]=mc::Interval(cur.l(),mid);
+            right.second_stage_IX[i-n1]=mc::Interval(mid,cur.u());
+        }
+        double left_LBD=this->calculateLBD(&left,tolerance);
+        double right_LBD=this->calculateLBD(&right,tolerance);
+        if (left_LBD==INFINITY && right_LBD==INFINITY) continue; // node infeasible, normal branching will discover it
+        // an infeasible half eliminates half the domain: score it as the largest possible gain
+        double cap = (this->bestUBD!=INFINITY) ? this->bestUBD : original_LBD;
+        double left_imp = left_LBD==INFINITY ? cap-original_LBD : std::max(left_LBD-original_LBD,0.0);
+        double right_imp = right_LBD==INFINITY ? cap-original_LBD : std::max(right_LBD-original_LBD,0.0);
+        double half=mid-cur.l();
+        node->branchheuristic.updateWeights(i,left_imp,right_imp,half,USE_inside_weights::YES); // same range convention as branchNodeAtIdx
+        double mu=node->branchheuristic.mu;
+        this->probe_scores[i]=(cur.u()-cur.l())*(mu*std::max(left_imp,right_imp)+(1-mu)*std::min(left_imp,right_imp))/half;
+    }
+}
+
 int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     double original_LBD= this->activeNodes[new_idx].LBD;
     if (original_LBD==INFINITY){
@@ -478,6 +515,11 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     //     std::cout<<"Infeasible node detected after strong branching, skipping branching."<<std::endl;
     //     return 0;
     // }
+    bool probed=false;
+    if (this->reliabilityBranching && this->activeNodes[new_idx].branchheuristic.strategy==BranchingStrategy::pseudo){
+        this->reliabilityProbe(&(this->activeNodes[new_idx]), tolerance);
+        probed=true;
+    }
     int next_idx=this->activeNodes.back().node_id+1; 
     xBBNode child1 = this->activeNodes[new_idx]; // Copy current node
     child1.node_id = next_idx; // Assign unique ID to child1
@@ -487,6 +529,14 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     int branch_idx=INFINITY;
 
     branch_idx = this->activeNodes[new_idx].branchheuristic.getBranchingVarIndex(this->activeNodes[new_idx].first_stage_IX,this->activeNodes[new_idx].second_stage_IX);
+    if (probed){ // probed variables compete with their fresh probe score, unprobed with their pseudocost score
+        const std::vector<double>& sl=this->activeNodes[new_idx].branchheuristic.score_list;
+        double best=-1;
+        for (size_t i=0;i<this->probe_scores.size();i++){
+            double sc = std::isnan(this->probe_scores[i]) ? (i<sl.size()? sl[i]:0.0) : this->probe_scores[i];
+            if (sc>best){best=sc;branch_idx=i;}
+        }
+    }
     
     if(branch_idx<this->activeNodes[new_idx].first_stage_IX.size()){
 

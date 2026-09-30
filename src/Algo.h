@@ -88,6 +88,15 @@ class insideAlgo:public Algo<xBBNode>{
         void printFirstStageIX(xBBNode* node) override;
         void printSecondStageIX(xBBNode* node);
         void weirdstrongbranching(xBBNode* node,double tolerance);
+        // Reliability branching: strong-branch probe variables whose pseudocost is unreliable
+        // (fewer than reliability_eta samples, or pseudocost==0) before picking the branching variable.
+        // Probed variables are ranked by their FRESH probe score (the averaged pseudocost history goes
+        // stale as boxes shrink). probe_all=true probes every non-fixed variable (full strong branching).
+        bool reliabilityBranching=true;
+        bool probe_all=true;
+        int reliability_eta=4;
+        std::vector<double> probe_scores; // NaN = variable not probed at this node
+        void reliabilityProbe(xBBNode* node,double tolerance);
         bool validitycheck(xBBNode* node);
         void printLBDsolution(xBBNode* node);
         bool OBBT(xBBNode* node,double tolerance);
