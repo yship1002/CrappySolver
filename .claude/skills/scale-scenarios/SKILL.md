@@ -1,6 +1,6 @@
 ---
 name: scale-scenarios
-description: Stress-test CrappySolver's two-stage stochastic branch-and-bound algorithm by artificially growing the number of scenarios in any model of Crappy_Fuzzy_Problem_Library (ProcessModel, Ex844, CrudeModel, Ex722, CHPModel, EDUnits, ...) and re-deriving the new optimal objective. Use this whenever the user asks to increase, add, or scale up scenarios for a model, wants to see how the algorithm's iteration count/wall time scales with problem size, or asks to "rerun with more scenarios" / "test the algorithm's effectiveness" on this repo. If the user doesn't name a model, use the one instantiated in test.cpp's main().
+description: Stress-test CrappySolver's two-stage stochastic branch-and-bound algorithm by artificially growing the number of scenarios in any model of Crappy_Fuzzy_Problem_Library (ProcessModel, Ex844, CrudeModel, Ex722, CHPModel, EDUnits, ...) and re-deriving the new optimal objective. Use this whenever the user asks to increase, add, or scale up scenarios for a model, wants to see how the algorithm's iteration count/wall time scales with problem size, or asks to "rerun with more scenarios" / "test the algorithm's effectiveness" on this repo. Scale-ups must always be reversible (original scenarios kept intact, new ones in a marked block that can be commented out to scale back down). If the user doesn't name a model, use the one instantiated in test.cpp's main().
 ---
 
 # Scale scenarios in a Crappy_Fuzzy_Problem_Library model
@@ -55,13 +55,40 @@ mandatory. Don't assume any line numbers or field names from a previous run on a
 5. Note the current scenario count and the model's *existing envelope* for every scenario
    parameter (min/max of each table).
 
-## Step 1 — Add N new scenarios
+## Step 1 — Add N new scenarios (reversibly)
+
+**Hard requirement: scaling up must be trivially reversible.** The user must be able to return to
+the original problem by commenting out/deleting a small, clearly marked piece of code — never by
+hand-reconstructing old values. This applies to every model you are given, so design the edit
+around it from the start.
 
 Edit the constructor. Leave every existing entry untouched; only append.
 
-1. Append `ScenarioNames::SCENARIO<k>` for each new scenario to `scenario_names`.
-2. Append a matching entry to **every** per-scenario table found in Step 0.
-3. Update `probability` (Step 0.3).
+1. Keep the original scenario list intact and add the new scenarios as a separate, clearly marked
+   block that can be disabled on its own. Example (10 → 20):
+   ```cpp
+   this->scenario_names = { SCENARIO1, ..., SCENARIO10 };            // ORIGINAL (N=10)
+   // ===== SCALE-UP BEGIN (N=10 -> 20): comment out this block to revert =====
+   for (auto s : { SCENARIO11, ..., SCENARIO20 }) this->scenario_names.push_back(s);
+   // ===== SCALE-UP END =====
+   ```
+   Do not rewrite the original initializer to contain all 20 names.
+2. Put the new entries of **every** per-scenario table found in Step 0 in the same marked
+   SCALE-UP block (e.g. `perturb[SCENARIO11] = ...;` statements or `insert`s after the original
+   map initializer), not spliced into the original initializer lists. For position-indexed arrays
+   (e.g. CHP's `CHP_SCENARIO_DATA[s]`), keep the original array and add a separate array/appended
+   rows in the block, so the original data stays byte-for-byte unchanged.
+3. Make `probability` depend on the count so it reverts automatically, e.g.
+   `this->probability = 1.0 / this->scenario_names.size();` placed after the block, with the
+   original literal kept in a comment. If the model has per-scenario probabilities, do the same.
+   If the block is commented out, every table and the probability must again describe exactly the
+   original problem — check this explicitly.
+4. If a single switch is cleaner (e.g. one `constexpr int N_SCENARIOS` or a `#define SCALE_UP`),
+   you may use it, but it must still default to the scaled-up state and revert to the exact
+   original with one edit.
+5. Any per-scenario tables in `clone()`/serialization must be covered by the same mechanism.
+
+Tell the user in the report exactly which lines to comment out to scale back down.
 
 **Picking parameter values for the new scenarios:** don't interpolate the existing range — a
 scenario whose parameters sit between two existing scenarios will usually just have a recourse
@@ -145,6 +172,15 @@ algorithm scales with problem size. Mention any model-specific tables you extend
 parameter ranges you chose.
 
 ## Notes
+
+- **Scaling down:** when asked to scale back down, just comment out the SCALE-UP block (and
+  restore the original UBD literal in `test.cpp`, which is recorded in the top-of-`main()` comment
+  list — keep both the old and new UBD there, e.g. `Ex844: 583.156(10s) 748.34(20s)`). Don't
+  touch the original data.
+- When the user hands over a model that was scaled up *before* this rule existed (original data
+  merged into the initializer), first refactor it into original + SCALE-UP block form, using git
+  history of the submodule to recover the original values, and verify the reverted model
+  reproduces the recorded original objective.
 
 - Edits happen in two places: `Crappy_Fuzzy_Problem_Library/<Model>.cpp` (a git submodule) and
   `test.cpp` (repo root). No commits are needed as part of this workflow — just edit, build,
