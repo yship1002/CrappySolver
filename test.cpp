@@ -9,6 +9,11 @@
 #include <cereal/archives/json.hpp>
 int insideAlgo::lbd_calculation_count=0;
 double insideAlgo::lbd_calculation_time=0;
+bool insideAlgo::in_strong_branching=false;
+int insideAlgo::sb_lbd_calculation_count=0;
+double insideAlgo::sb_lbd_calculation_time=0;
+int insideAlgo::ubd_calculation_count=0;
+double insideAlgo::ubd_calculation_time=0;
 int BBHeuristic::refresh_meter=0;
 int BBNode::node_counter=0;
 

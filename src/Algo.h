@@ -79,6 +79,18 @@ class insideAlgo:public Algo<xBBNode>{
         std::vector<double> LBD_calculation_time_records;
         static int lbd_calculation_count;
         static double lbd_calculation_time;
+        // LBD solves issued while in_strong_branching is true (outer/inner root strong branching and
+        // reliability probes) go to the sb_* counters instead of lbd_calculation_*.
+        static bool in_strong_branching;
+        static int sb_lbd_calculation_count;
+        static double sb_lbd_calculation_time;
+        struct StrongBranchingScope { // RAII: flags LBD solves as strong branching for the current scope
+            bool previous;
+            StrongBranchingScope():previous(in_strong_branching){in_strong_branching=true;}
+            ~StrongBranchingScope(){in_strong_branching=previous;}
+        };
+        static int ubd_calculation_count; // root UBD solves at the start of insideAlgo::solve
+        static double ubd_calculation_time;
         std::vector<double> LBD_values_records;
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;
@@ -107,6 +119,10 @@ class insideAlgo:public Algo<xBBNode>{
             ar(
                cereal::make_nvp("lbd_calculation_count", lbd_calculation_count),
                cereal::make_nvp("lbd_calculation_time", lbd_calculation_time),
+               cereal::make_nvp("sb_lbd_calculation_count", sb_lbd_calculation_count),
+               cereal::make_nvp("sb_lbd_calculation_time", sb_lbd_calculation_time),
+               cereal::make_nvp("ubd_calculation_count", ubd_calculation_count),
+               cereal::make_nvp("ubd_calculation_time", ubd_calculation_time),
                cereal::make_nvp("LBD_values_records", LBD_values_records),
                cereal::make_nvp("LBD_calculation_time_records", LBD_calculation_time_records)
             );

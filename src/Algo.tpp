@@ -268,10 +268,8 @@ double outsideAlgo::solve(double tolerance) {
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-initial_lbd_calculation_time); // record LBD calculation time for root node
     
     
-    int before_strong_branching_lbd_calculation_count=insideAlgo::lbd_calculation_count;
-    double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
-
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
+        insideAlgo::StrongBranchingScope sb_scope; // LBD solves in here go to the sb_* counters
         std::cout<<"========================================"<<std::endl;
         std::cout<<"Started Outside Strong Branching"<<std::endl;
         std::cout<<"========================================"<<std::endl;
@@ -280,10 +278,16 @@ double outsideAlgo::solve(double tolerance) {
         std::cout<<"Finished Outside Strong Branching"<<std::endl;
         std::cout<<"========================================"<<std::endl;
     }
-    insideAlgo::lbd_calculation_time=before_strong_branching_lbd_calculation_time; // add the LBD calculation time before strong branching to the total LBD calculation time
-    insideAlgo::lbd_calculation_count=before_strong_branching_lbd_calculation_count;
     double gap = (this->bestUBD - this->worstLBD); // abs gap calculation
     this->iterations = 0;
+
+    // previous-iteration values of the global counters, used to print per-iteration deltas
+    int prev_lbd_count=insideAlgo::lbd_calculation_count;
+    double prev_lbd_time=insideAlgo::lbd_calculation_time;
+    int prev_sb_lbd_count=insideAlgo::sb_lbd_calculation_count;
+    double prev_sb_lbd_time=insideAlgo::sb_lbd_calculation_time;
+    int prev_ubd_count=insideAlgo::ubd_calculation_count;
+    double prev_ubd_time=insideAlgo::ubd_calculation_time;
 
     while (gap >= tolerance) {
         if (this->activeNodes.empty()) {
@@ -309,8 +313,24 @@ double outsideAlgo::solve(double tolerance) {
         std::cout<<"Iteration "<<this->iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
-        std::cout<<"Total LBD time: "<<insideAlgo::lbd_calculation_time<<std::endl;
-        std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
+        std::cout<<"Total LBD time (excl. strong branching): "<<insideAlgo::lbd_calculation_time<<std::endl;
+        std::cout<<"Total LBD calculations (excl. strong branching): "<<insideAlgo::lbd_calculation_count<<std::endl;
+        std::cout<<"Total LBD time (strong branching): "<<insideAlgo::sb_lbd_calculation_time<<std::endl;
+        std::cout<<"Total LBD calculations (strong branching): "<<insideAlgo::sb_lbd_calculation_count<<std::endl;
+        std::cout<<"Total UBD time: "<<insideAlgo::ubd_calculation_time<<std::endl;
+        std::cout<<"Total UBD calculations: "<<insideAlgo::ubd_calculation_count<<std::endl;
+        std::cout<<"This iteration: LBD (excl. SB) time "<<insideAlgo::lbd_calculation_time-prev_lbd_time
+                 <<" count "<<insideAlgo::lbd_calculation_count-prev_lbd_count
+                 <<" | LBD (SB) time "<<insideAlgo::sb_lbd_calculation_time-prev_sb_lbd_time
+                 <<" count "<<insideAlgo::sb_lbd_calculation_count-prev_sb_lbd_count
+                 <<" | UBD time "<<insideAlgo::ubd_calculation_time-prev_ubd_time
+                 <<" count "<<insideAlgo::ubd_calculation_count-prev_ubd_count<<std::endl;
+        prev_lbd_count=insideAlgo::lbd_calculation_count;
+        prev_lbd_time=insideAlgo::lbd_calculation_time;
+        prev_sb_lbd_count=insideAlgo::sb_lbd_calculation_count;
+        prev_sb_lbd_time=insideAlgo::sb_lbd_calculation_time;
+        prev_ubd_count=insideAlgo::ubd_calculation_count;
+        prev_ubd_time=insideAlgo::ubd_calculation_time;
         this->iterations++;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -517,6 +537,7 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     // }
     bool probed=false;
     if (this->reliabilityBranching && this->activeNodes[new_idx].branchheuristic.strategy==BranchingStrategy::pseudo){
+        insideAlgo::StrongBranchingScope sb_scope; // probe LBD solves go to the sb_* counters
         this->reliabilityProbe(&(this->activeNodes[new_idx]), tolerance);
         probed=true;
     }
@@ -647,7 +668,11 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     return branch_idx;
 }
 double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
-    insideAlgo::lbd_calculation_count++;
+    if (insideAlgo::in_strong_branching){
+        insideAlgo::sb_lbd_calculation_count++;
+    }else{
+        insideAlgo::lbd_calculation_count++;
+    }
     this->model->scenario_name = node->scenario_name;
     this->model->first_stage_IX = node->first_stage_IX;
     this->model->second_stage_IX = node->second_stage_IX;
@@ -683,7 +708,11 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
         cplex.solve();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        insideAlgo::lbd_calculation_time += elapsed.count();
+        if (insideAlgo::in_strong_branching){
+            insideAlgo::sb_lbd_calculation_time += elapsed.count();
+        }else{
+            insideAlgo::lbd_calculation_time += elapsed.count();
+        }
         if (cplex.getStatus() == IloAlgorithm::Optimal) {
             node->LBD= cplex.getObjValue();
             IloNumArray vals(env);
@@ -809,6 +838,15 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
 
 }
 double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
+    insideAlgo::ubd_calculation_count++;
+    // adds the elapsed time of this call to the total on every exit path
+    struct UBDTimer {
+        std::chrono::high_resolution_clock::time_point start=std::chrono::high_resolution_clock::now();
+        ~UBDTimer(){
+            std::chrono::duration<double> elapsed=std::chrono::high_resolution_clock::now()-start;
+            insideAlgo::ubd_calculation_time+=elapsed.count();
+        }
+    } ubd_timer;
 
     // if (this->solvefullModel){
     //     // if solvefullModel is true, we solve the full MINLP to get the UBD, otherwise we just use the provided UBD for this node
@@ -1026,6 +1064,9 @@ void insideAlgo::weirdstrongbranching(xBBNode* node,double tolerance){
 
 double insideAlgo::solve(double tolerance) {
     std::cout<<"Solving scenario: "<<static_cast<int>(this->scenario_name)<<std::endl;
+    // snapshot so that an infeasible scenario contributes nothing to the LBD count/time
+    const int solve_start_lbd_calculation_count=insideAlgo::lbd_calculation_count;
+    const double solve_start_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
     if (this->bestUBD==INFINITY){
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
@@ -1044,13 +1085,14 @@ double insideAlgo::solve(double tolerance) {
     }
     if (this->worstLBD==INFINITY || this->bestUBD==INFINITY){ // if root node is infeasible or the provided UBD is infeasible, then we can terminate immediately
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
+        insideAlgo::lbd_calculation_count=solve_start_lbd_calculation_count;
+        insideAlgo::lbd_calculation_time=solve_start_lbd_calculation_time;
         return INFINITY;
     }
 
     // strong branching
-    int before_strong_branching_lbd_calculation_count=insideAlgo::lbd_calculation_count;
-    double before_strong_branching_lbd_calculation_time=insideAlgo::lbd_calculation_time;
     if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
+        insideAlgo::StrongBranchingScope sb_scope; // LBD solves in here go to the sb_* counters
         std::cout<<"========================================"<<std::endl;
         std::cout<<"Started Inside Strong Branching"<<std::endl;
 
@@ -1069,8 +1111,6 @@ double insideAlgo::solve(double tolerance) {
         return INFINITY;
     }
 
-    insideAlgo::lbd_calculation_count=before_strong_branching_lbd_calculation_count; //offset the LBD calculation count to exclude strong branching calculations for fair comparison
-    insideAlgo::lbd_calculation_time=before_strong_branching_lbd_calculation_time; // same idea
 
 
     // OFFICIAL SOLVING LOOP
