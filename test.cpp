@@ -1,6 +1,6 @@
 #include "src/Algo.h"
 #include "src/BBNode.h"
-#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+#include <Crappy_Fuzzy_Problem_Library/Ex722.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -21,20 +21,20 @@ int main(int argc, char* argv[]) {
     //ProcessMode: -1060.14(10s) -4422.39(20s)
     //Ex844:2014.79(10s) (20s: UBD 748.34, see run)
     //CrudeModel: -18502.5(3s)
-    //Ex722:   -378487.77799786365(5s, OLD near-identical scenarios); new diverse 5-scenario version: UBD -92551.4 (solver-verified)
+    //Ex722:   -378487.77799786365(5s, OLD near-identical scenarios); new diverse 5-scenario version: UBD -92551.4 (solver-verified); 20s: UBD -37283.5
     // CHPSIze:3.03*1000
     //Edunits:58240 (58216.75904279342+13.16696553855068+10.649036512259626)
     //edunits_nocp:56844
 
-    ProcessModel model(BranchingStrategy::pseudo);
+    Ex722Model model(BranchingStrategy::pseudo);
     // for (auto scenario_name : model.scenario_names) {
     //     insideAlgo CZalgo(&model,scenario_name,INFINITY,false,UBDSolver::GUROBI); // provide UBD for outer layer
     //     std::cout<<"("<<CZalgo.model->perturb_coeffs[scenario_name][0]<<", "<<CZalgo.model->perturb_coeffs[scenario_name][1]<<", "<<-CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1,false)<<")"<<std::endl;
         
     // }
-    outsideAlgo CZalgo(&model,-4422.39,UBDSolver::GUROBI); // provide UBD for outer layer
+    outsideAlgo CZalgo(&model,-37283.5,UBDSolver::GUROBI); // provide UBD for outer layer
     CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(4.4); // relgap=0.1% tolerance, abs=1
+    CZalgo.solve(37); // relgap=0.1% tolerance, abs=1
 
     // *************uncooment this part to get the provided_UBD after you change problem
     //insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,INFINITY,true,UBDSolver::GUROBI); // provide UBD for outer layer
