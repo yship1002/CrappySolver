@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # -O0 -g -w
-add_compile_options(-w -g)
+add_compile_options(-w -g -O2)
 
 # ---- Paths (edit if needed) ----
 set(PROJ_ROOT ${CMAKE_CURRENT_SOURCE_DIR})  # e.g., /Users/username/Desktop/CrappySolver
