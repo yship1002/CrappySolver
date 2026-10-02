@@ -1,3 +1,4 @@
+#include <limits>
 #include "BBHeuristic.h"
 BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
                     std::vector<mc::Interval> initial_second_stage_IX,
@@ -127,7 +128,7 @@ void BBHeuristic::updateWeights(int idx_branched, double left_improve,double rig
 double BBHeuristic::getPseudoCost(int idx_branched,SCORE_FUNCTION score_function){
     double left_sum = 0.0;
     double right_sum = 0.0;
-    int memory_Size=INFINITY; // use all the history to calculate pseudo cost
+    int memory_Size=std::numeric_limits<int>::max(); // use all the history to calculate pseudo cost
     int counter=0;
     for (int i=BBHeuristic::weights[idx_branched].size()-1; i>=0 && counter<=memory_Size; i--) {
         left_sum += BBHeuristic::weights[idx_branched][i].first;
