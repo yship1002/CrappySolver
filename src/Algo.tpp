@@ -286,6 +286,9 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
             break; // No more nodes to process
         }
         //get worst node idx
+        auto iter_start = std::chrono::high_resolution_clock::now();
+        int iter_lbd_count_before = Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count;
+        double iter_cplex_time_before = Tracker::nonsb_lbd_cplex_time;
         int idx=this->getWorstNodeIdx();
 
         //branch node at idx
@@ -305,7 +308,10 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
-        std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+        std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time << " seconds" << std::endl;
+        std::cout<<"This iteration: Wall Time: " << std::chrono::duration<double>(end - iter_start).count() << " seconds"
+                 << ", LBD calculation count: " << (Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count) - iter_lbd_count_before
+                 << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time - iter_cplex_time_before << " seconds" << std::endl;
 
         iterations++;
     }
@@ -632,7 +638,12 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranc
 
         //cplex.exportModel("/Users/jyang872/Desktop/CrappySolver/test.lp");
         cplex.setOut(env.getNullStream());
+        auto cplex_start = std::chrono::high_resolution_clock::now();
         cplex.solve();
+        auto cplex_end = std::chrono::high_resolution_clock::now();
+        if (flag==withinStrongBranching::no){
+            Tracker::nonsb_lbd_cplex_time += std::chrono::duration<double>(cplex_end - cplex_start).count();
+        }
 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
@@ -860,7 +871,7 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << std::endl;
+        std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time << " seconds" << std::endl;
         iterations++;
         
     

@@ -17,6 +17,7 @@ std::vector<double> Tracker::strong_branching_ubd_calculation_time={}; // only f
 
 int Tracker::total_lbd_calculation_count=0; // include strong branching calculations
 std::vector<double> Tracker::total_lbd_calculation_time={};
+double Tracker::nonsb_lbd_cplex_time=0.0;
 int Tracker::strong_branching_lbd_calculation_count=0;
 std::vector<double> Tracker::strong_branching_lbd_calculation_time={};
 std::vector<double> Tracker::LBD_value_records={}; 

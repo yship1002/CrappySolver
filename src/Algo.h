@@ -31,6 +31,7 @@ struct Tracker{
     // LBD related bookeeping variables
     static int total_lbd_calculation_count; // include strong branching calculations
     static std::vector<double> total_lbd_calculation_time;
+    static double nonsb_lbd_cplex_time; // cumulative pure cplex.solve() time of LBD calculations (exclude strong branching)
     static int strong_branching_lbd_calculation_count;
     static std::vector<double> strong_branching_lbd_calculation_time;
     static std::vector<double> LBD_value_records; // for every LBD calculation recrod result value (exclude strong branching)
