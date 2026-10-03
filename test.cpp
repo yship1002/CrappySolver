@@ -3,7 +3,14 @@
 #include <thread>
 #include "src/Algo.h"
 #include "src/BBNode.h"
+// Include ONLY the model you want to run (and set MODEL_TYPE below to match).
+//#include <Crappy_Fuzzy_Problem_Library/Ex722.h>
 #include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+// #include <Crappy_Fuzzy_Problem_Library/Ex844.h>
+// #include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
+// #include <Crappy_Fuzzy_Problem_Library/CHPModel.h>
+// #include <Crappy_Fuzzy_Problem_Library/EDUnits.h>
+// #include <Crappy_Fuzzy_Problem_Library/EDUnits_nocp.h>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -25,6 +32,14 @@ std::string Tracker::file_name="test.json";
 static volatile std::sig_atomic_t terminate_flag = 0;
 std::vector<std::vector<std::pair<double,double>>> BBHeuristic::weights;
 int BBHeuristic::branch_counter=0;
+// ============================ USER CONFIG (edit only this block) ============================
+using MODEL_TYPE = ProcessModel;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
+constexpr int       NUM_SCENARIOS = 40;   // max: Ex722 20, Process 40, Ex844 20, Crude 3, CHP 8, EDUnits 3
+constexpr UBDSolver UBD_SOLVER    = UBDSolver::IPOPT;
+constexpr double    TOLERANCE     = 7.2;                // absolute gap
+constexpr double    PROVIDED_UBD  = -7264.69;           // UBD provided to the algorithm
+// =============================================================================================
+
 void handle_signal(int)
 {
     terminate_flag = 1;
@@ -42,24 +57,15 @@ int main(int argc, char* argv[]) {
         Tracker::serialize(oarchive);
     });
 
-    //ProcessMode: -1060.14(10s) -4422.39(20s) -7264.69(40s)
-    //Ex844:583.156(10s) 20s: UBD 748.34
-    //CrudeModel: -18502.5(3s)
-    // Ex722:   -3527.6(3s) -92551.4 (5s) 20s: UBD -37283.5
-    // CHPsize: 3.03*1000 (8s)
-    // EDUnits:UBD:59363
-    // ED_nocp :56844
-    ProcessModel model(BranchingStrategy::pseudo);
+    // Reference notes: ProcessModel: -4422.39(20s) -7264.69(40s); Ex844: 583.156(10s) 20s: UBD 748.34;
+    // CrudeModel: -18502.5(3s); Ex722: -92551.4(5s) 20s: UBD -37283.5;
 
-    //outsideAlgo CZalgo(&model,3.03*1000,UBDSolver::GUROBI); // provide UBD for outer layer
-    
-    insideAlgo CZalgo(&model,ScenarioNames::SCENARIO1,-7264.69,solveFullmodel::yes,UBDSolver:: IPOPT); // provide UBD for outer layer
-    
-    //std::cout << "UBD is: "<<CZalgo.calculateUBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
-    //std::cout << "LBD is: "<<CZalgo.calculateLBD(&(CZalgo.activeNodes[0]), 1)<<std::endl; // calculate LBD for root node before starting the algorithm, this is important for strong branching to have a good initial LBD for weight update when infeasible
+    Ipopt::SmartPtr<STModel> model = new MODEL_TYPE(BranchingStrategy::pseudo, NUM_SCENARIOS);
+    std::cout << "Model config: scenarios=" << NUM_SCENARIOS << ", UBD=" << PROVIDED_UBD << ", tol=" << TOLERANCE << std::endl;
 
-    CZalgo.bestUBDforInfinity=true; // set this to true if you want to use the bestUBD for strong branching weight update when infeasible, set to false if you want to use 0 for weight update when infeasible
-    CZalgo.solve(7.2); // relgap=0.1% tolerance, abs=1
+    insideAlgo CZalgo(GetRawPtr(model), ScenarioNames::SCENARIO1, PROVIDED_UBD, solveFullmodel::yes, UBD_SOLVER);
+    CZalgo.bestUBDforInfinity = true; // use bestUBD for strong branching weight update when infeasible, false uses 0
+    CZalgo.solve(TOLERANCE);
 
     // {
     //     std::ofstream os(Tracker::file_name);
