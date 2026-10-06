@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# -O0 -g -w
-add_compile_options(-w -g)
+# -O2 -g -w
+add_compile_options(-w -g -O2)
 
 # ---- Paths (edit if needed) ----
 set(PROJ_ROOT ${CMAKE_CURRENT_SOURCE_DIR})  # e.g., /Users/username/Desktop/CrappySolver
@@ -53,6 +53,8 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library"
     "${PROJ_ROOT}/cereal/include"
     "${PROJ_ROOT}/mcpp/src/3rdparty/fadbad++"
+    "${PROJ_ROOT}/mcpp/src/3rdparty/cpplapack-2015.05.11-1/include"
+    "${PROJ_ROOT}/mcpp/include"
     "${CPLEX_INC_CONCERT}"
     "${CPLEX_INC_CPLEX}"
     "${GUROBI_INC}"

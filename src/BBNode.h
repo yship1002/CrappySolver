@@ -19,6 +19,7 @@ class Node{
         BBHeuristic branchheuristic;
         std::vector<mc::Interval> first_stage_IX;
         std::vector<mc::Interval> second_stage_IX;
+        int node_id;
         double LBD;
         double UBD;
 };
@@ -28,8 +29,10 @@ class BBNode : public Node {
         BBNode()=default; // default constructor
         BBNode(const BBNode& other)=default;
         std::vector<double> scenario_LBDs; // record LBD for each scenario for this node
+        // Lagrangean multipliers mu[scenario][first stage var] on the NACs (sum over scenarios is 0).
+        // Holds the multipliers that gave the best LBD at this node; children inherit them as a warm start.
+        std::vector<std::vector<double>> mu;
         static int node_counter;
-        int node_id;
 
 
 };
@@ -39,6 +42,9 @@ class xBBNode: public Node {
             BranchingStrategy strategy,ScenarioNames scenario_name);
         xBBNode()=default; // default constructor
         xBBNode(const xBBNode& other)=default;
+        void printBound();
+        std::vector<std::pair<double,double>> strong_branching_storage;
+        std::vector<double> UBD_solution;
         ScenarioNames scenario_name;
 
 };
