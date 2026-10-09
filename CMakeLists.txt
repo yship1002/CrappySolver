@@ -42,7 +42,7 @@ file(GLOB EXAMPLE_SOURCES
     "${PROJ_ROOT}/Crappy_Fuzzy_Problem_Library/*.cpp"
 
 )
-
+list(FILTER EXAMPLE_SOURCES EXCLUDE REGEX "CrudeModel\\.cpp$")
 add_executable(${EXECUTABLE_NAME}
     "${PROJ_ROOT}/test.cpp"
     ${src_SOURCES}
