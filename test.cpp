@@ -5,8 +5,8 @@
 #include "src/BBNode.h"
 // Include ONLY the model you want to run (and set MODEL_TYPE below to match).
 //#include <Crappy_Fuzzy_Problem_Library/Ex722.h>
-#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
-// #include <Crappy_Fuzzy_Problem_Library/Ex844.h>
+// #include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+#include <Crappy_Fuzzy_Problem_Library/Ex844.h>
 // #include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/CHPModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/EDUnits.h>
@@ -33,11 +33,11 @@ static volatile std::sig_atomic_t terminate_flag = 0;
 std::vector<std::vector<std::pair<double,double>>> BBHeuristic::weights;
 int BBHeuristic::branch_counter=0;
 // ============================ USER CONFIG (edit only this block) ============================
-using MODEL_TYPE = ProcessModel;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
-constexpr int       NUM_SCENARIOS = 40;   // max: Ex722 20, Process 40, Ex844 20, Crude 3, CHP 8, EDUnits 3
+using MODEL_TYPE = Ex844Model;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
+constexpr int       NUM_SCENARIOS = 20;   // max: Ex722 20, Process 40, Ex844 20, Crude 3, CHP 8, EDUnits 3
 constexpr UBDSolver UBD_SOLVER    = UBDSolver::IPOPT;
-constexpr double    TOLERANCE     = 7.2;                // absolute gap
-constexpr double    PROVIDED_UBD  = -7264.69;           // UBD provided to the algorithm
+constexpr double    TOLERANCE     = 0.7;                // absolute gap
+constexpr double    PROVIDED_UBD  = 748.34;           // UBD provided to the algorithm
 // =============================================================================================
 
 void handle_signal(int)

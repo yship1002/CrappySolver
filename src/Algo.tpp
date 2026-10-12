@@ -308,10 +308,16 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         std::cout<<"----------------------------------------"<<std::endl;
         std::cout<<"Iteration "<<iterations<<std::endl;
         std::cout<<"----------------------------------------"<<std::endl;
-        std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap<<" Total Wall Time: " << elapsed.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time << " seconds" << std::endl;
+        std::ios_base::fmtflags saved_flags = std::cout.flags();
+        std::streamsize saved_prec = std::cout.precision();
+        std::cout<<"Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", Gap: "<<gap;
+        std::cout<<std::fixed<<std::setprecision(3);
+        std::cout<<" Total Wall Time: " << elapsed.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time << " seconds" << std::endl;
         std::cout<<"This iteration: Wall Time: " << std::chrono::duration<double>(end - iter_start).count() << " seconds"
                  << ", LBD calculation count: " << (Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count) - iter_lbd_count_before
                  << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time - iter_cplex_time_before << " seconds" << std::endl;
+        std::cout.flags(saved_flags);
+        std::cout.precision(saved_prec);
 
         iterations++;
     }
@@ -319,7 +325,7 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
     std::chrono::duration<double> elapsed = end - start;
     std::cout<<"========================================"<<std::endl;
     std::cout<<"Algorithm terminated after "<<iterations<<" iterations."<<std::endl;
-    std::cout<<"Total Wall Time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout<<"Total Wall Time: " << std::fixed << std::setprecision(3) << elapsed.count() << " seconds" << std::defaultfloat << std::setprecision(6) << std::endl;
     std::cout<<"Best Solution: " << this->bestUBD << std::endl;
 
     return this->bestUBD;
@@ -870,8 +876,13 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
         Tracker::LBD_value_records.push_back(this->worstLBD);
         std::cout<<"Inside Iteration "<<iterations<<": Current UBD: "<<this->bestUBD<<", LBD: "<<this->worstLBD<<", AbsGap: "<<gap<<"Tol: "<<tolerance<<std::endl;
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+        std::chrono::duration<double> duration = end - start;
+        std::ios_base::fmtflags saved_flags = std::cout.flags();
+        std::streamsize saved_prec = std::cout.precision();
+        std::cout<<std::fixed<<std::setprecision(3);
         std::cout<<"Total Wall Time: " << duration.count() << " seconds" << ", LBD calculation count: " << Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count << ", LBD CPLEX time: " << Tracker::nonsb_lbd_cplex_time << " seconds" << std::endl;
+        std::cout.flags(saved_flags);
+        std::cout.precision(saved_prec);
         iterations++;
         
     

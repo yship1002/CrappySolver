@@ -2,6 +2,7 @@
 #define ALGO_H
 #include <string>
 #include <cmath>
+#include <iomanip>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
