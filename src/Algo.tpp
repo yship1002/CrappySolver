@@ -1146,6 +1146,12 @@ double insideAlgo::solve(double tolerance) {
         //std::cout<<"Total LBD calculations: "<<insideAlgo::lbd_calculation_count<<std::endl;
         //std::cout<<"Total LBD calculation time: "<<insideAlgo::lbd_calculation_time<<std::endl;
         this->iterations++;
+        if (gap >= tolerance && this->iterations >= this->max_inner_iterations){
+            std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" hit the inner iteration cap ("<<this->max_inner_iterations
+                     <<") without converging: returning LBD "<<this->worstLBD<<" (UBD "<<this->bestUBD<<", gap "<<gap<<")."<<std::endl;
+            
+            return this->bestUBD;
+        }
     }
 
     std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" terminated after "<<iterations<<" iterations."<<std::endl;

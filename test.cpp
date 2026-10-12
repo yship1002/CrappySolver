@@ -2,8 +2,8 @@
 #include "src/BBNode.h"
 #include <type_traits>
 // Include ONLY the model you want to run (and set MODEL_TYPE below to match).
-// #include <Crappy_Fuzzy_Problem_Library/Ex722.h>
-#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+#include <Crappy_Fuzzy_Problem_Library/Ex722.h>
+// #include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/Ex844.h>
 // #include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/CHPModel.h>
@@ -26,18 +26,19 @@ int BBHeuristic::refresh_meter=0;
 int BBNode::node_counter=0;
 
 // ============================ USER CONFIG (edit only this block) ============================
-using MODEL_TYPE = ProcessModel;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
-constexpr int       NUM_SCENARIOS = 40;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
+using MODEL_TYPE = Ex722Model;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
+constexpr int       NUM_SCENARIOS = 5;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
 constexpr UBDSolver UBD_SOLVER    = UBDSolver::GUROBI;
-constexpr double    TOLERANCE     = 7.2;        // absolute gap
-constexpr double    PROVIDED_UBD  = -7264.69;   // known best objective for the config above
+constexpr double    TOLERANCE     = 92;        // absolute gap
+constexpr double    PROVIDED_UBD  = -92551.4;   // known best objective for the config above
 // =============================================================================================
 
 int main(int argc, char* argv[]) {
+    // current cap BB inside to 2000 iterations
     //ProcessMode: -1060.14(10s) -4422.39(20s, UBD -4422.39) (40s: UBD -7264.69)
     //Ex844:2014.79(10s) (20s: UBD 748.34, see run)
     //CrudeModel: -18502.5(3s)
-    //Ex722:   -378487.77799786365(5s, OLD near-identical scenarios); new diverse 5-scenario version: UBD -92551.4 (solver-verified); 20s: UBD -37283.5
+    //Ex722:   new diverse 5-scenario version: UBD -92551.4 (solver-verified); 20s: UBD -37283.5
     // CHPSIze:3.03*1000
     //Edunits:58240 (58216.75904279342+13.16696553855068+10.649036512259626)
     //edunits_nocp:56844
