@@ -489,6 +489,8 @@ void insideAlgo::reliabilityProbe(xBBNode* node,double tolerance){
     const int n=n1+node->second_stage_IX.size();
     const double original_LBD=node->LBD;
     this->probe_scores.assign(n,std::nan(""));
+    // candidates: non-fixed variables with an unreliable pseudocost (all of them if probe_all)
+    std::vector<std::pair<double,std::pair<int,int>>> cands; // (priority, (samples, var index))
     for (int i=0;i<n;i++){
         mc::Interval cur = i<n1 ? node->first_stage_IX[i] : node->second_stage_IX[i-n1];
         mc::Interval ini = i<n1 ? node->branchheuristic.initial_first_stage_IX[i] : node->branchheuristic.initial_second_stage_IX[i-n1];
@@ -497,7 +499,20 @@ void insideAlgo::reliabilityProbe(xBBNode* node,double tolerance){
         bool reliable = (int)node->branchheuristic.inside_weights[i].size()>=this->reliability_eta
                         && node->branchheuristic.getPseudoCost(i,USE_inside_weights::YES)>0;
         if (reliable && !this->probe_all) continue;
-
+        // variables with no samples or a zero pseudocost come first (fewest samples first, so they rotate), the rest by pseudocost score
+        int samples=node->branchheuristic.inside_weights[i].size();
+        double pc = samples==0 ? 0.0 : node->branchheuristic.getPseudoCost(i,USE_inside_weights::YES);
+        double priority = pc>0 ? (cur.u()-cur.l())*pc : INFINITY;
+        cands.push_back({priority,{samples,i}});
+    }
+    std::stable_sort(cands.begin(),cands.end(),[](const std::pair<double,std::pair<int,int>>& a,const std::pair<double,std::pair<int,int>>& b){
+        if (a.first!=b.first) return a.first>b.first;
+        return a.second.first<b.second.first; // fewer samples first
+    });
+    if (!this->probe_all && (int)cands.size()>this->max_probe_cands) cands.resize(this->max_probe_cands); // probe only the top candidates
+    for (const auto& cand : cands){
+        int i=cand.second.second;
+        mc::Interval cur = i<n1 ? node->first_stage_IX[i] : node->second_stage_IX[i-n1];
         xBBNode left=*node, right=*node;
         double mid=(cur.l()+cur.u())/2.0;
         if (i<n1){

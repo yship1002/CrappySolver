@@ -106,8 +106,9 @@ class insideAlgo:public Algo<xBBNode>{
         // Probed variables are ranked by their FRESH probe score (the averaged pseudocost history goes
         // stale as boxes shrink). probe_all=true probes every non-fixed variable (full strong branching).
         bool reliabilityBranching=true;
-        bool probe_all=true;
+        bool probe_all=false;
         int reliability_eta=4;
+        int max_probe_cands=8; // probe at most this many unreliable candidates per node (ranked by pseudocost score); ignored if probe_all
         std::vector<double> probe_scores; // NaN = variable not probed at this node
         void reliabilityProbe(xBBNode* node,double tolerance);
         bool validitycheck(xBBNode* node);
