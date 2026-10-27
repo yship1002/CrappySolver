@@ -2,8 +2,8 @@
 #include "src/BBNode.h"
 #include <type_traits>
 // Include ONLY the model you want to run (and set MODEL_TYPE below to match).
-#include <Crappy_Fuzzy_Problem_Library/Ex722.h>
-// #include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+// #include <Crappy_Fuzzy_Problem_Library/Ex722.h>
+#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/Ex844.h>
 // #include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/CHPModel.h>
@@ -26,11 +26,12 @@ int BBHeuristic::refresh_meter=0;
 int BBNode::node_counter=0;
 
 // ============================ USER CONFIG (edit only this block) ============================
-using MODEL_TYPE = Ex722Model;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
-constexpr int       NUM_SCENARIOS = 20;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
+using MODEL_TYPE = ProcessModel;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
+constexpr int       NUM_SCENARIOS = 40;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
 constexpr UBDSolver UBD_SOLVER    = UBDSolver::IPOPT;
-constexpr double    TOLERANCE     = 372;        // absolute gap
-constexpr double    PROVIDED_UBD  = -37283.5;   // known best objective for the config above
+constexpr int       UBD_EVERY_K_NODES = 10;   // inner Ipopt/Gurobi UBD solve at the root and every k-th child node (1 = every node)
+constexpr double    TOLERANCE     = 72;        // absolute gap
+constexpr double    PROVIDED_UBD  = -7264.69;   // known best objective for the config above
 // =============================================================================================
 
 int main(int argc, char* argv[]) {
@@ -57,6 +58,7 @@ int main(int argc, char* argv[]) {
     //outsideAlgo CZalgo(&model,-4422.39,UBDSolver::GUROBI); // ProcessModel 20s UBD (original)
     outsideAlgo CZalgo(GetRawPtr(model),PROVIDED_UBD,UBD_SOLVER);
     CZalgo.bestUBDforInfinity=true;
+    CZalgo.ubd_every_k_nodes=UBD_EVERY_K_NODES;
     CZalgo.solve(TOLERANCE);
 
     // *************uncooment this part to get the provided_UBD after you change problem

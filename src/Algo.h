@@ -49,6 +49,7 @@ class outsideAlgo:public Algo<BBNode>{
         outsideAlgo(STModel* model,double provided_UBD,UBDSolver solver=UBDSolver::IPOPT);
         outsideAlgo()=default; // default constructor
         outsideAlgo(const outsideAlgo& other)=default;
+        int ubd_every_k_nodes=1; // forwarded to every insideAlgo
         std::vector<double> LBD_values_records;
         std::vector<int> LBD_calculation_records;
         std::vector<double> LBD_calculation_time_records;
@@ -92,6 +93,8 @@ class insideAlgo:public Algo<xBBNode>{
         static int ubd_calculation_count; // root UBD solves at the start of insideAlgo::solve
         static double ubd_calculation_time;
         std::vector<double> LBD_values_records;
+        int ubd_every_k_nodes=1; // local UBD solve at the root and at every k-th child node (1 = every node)
+        int ubd_node_counter=0; // children seen so far in this tree, used for the every-k-th test
         double incumbentUBD=INFINITY; // best UBD found by any calculateUBD call in this tree, kept even after its node is fathomed or branched
         int max_inner_iterations=4000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
         double solve(double tolerance) override;

@@ -216,6 +216,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,bool verbose) {
         this->model->first_stage_IX = node->first_stage_IX;
         this->model->second_stage_IX = node->second_stage_IX;
         insideAlgo inneralgo(this->model,scenario_name,INFINITY,false,this->ubd_solver);
+        inneralgo.ubd_every_k_nodes=this->ubd_every_k_nodes; // pass the UBD frequency to inner algo
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
         //double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
         double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s 
@@ -603,12 +604,7 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
 
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
-    if (child1.UBD==INFINITY){
-        child1.LBD=INFINITY; // if child UBD is infinity, then set child UBD to best UBD to avoid numerical issue
-    }
-    if (child2.UBD==INFINITY){
-        child2.LBD=INFINITY; // if child UBD is infinity, then set child UBD to best UBD to avoid numerical issue
-    }
+    // note: child.UBD==INFINITY (inherited from a parent with no incumbent) says nothing about feasibility, only the LBD does
 
     if (child1.LBD<original_LBD){
         child1.LBD=original_LBD; // if child LBD is less than parent LBD, then set child LBD to parent LBD to avoid numerical issue
@@ -619,12 +615,16 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     }
 
     if (child1.LBD != INFINITY){
-        { double parent_UBD=child1.UBD; this->calculateUBD(&child1, tolerance); child1.UBD=std::min(child1.UBD,parent_UBD); } // Ipopt local solve at every node; keep the incumbent if the local solve fails
+        if (++this->ubd_node_counter % this->ubd_every_k_nodes == 0){ // local UBD solve only at every k-th child (the root is always solved)
+            double parent_UBD=child1.UBD; this->calculateUBD(&child1, tolerance); child1.UBD=std::min(child1.UBD,parent_UBD); // keep the incumbent if the local solve fails
+        }
     }else{
         child1.UBD=INFINITY;
     }
     if (child2.LBD != INFINITY){
-        { double parent_UBD=child2.UBD; this->calculateUBD(&child2, tolerance); child2.UBD=std::min(child2.UBD,parent_UBD); } // Ipopt local solve at every node; keep the incumbent if the local solve fails
+        if (++this->ubd_node_counter % this->ubd_every_k_nodes == 0){ // local UBD solve only at every k-th child (the root is always solved)
+            double parent_UBD=child2.UBD; this->calculateUBD(&child2, tolerance); child2.UBD=std::min(child2.UBD,parent_UBD); // keep the incumbent if the local solve fails
+        }
     }else{
         child2.UBD=INFINITY;
     }
@@ -1088,11 +1088,9 @@ double insideAlgo::solve(double tolerance) {
     // snapshot so that an infeasible scenario contributes nothing to the LBD count/time
     const int solve_start_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     const double solve_start_lbd_calculation_time=insideAlgo::lbd_calculation_time;
+    // a failed local solve (max iterations, local infeasibility) is not a proof of infeasibility: only the LBD can prove it,
+    // so with no incumbent yet we carry on with bestUBD=INFINITY and let the children's Ipopt solves find one
     this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance);
-    if (this->bestUBD==INFINITY){
-        std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
-        return INFINITY;
-    }
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
 
     this->worstLBD = this->calculateLBD(&(this->activeNodes[0]), tolerance);
@@ -1104,7 +1102,7 @@ double insideAlgo::solve(double tolerance) {
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" terminated at root node with gap: "<<gap<<std::endl;
         return this->worstLBD;
     }
-    if (this->worstLBD==INFINITY || this->bestUBD==INFINITY){ // if root node is infeasible or the provided UBD is infeasible, then we can terminate immediately
+    if (this->worstLBD==INFINITY){ // root relaxation infeasible: the scenario is infeasible on this box
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node."<<std::endl;
         insideAlgo::lbd_calculation_count=solve_start_lbd_calculation_count;
         insideAlgo::lbd_calculation_time=solve_start_lbd_calculation_time;
