@@ -96,7 +96,7 @@ class insideAlgo:public Algo<xBBNode>{
         int ubd_every_k_nodes=1; // local UBD solve at the root and at every k-th child node (1 = every node)
         int ubd_node_counter=0; // children seen so far in this tree, used for the every-k-th test
         double incumbentUBD=INFINITY; // best UBD found by any calculateUBD call in this tree, kept even after its node is fathomed or branched
-        int max_inner_iterations=4000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
+        int max_inner_iterations=10000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;
         void strongbranching(xBBNode* node,double tolerance) override;
