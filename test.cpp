@@ -28,7 +28,7 @@ int BBNode::node_counter=0;
 // ============================ USER CONFIG (edit only this block) ============================
 using MODEL_TYPE = Ex722Model;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
 constexpr int       NUM_SCENARIOS = 20;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
-constexpr UBDSolver UBD_SOLVER    = UBDSolver::GUROBI;
+constexpr UBDSolver UBD_SOLVER    = UBDSolver::IPOPT;
 constexpr double    TOLERANCE     = 372;        // absolute gap
 constexpr double    PROVIDED_UBD  = -37283.5;   // known best objective for the config above
 // =============================================================================================

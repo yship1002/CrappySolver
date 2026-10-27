@@ -619,12 +619,12 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     }
 
     if (child1.LBD != INFINITY){
-        //this->calculateUBD(&child1, tolerance); // just use global gurobi if ipopt just commetn in
+        { double parent_UBD=child1.UBD; this->calculateUBD(&child1, tolerance); child1.UBD=std::min(child1.UBD,parent_UBD); } // Ipopt local solve at every node; keep the incumbent if the local solve fails
     }else{
         child1.UBD=INFINITY;
     }
     if (child2.LBD != INFINITY){
-        //this->calculateUBD(&child2, tolerance); // just use global gurobi
+        { double parent_UBD=child2.UBD; this->calculateUBD(&child2, tolerance); child2.UBD=std::min(child2.UBD,parent_UBD); } // Ipopt local solve at every node; keep the incumbent if the local solve fails
     }else{
         child2.UBD=INFINITY;
     }
@@ -855,13 +855,17 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
 double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
     insideAlgo::ubd_calculation_count++;
     // adds the elapsed time of this call to the total on every exit path
+    // also records the node's UBD into incumbentUBD on every exit path
     struct UBDTimer {
         std::chrono::high_resolution_clock::time_point start=std::chrono::high_resolution_clock::now();
+        insideAlgo* algo; xBBNode* node;
+        UBDTimer(insideAlgo* a,xBBNode* n):algo(a),node(n){}
         ~UBDTimer(){
             std::chrono::duration<double> elapsed=std::chrono::high_resolution_clock::now()-start;
             insideAlgo::ubd_calculation_time+=elapsed.count();
+            if (node->UBD<algo->incumbentUBD) algo->incumbentUBD=node->UBD;
         }
-    } ubd_timer;
+    } ubd_timer(this,node);
 
     // if (this->solvefullModel){
     //     // if solvefullModel is true, we solve the full MINLP to get the UBD, otherwise we just use the provided UBD for this node
@@ -929,6 +933,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             node->UBD = INFINITY;
             return node->UBD;
         }
+        node->UBD = INFINITY; // any other Ipopt status: no usable local solution
+        return node->UBD;
     }else if (this->ubd_solver == UBDSolver::GUROBI){
         GRBEnv env = GRBEnv(true); // empty environemtn to turn off annoying Gurobi output
         env.set(GRB_IntParam_OutputFlag, 0);
@@ -1139,7 +1145,7 @@ double insideAlgo::solve(double tolerance) {
         int idx = this->getWorstNodeIdx();
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance);
         this->worstLBD = this->getWorstLBD();
-        this->bestUBD = this->getBestUBD();
+        this->bestUBD = this->incumbentUBD;
         if (this->worstLBD>this->bestUBD){
             return this->bestUBD;
             //throw std::runtime_error("Warning: Worst LBD is greater than best UBD, this should not happen, there might be a bug in the code");
@@ -1147,10 +1153,10 @@ double insideAlgo::solve(double tolerance) {
 
         this->fathomNodes(this->bestUBD);
         this->worstLBD = this->getWorstLBD();
-        this->bestUBD = this->getBestUBD();
+        this->bestUBD = this->incumbentUBD;
         this->LBD_values_records.push_back(this->worstLBD); // record LBD value for worst node
         if (this->worstLBD==INFINITY){
-            return INFINITY;
+            return this->incumbentUBD; // every node fathomed: the incumbent is optimal within tolerance (INFINITY only if no feasible point was ever found)
         }
 
 

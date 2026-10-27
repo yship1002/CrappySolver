@@ -92,7 +92,8 @@ class insideAlgo:public Algo<xBBNode>{
         static int ubd_calculation_count; // root UBD solves at the start of insideAlgo::solve
         static double ubd_calculation_time;
         std::vector<double> LBD_values_records;
-        int max_inner_iterations=2000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
+        double incumbentUBD=INFINITY; // best UBD found by any calculateUBD call in this tree, kept even after its node is fathomed or branched
+        int max_inner_iterations=4000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
         double solve(double tolerance) override;
         int branchNodeAtIdx(int idx,double tolerance) override;
         void strongbranching(xBBNode* node,double tolerance) override;
