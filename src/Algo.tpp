@@ -500,10 +500,10 @@ void insideAlgo::reliabilityProbe(xBBNode* node,double tolerance){
         bool reliable = (int)node->branchheuristic.inside_weights[i].size()>=this->reliability_eta
                         && node->branchheuristic.getPseudoCost(i,USE_inside_weights::YES)>0;
         if (reliable && !this->probe_all) continue;
-        // variables with no samples or a zero pseudocost come first (fewest samples first, so they rotate), the rest by pseudocost score
+        // candidates are ranked by pseudocost score; variables with no samples or a zero pseudocost get priority 0 (last, fewest samples first)
         int samples=node->branchheuristic.inside_weights[i].size();
         double pc = samples==0 ? 0.0 : node->branchheuristic.getPseudoCost(i,USE_inside_weights::YES);
-        double priority = pc>0 ? (cur.u()-cur.l())*pc : INFINITY;
+        double priority = (cur.u()-cur.l())*pc;
         cands.push_back({priority,{samples,i}});
     }
     std::stable_sort(cands.begin(),cands.end(),[](const std::pair<double,std::pair<int,int>>& a,const std::pair<double,std::pair<int,int>>& b){
