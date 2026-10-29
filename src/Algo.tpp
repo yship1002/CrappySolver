@@ -217,6 +217,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,bool verbose) {
         this->model->second_stage_IX = node->second_stage_IX;
         insideAlgo inneralgo(this->model,scenario_name,INFINITY,false,this->ubd_solver);
         inneralgo.ubd_every_k_nodes=this->ubd_every_k_nodes; // pass the UBD frequency to inner algo
+        inneralgo.ubd_root_only=this->ubd_root_only;
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
         //double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
         double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s 
@@ -615,14 +616,14 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     }
 
     if (child1.LBD != INFINITY){
-        if (++this->ubd_node_counter % this->ubd_every_k_nodes == 0){ // local UBD solve only at every k-th child (the root is always solved)
+        if (!this->ubd_root_only && ++this->ubd_node_counter % this->ubd_every_k_nodes == 0){ // local UBD solve only at every k-th child (the root is always solved)
             double parent_UBD=child1.UBD; this->calculateUBD(&child1, tolerance); child1.UBD=std::min(child1.UBD,parent_UBD); // keep the incumbent if the local solve fails
         }
     }else{
         child1.UBD=INFINITY;
     }
     if (child2.LBD != INFINITY){
-        if (++this->ubd_node_counter % this->ubd_every_k_nodes == 0){ // local UBD solve only at every k-th child (the root is always solved)
+        if (!this->ubd_root_only && ++this->ubd_node_counter % this->ubd_every_k_nodes == 0){ // local UBD solve only at every k-th child (the root is always solved)
             double parent_UBD=child2.UBD; this->calculateUBD(&child2, tolerance); child2.UBD=std::min(child2.UBD,parent_UBD); // keep the incumbent if the local solve fails
         }
     }else{
@@ -946,7 +947,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-4);
             grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
-            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-10);  // temporarily set to tight gap for testing
+            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-5);
             grbmodel.set(GRB_DoubleParam_TimeLimit, 60.0);
 
             grbmodel.optimize();
