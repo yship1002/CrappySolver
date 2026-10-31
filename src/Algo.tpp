@@ -6,23 +6,15 @@ Algo<T>::Algo(STModel* model) {
     this->model = model;
 }
 template<typename T>
-int Algo<T>::getWorstNodeIdx() {
-    double worstLBD = std::numeric_limits<double>::infinity();
-    int worstNodeIdx = 0;
-    for (size_t i = 0; i < this->activeNodes.size(); ++i) {
-        if (this->activeNodes[i].LBD < worstLBD) {
-            worstLBD = this->activeNodes[i].LBD;
-            worstNodeIdx = i;
-        }
-    }
-    return worstNodeIdx;
+typename Algo<T>::NodeIt Algo<T>::getWorstNodeIt() {
+    return this->activeNodes.begin(); // smallest LBD; ties resolved by insertion order
 }
 template<typename T>
 double Algo<T>::getBestUBD() {
     double bestUBD = std::numeric_limits<double>::infinity();
-    for (const auto& node : this->activeNodes) {
-        if (node.UBD < bestUBD) {
-            bestUBD = node.UBD;
+    for (const auto& kv : this->activeNodes) {
+        if (kv.second.UBD < bestUBD) {
+            bestUBD = kv.second.UBD;
         }
     }
     return bestUBD;
@@ -30,27 +22,20 @@ double Algo<T>::getBestUBD() {
 
 template<typename T>
 double Algo<T>::getWorstLBD() {
-    double worstLBD = std::numeric_limits<double>::infinity();
-    for (const auto& node : this->activeNodes) {
-        if (node.LBD < worstLBD) {
-            worstLBD = node.LBD;
-        }
-    }
-    return worstLBD;
+    if (this->activeNodes.empty()) return std::numeric_limits<double>::infinity();
+    return this->activeNodes.begin()->first;
 }
 
 template<typename T>
 void Algo<T>::fathomNodes(double UBD) {
-    this->activeNodes.erase(
-        std::remove_if(this->activeNodes.begin(), this->activeNodes.end(),
-                       [UBD](const T& node) { return node.LBD >= UBD; }),
-        this->activeNodes.end());
+    // drop every node with LBD >= UBD: they sit at the tail of the ordered map
+    this->activeNodes.erase(this->activeNodes.lower_bound(UBD), this->activeNodes.end());
 }
 
 outsideAlgo::outsideAlgo(STModel* model,double provided_UBD,UBDSolver solver) : Algo<BBNode>(model) {
     this->ubd_solver = solver;
     this->bestUBD = provided_UBD;
-    this->activeNodes.push_back(BBNode(model->first_stage_IX,model->second_stage_IX,model->branching_strategy));
+    this->insertNode(BBNode(model->first_stage_IX,model->second_stage_IX,model->branching_strategy));
 
 
 }
@@ -61,7 +46,7 @@ double outsideAlgo::cheatstrongbranching(BBNode* node,double tolerance){
         this->model->first_stage_IX=node->first_stage_IX;
         this->model->second_stage_IX=node->second_stage_IX;
         insideAlgo temp_inside_algo(this->model,scenario_name,INFINITY,solveFullmodel::no,UBDSolver::GUROBI);
-        new_LBD+=temp_inside_algo.calculateUBD(&(temp_inside_algo.activeNodes[0]),tolerance,withinStrongBranching::yes);
+        new_LBD+=temp_inside_algo.calculateUBD(&(temp_inside_algo.rootNode()),tolerance,withinStrongBranching::yes);
     }
     return new_LBD;
 }
@@ -126,21 +111,22 @@ void outsideAlgo::strongbranching(BBNode* node,double tolerance){
         iterator++;
     }
 }
-int outsideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag) {
-    double original_LBD= this->activeNodes[idx].LBD;
-    BBNode child1 = this->activeNodes[idx]; // Copy current node
+int outsideAlgo::branchNodeAtIdx(NodeIt it,double tolerance,withinStrongBranching flag) {
+    BBNode& cur=it->second;
+    double original_LBD= cur.LBD;
+    BBNode child1 = cur; // Copy current node
     BBNode::node_counter++; // Increment node index for child nodes
     child1.node_id = BBNode::node_counter; // Assign unique ID to child1
-    BBNode child2 = this->activeNodes[idx]; // Copy current node
+    BBNode child2 = cur; // Copy current node
     BBNode::node_counter++; // Increment node index for child nodes
     child2.node_id = BBNode::node_counter; // Assign unique ID to child2
    
-    int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX);
+    int branch_idx = cur.branchheuristic.getBranchingVarIndex(cur.first_stage_IX);
     std::cout<<"Branching on first stage variable index: "<<branch_idx<<std::endl;
-   double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-    double range=branch_point-this->activeNodes[idx].first_stage_IX[branch_idx].l();
-    child1.first_stage_IX[branch_idx] = mc::Interval(this->activeNodes[idx].first_stage_IX[branch_idx].l(), branch_point);
-    child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, this->activeNodes[idx].first_stage_IX[branch_idx].u());
+   double branch_point = cur.branchheuristic.getBranchingPoint(branch_idx,cur.first_stage_IX,cur.second_stage_IX);
+    double range=branch_point-cur.first_stage_IX[branch_idx].l();
+    child1.first_stage_IX[branch_idx] = mc::Interval(cur.first_stage_IX[branch_idx].l(), branch_point);
+    child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, cur.first_stage_IX[branch_idx].u());
 
     // processing left child
 
@@ -203,9 +189,9 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching 
             (child1.LBD - original_LBD), (child2.LBD - original_LBD),range);
     }
 
-    this->activeNodes.erase(this->activeNodes.begin() + idx);
-    this->activeNodes.push_back(child1);
-    this->activeNodes.push_back(child2);
+    this->activeNodes.erase(it); // cur dangles from here on
+    this->insertNode(std::move(child1));
+    this->insertNode(std::move(child2));
     return branch_idx;
 }
 double outsideAlgo::calculateUBD(BBNode* node,double tolerance,withinStrongBranching flag) {
@@ -260,20 +246,22 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
     auto start = std::chrono::high_resolution_clock::now();
 
     std::cout<<"Calculating LBD for root node..."<<std::endl;
-    this->worstLBD=this->calculateLBD(&(this->activeNodes[0]), tolerance,flag);
+    this->worstLBD=this->calculateLBD(&(this->rootNode()), tolerance,flag);
+    this->rekeyRoot(); // key must follow the freshly computed root LBD
     std::cout<<"Finished calculating LBD for root node."<<std::endl;
     std::vector<std::pair<double, double>> initial_first_stage_IX_record;  // record first stage variable bound
-    for (const auto& interval : this->activeNodes[0].first_stage_IX) {
+    for (const auto& interval : this->rootNode().first_stage_IX) {
         initial_first_stage_IX_record.push_back({interval.l(), interval.u()});
     }
     this->first_stage_IX_record.push_back(initial_first_stage_IX_record);
     
     
-    if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
+    if (this->rootNode().branchheuristic.strategy==BranchingStrategy::pseudo){
         std::cout<<"========================================"<<std::endl;
         std::cout<<"Started Outside Strong Branching"<<std::endl;
         std::cout<<"========================================"<<std::endl;
-        this->strongbranching(&(this->activeNodes[0]), tolerance);
+        this->strongbranching(&(this->rootNode()), tolerance);
+        this->rekeyRoot(); // strong branching may change the root LBD
         std::cout<<"========================================"<<std::endl;
         std::cout<<"Finished Outside Strong Branching"<<std::endl;
         std::cout<<"========================================"<<std::endl;
@@ -289,7 +277,7 @@ double outsideAlgo::solve(double tolerance, withinStrongBranching flag) {
         auto iter_start = std::chrono::high_resolution_clock::now();
         int iter_lbd_count_before = Tracker::total_lbd_calculation_count-Tracker::strong_branching_lbd_calculation_count;
         double iter_cplex_time_before = Tracker::nonsb_lbd_cplex_time;
-        int idx=this->getWorstNodeIdx();
+        auto idx=this->getWorstNodeIt();
 
         //branch node at idx
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance,flag);
@@ -340,7 +328,7 @@ insideAlgo::insideAlgo(STModel* model,ScenarioNames scenario_name,double provide
         this->model->convertToCentralizedModel();
         this->model->full_model_built=true;
     }
-    this->activeNodes.push_back(xBBNode(this->model->first_stage_IX,this->model->second_stage_IX,
+    this->insertNode(xBBNode(this->model->first_stage_IX,this->model->second_stage_IX,
         this->model->branching_strategy,this->scenario_name));
     BBHeuristic::weights.resize(this->model->first_stage_IX.size()+this->model->second_stage_IX.size());
     for (auto& weight_vector : BBHeuristic::weights) {
@@ -492,14 +480,14 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     }
     // if there are 0 0 improve in any first stage weigts
     // double min_weight=INFINITY;
-    // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    // for (auto& weight: this->rootNode().branchheuristic.weights){
     //     double lower_weight=std::min(weight[0].first,weight[0].second);
     //     if (lower_weight!=0 && lower_weight<min_weight){
     //         min_weight=lower_weight;
     //     }
     // }
     // // go through the weights again to update 0 0 weight with minimum improve observed among other branches, this is to avoid 0 0 weight which will cause no branching on that variable in the future
-    // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    // for (auto& weight: this->rootNode().branchheuristic.weights){
     //     if (weight[0].first==0 && weight[0].second==0){
     //         weight[0].first=min_weight;
     //         weight[0].second=min_weight;
@@ -507,39 +495,40 @@ void insideAlgo::strongbranching(xBBNode* node,double tolerance){
     // }
     // <-------------------- print weights for debugging
     // int i=0;
-    // for (auto& weight: this->activeNodes[0].branchheuristic.weights){
+    // for (auto& weight: this->rootNode().branchheuristic.weights){
     //     std::cout<<"Idx: "<<i<<" Weight: "<<weight[0].first<<" "<<weight[0].second<<std::endl;
     //     i++;
     // }
     
 }
-int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching flag) {
-    double original_LBD= this->activeNodes[idx].LBD;
+int insideAlgo::branchNodeAtIdx(NodeIt it,double tolerance,withinStrongBranching flag) {
+    xBBNode& cur=it->second;
+    double original_LBD= cur.LBD;
     if (original_LBD==INFINITY){
         throw std::runtime_error("Should not branch on infeasible node");
     }
-    std::cout<<"Branching on node idx: "<<idx<<" Size: "<<this->activeNodes.size()<<std::endl;
-    xBBNode child1 = this->activeNodes[idx]; // Copy current node
-    xBBNode child2 = this->activeNodes[idx]; // Copy current node
+    std::cout<<"Branching on node with LBD: "<<original_LBD<<" Size: "<<this->activeNodes.size()<<std::endl;
+    xBBNode child1 = cur; // Copy current node
+    xBBNode child2 = cur; // Copy current node
     double range;
-    int branch_idx = this->activeNodes[idx].branchheuristic.getBranchingVarIndex(this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
+    int branch_idx = cur.branchheuristic.getBranchingVarIndex(cur.first_stage_IX,cur.second_stage_IX);
     std::cout<<"Branching on variable index: "<<branch_idx<<std::endl;
-    if(branch_idx<this->activeNodes[idx].first_stage_IX.size()){
+    if(branch_idx<cur.first_stage_IX.size()){
 
         // first stage branching
-        double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-        range=branch_point-this->activeNodes[idx].first_stage_IX[branch_idx].l();
-        child1.first_stage_IX[branch_idx] = mc::Interval(this->activeNodes[idx].first_stage_IX[branch_idx].l(), branch_point);
-        child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, this->activeNodes[idx].first_stage_IX[branch_idx].u());
+        double branch_point = cur.branchheuristic.getBranchingPoint(branch_idx,cur.first_stage_IX,cur.second_stage_IX);
+        range=branch_point-cur.first_stage_IX[branch_idx].l();
+        child1.first_stage_IX[branch_idx] = mc::Interval(cur.first_stage_IX[branch_idx].l(), branch_point);
+        child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, cur.first_stage_IX[branch_idx].u());
       
-    }else if(branch_idx>=this->activeNodes[idx].first_stage_IX.size()){
+    }else if(branch_idx>=cur.first_stage_IX.size()){
         
         // second stage branching
 
-        double branch_point = this->activeNodes[idx].branchheuristic.getBranchingPoint(branch_idx,this->activeNodes[idx].first_stage_IX,this->activeNodes[idx].second_stage_IX);
-        range=branch_point-this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].l();
-        child1.second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()] = mc::Interval(this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].l(), branch_point);
-        child2.second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()] = mc::Interval(branch_point, this->activeNodes[idx].second_stage_IX[branch_idx-this->activeNodes[idx].first_stage_IX.size()].u());
+        double branch_point = cur.branchheuristic.getBranchingPoint(branch_idx,cur.first_stage_IX,cur.second_stage_IX);
+        range=branch_point-cur.second_stage_IX[branch_idx-cur.first_stage_IX.size()].l();
+        child1.second_stage_IX[branch_idx-cur.first_stage_IX.size()] = mc::Interval(cur.second_stage_IX[branch_idx-cur.first_stage_IX.size()].l(), branch_point);
+        child2.second_stage_IX[branch_idx-cur.first_stage_IX.size()] = mc::Interval(branch_point, cur.second_stage_IX[branch_idx-cur.first_stage_IX.size()].u());
     
     }
     this->calculateLBD(&child1, tolerance,flag);
@@ -560,14 +549,14 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
         if (child2.LBD == INFINITY){
             // no need to update heuristic if both child are infeasible
             std::cout<<"Both child are infeasible after branching on variable index "<<branch_idx<<std::endl;
-            this->activeNodes.erase(this->activeNodes.begin() + idx);
+            this->activeNodes.erase(it);
             return branch_idx;
         }else{
             // left child is infeasible, right child improve
 
             if (this->bestUBDforInfinity){
                 if (this->bestUBD == INFINITY){ // if bestUBD is infinity, we cannot update heuristic with bestUBD, no idea why this happend
-                    this->activeNodes.erase(this->activeNodes.begin() + idx);
+                    this->activeNodes.erase(it);
                     std::cout<<"Warning: bestUBD is infinity, cannot update heuristic with bestUBD, exiting"<<std::endl;
                     return branch_idx;
 
@@ -606,10 +595,10 @@ int insideAlgo::branchNodeAtIdx(int idx,double tolerance,withinStrongBranching f
             (child1.LBD - original_LBD), (child2.LBD - original_LBD),range);
     }
 
-    this->activeNodes.erase(this->activeNodes.begin() + idx);
-    this->activeNodes.push_back(child1);
-    this->activeNodes.push_back(child2);
-    std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl;
+    std::cout<<"Left child LBD: "<<child1.LBD<<", Right child LBD: "<<child2.LBD<<std::endl; // print before the moves below
+    this->activeNodes.erase(it); // cur dangles from here on
+    this->insertNode(std::move(child1));
+    this->insertNode(std::move(child2));
     return branch_idx;
 }
 double insideAlgo::calculateLBD(xBBNode* node,double tolerance,withinStrongBranching flag) {
@@ -827,8 +816,9 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance,withinStrongBranc
 
 double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
     auto start = std::chrono::high_resolution_clock::now();
-    this->bestUBD = this->calculateUBD(&(this->activeNodes[0]), tolerance,flag);
-    this->worstLBD = this->calculateLBD(&(this->activeNodes[0]), tolerance,flag);
+    this->bestUBD = this->calculateUBD(&(this->rootNode()), tolerance,flag);
+    this->worstLBD = this->calculateLBD(&(this->rootNode()), tolerance,flag);
+    this->rekeyRoot(); // key must follow the freshly computed root LBD
     Tracker::LBD_value_records.push_back(this->worstLBD);
 
     if (this->bestUBD==INFINITY || this->worstLBD==INFINITY){
@@ -837,17 +827,18 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
     }
 
 
-    if (this->activeNodes[0].branchheuristic.strategy==BranchingStrategy::pseudo){
+    if (this->rootNode().branchheuristic.strategy==BranchingStrategy::pseudo){
         //std::cout<<"========================================"<<std::endl;
         //std::cout<<"Started Inside Strong Branching"<<std::endl;
 
 
-        this->strongbranching(&(this->activeNodes[0]), tolerance);
+        this->strongbranching(&(this->rootNode()), tolerance);
+        this->rekeyRoot(); // strong branching may change the root LBD
 
         //std::cout<<"Finished Inside Strong Branching"<<std::endl;
         //std::cout<<"========================================"<<std::endl;
     }
-    if (this->activeNodes[0].LBD == INFINITY){ // in rare case when strong branching detects infeasibility
+    if (this->rootNode().LBD == INFINITY){ // in rare case when strong branching detects infeasibility
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible after strong branching at root node."<<std::endl;
         return INFINITY;
     }
@@ -862,7 +853,7 @@ double insideAlgo::solve(double tolerance,withinStrongBranching flag) {
             break;
         }
         
-        int idx = this->getWorstNodeIdx();
+        auto idx = this->getWorstNodeIt();
         int branch_var_idx= this->branchNodeAtIdx( idx,tolerance,flag);
         this->worstLBD = this->getWorstLBD();
         this->bestUBD = this->getBestUBD();
