@@ -2,8 +2,8 @@
 #include "src/BBNode.h"
 #include <type_traits>
 // Include ONLY the model you want to run (and set MODEL_TYPE below to match).
-// #include <Crappy_Fuzzy_Problem_Library/Ex722.h>
-#include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
+#include <Crappy_Fuzzy_Problem_Library/Ex722.h>
+// #include <Crappy_Fuzzy_Problem_Library/ProcessModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/Ex844.h>
 // #include <Crappy_Fuzzy_Problem_Library/CrudeModel.h>
 // #include <Crappy_Fuzzy_Problem_Library/CHPModel.h>
@@ -26,13 +26,13 @@ int BBHeuristic::refresh_meter=0;
 int BBNode::node_counter=0;
 
 // ============================ USER CONFIG (edit only this block) ============================
-using MODEL_TYPE = ProcessModel;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
-constexpr int       NUM_SCENARIOS = 40;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
+using MODEL_TYPE = Ex722Model;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
+constexpr int       NUM_SCENARIOS = 5;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
 constexpr UBDSolver UBD_SOLVER    = UBDSolver::GUROBI;
 constexpr bool      UBD_ROOT_ONLY = true;     // true: inner UBD solve at the root only (UBD_EVERY_K_NODES ignored); false: also every k-th child node
 constexpr int       UBD_EVERY_K_NODES = 10;   // inner Ipopt/Gurobi UBD solve at the root and every k-th child node (1 = every node)
-constexpr double    TOLERANCE     = 7.2;        // absolute gap
-constexpr double    PROVIDED_UBD  = -7264.69;   // known best objective for the config above
+constexpr double    TOLERANCE     = 92;        // absolute gap
+constexpr double    PROVIDED_UBD  = -92551.4;   // known best objective for the config above
 // =============================================================================================
 
 int main(int argc, char* argv[]) {

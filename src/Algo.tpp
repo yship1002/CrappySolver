@@ -878,6 +878,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
 }
 double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
     insideAlgo::ubd_calculation_count++;
+    this->last_ubd_proved_infeasible=false;
     // adds the elapsed time of this call to the total on every exit path
     // also records the node's UBD into incumbentUBD on every exit path
     struct UBDTimer {
@@ -999,6 +1000,9 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
                 return objval;
             }
 
+            // Gurobi solves the nonconvex model globally, so INFEASIBLE / INF_OR_UNBD (all variables are boxed, so "unbounded" cannot occur)
+            // proves that this box holds no feasible point
+            this->last_ubd_proved_infeasible=(status==GRB_INFEASIBLE || status==GRB_INF_OR_UNBD);
             if (status == GRB_INFEASIBLE) {
                 //std::cerr<<"Gurobi model infeasible (status=" + std::to_string(status) + ").\n";
             } else if (status == GRB_UNBOUNDED) {
@@ -1120,6 +1124,10 @@ double insideAlgo::solve(double tolerance) {
     // a failed local solve (max iterations, local infeasibility) is not a proof of infeasibility: only the LBD can prove it,
     // so with no incumbent yet we carry on with bestUBD=INFINITY and let the children's Ipopt solves find one
     this->bestUBD = this->calculateUBD(&(this->rootNode()), tolerance);
+    if (this->last_ubd_proved_infeasible){ // Gurobi (global) says the root box has no feasible point: the scenario is infeasible here, skip the LBD and the whole tree
+        std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node (Gurobi infeasible)."<<std::endl;
+        return INFINITY;
+    }
     double before_root_lbd_calculation_time=insideAlgo::lbd_calculation_time;
 
     this->worstLBD = this->calculateLBD(&(this->rootNode()), tolerance);

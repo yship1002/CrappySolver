@@ -114,6 +114,7 @@ class insideAlgo:public Algo<xBBNode>{
         int ubd_node_counter=0; // children seen so far in this tree, used for the every-k-th test
         std::vector<double> incumbent_x; // all-variable point that achieved incumbentUBD (empty if none)
         double incumbentUBD=INFINITY; // best UBD found by any calculateUBD call in this tree, kept even after its node is fathomed or branched
+        bool last_ubd_proved_infeasible=false; // set by calculateUBD: the (global) Gurobi solve reported INFEASIBLE or INF_OR_UNBD, i.e. no feasible point in this node's box (never set by Ipopt: a local failure proves nothing)
         int max_inner_iterations=10000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
         double solve(double tolerance) override;
         int branchNodeAtIdx(NodeIt it,double tolerance) override;
