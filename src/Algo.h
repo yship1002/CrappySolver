@@ -1,6 +1,7 @@
 #ifndef ALGO_H
 #define ALGO_H
 #include <cmath>
+#include <map>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/utility.hpp>   // <-- THIS is the important one
 #include <cereal/types/string.hpp>
@@ -28,16 +29,28 @@ class Algo {
         double worstLBD;
         double bestUBD;
         STModel* model;
-        std::vector<T> activeNodes;
+        // open nodes ordered by LBD (key == node.LBD at insertion): worst node is begin(), fathoming is a tail erase, no O(n) vector shifts.
+        // If a node's LBD is changed while it is stored, call rekeyRoot()/insertNode() so the key stays in sync.
+        using NodeMap = std::multimap<double,T>;
+        using NodeIt = typename NodeMap::iterator;
+        NodeMap activeNodes;
         int iterations;
-        int getWorstNodeIdx();
+        NodeIt getWorstNodeIt();
+        T& rootNode(){ return this->activeNodes.begin()->second; } // only valid while the tree holds the single root node
+        NodeIt insertNode(const T& node){ return this->activeNodes.emplace(node.LBD,node); }
+        NodeIt insertNode(T&& node){ double key=node.LBD; return this->activeNodes.emplace(key,std::move(node)); }
+        void rekeyRoot(){ // re-sync the key of the (single) root node after its LBD was computed or changed
+            auto nh=this->activeNodes.extract(this->activeNodes.begin());
+            nh.key()=nh.mapped().LBD;
+            this->activeNodes.insert(std::move(nh));
+        }
         double getBestUBD();
         double getWorstLBD();   
         void fathomNodes(double UBD);
 
         bool bestUBDforInfinity=false;
 
-        virtual int branchNodeAtIdx(int idx,double tolerance)=0;
+        virtual int branchNodeAtIdx(NodeIt it,double tolerance)=0;
         virtual double solve(double tolerance)=0;
         virtual double calculateLBD(T* node,double tolerance,bool verbose=false)=0;
         virtual double calculateUBD(T* node,double tolerance)=0;
@@ -58,7 +71,7 @@ class outsideAlgo:public Algo<BBNode>{
         std::vector<double> LBD_calculation_time_records;
         std::vector<std::vector<std::pair<double, double>>> first_stage_IX_record;
         double cheatstrongbranching(BBNode* node,double tolerance);
-        int branchNodeAtIdx(int idx,double tolerance) override;
+        int branchNodeAtIdx(NodeIt it,double tolerance) override;
         double solve(double tolerance) override;
         double calculateLBD(BBNode* node,double tolerance,bool verbose=false) override;
         double calculateUBD(BBNode* node,double tolerance) override;
@@ -103,7 +116,7 @@ class insideAlgo:public Algo<xBBNode>{
         double incumbentUBD=INFINITY; // best UBD found by any calculateUBD call in this tree, kept even after its node is fathomed or branched
         int max_inner_iterations=10000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
         double solve(double tolerance) override;
-        int branchNodeAtIdx(int idx,double tolerance) override;
+        int branchNodeAtIdx(NodeIt it,double tolerance) override;
         void strongbranching(xBBNode* node,double tolerance) override;
         double calculateLBD(xBBNode* node,double tolerance,bool verbose=false) override;
         double calculateUBD(xBBNode* node,double tolerance) override;
@@ -118,6 +131,7 @@ class insideAlgo:public Algo<xBBNode>{
         bool probe_all=false;
         int sb_node_limit=10; // full strong branching (all non-fixed vars probed) only for the first sb_node_limit branchings of each inner tree, pseudocost history only afterwards
         int sb_branch_count=0;
+        int next_node_id=1; // id of the next child created by branchNodeAtIdx (root is 0)
         int reliability_eta=4;
         int max_probe_cands=8; // probe at most this many unreliable candidates per node (ranked by pseudocost score); ignored if probe_all
         std::vector<double> probe_scores; // NaN = variable not probed at this node
