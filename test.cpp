@@ -29,8 +29,9 @@ int BBNode::node_counter=0;
 using MODEL_TYPE = ProcessModel;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
 constexpr int       NUM_SCENARIOS = 40;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
 constexpr UBDSolver UBD_SOLVER    = UBDSolver::GUROBI;
+constexpr bool      UBD_ROOT_ONLY = true;     // true: inner UBD solve at the root only (UBD_EVERY_K_NODES ignored); false: also every k-th child node
 constexpr int       UBD_EVERY_K_NODES = 10;   // inner Ipopt/Gurobi UBD solve at the root and every k-th child node (1 = every node)
-constexpr double    TOLERANCE     = 726.4;        // absolute gap
+constexpr double    TOLERANCE     = 7.2;        // absolute gap
 constexpr double    PROVIDED_UBD  = -7264.69;   // known best objective for the config above
 // =============================================================================================
 
@@ -59,7 +60,8 @@ int main(int argc, char* argv[]) {
     outsideAlgo CZalgo(GetRawPtr(model),PROVIDED_UBD,UBD_SOLVER);
     CZalgo.bestUBDforInfinity=true;
     CZalgo.ubd_every_k_nodes=UBD_EVERY_K_NODES;
-    CZalgo.ubd_root_only=true;   // inner trees: Gurobi UBD at the root only, never at child nodes
+    CZalgo.ubd_root_only=UBD_ROOT_ONLY;
+    CZalgo.sb_node_limit=3;     // inner trees: full strong branching for the first 10 branchings only, then pseudocost history only
     CZalgo.solve(TOLERANCE);
 
     // *************uncooment this part to get the provided_UBD after you change problem

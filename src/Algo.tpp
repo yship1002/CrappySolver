@@ -122,12 +122,31 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
     child1.first_stage_IX[branch_idx] = mc::Interval(this->activeNodes[idx].first_stage_IX[branch_idx].l(), branch_point);
     child2.first_stage_IX[branch_idx] = mc::Interval(branch_point, this->activeNodes[idx].first_stage_IX[branch_idx].u());
 
+    if (this->inherit_scenario_child){
+        // per scenario: the parent's incumbent lies in exactly one child, whose optimum for that scenario equals the parent's, so it skips the inner solve
+        const BBNode& parent=this->activeNodes[idx];
+        const size_t S=parent.scenario_LBDs.size();
+        child1.skip_scenario.assign(S,0);
+        child2.skip_scenario.assign(S,0);
+        for (size_t w=0;w<S;w++){
+            if (w>=parent.scenario_incumbent_x.size() || parent.scenario_incumbent_x[w].empty()) continue; // no incumbent: solve both children
+            double xb=parent.scenario_incumbent_x[w][branch_idx];
+            (xb<=branch_point ? child1 : child2).skip_scenario[w]=1;
+        }
+        std::cout<<"Scenarios inheriting parent's bound: left";
+        for (size_t w=0;w<S;w++) if (child1.skip_scenario[w]) std::cout<<" "<<w;
+        std::cout<<", right";
+        for (size_t w=0;w<S;w++) if (child2.skip_scenario[w]) std::cout<<" "<<w;
+        std::cout<<std::endl;
+    }
+
     // processing left child
     int initial_lbd_calculation_count=insideAlgo::lbd_calculation_count;
     double initial_lbd_calculation_time=insideAlgo::lbd_calculation_time;
 
 
     this->calculateLBD(&child1, tolerance);
+    child1.skip_scenario.clear();
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-initial_lbd_calculation_time); // record LBD calculation time for child1
     this->LBD_calculation_records.push_back(insideAlgo::lbd_calculation_count-initial_lbd_calculation_count); // record LBD calculation count for child1
     std::vector<std::pair<double, double>> initial_first_stage_IX_record; // record the first stage IX for child1
@@ -146,6 +165,7 @@ int outsideAlgo::branchNodeAtIdx(int idx,double tolerance) {
 
 
     this->calculateLBD(&child2, tolerance);
+    child2.skip_scenario.clear();
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-initial_lbd_calculation_time); // record LBD calculation time for child2
     this->LBD_calculation_records.push_back(insideAlgo::lbd_calculation_count-initial_lbd_calculation_count);
     initial_first_stage_IX_record.clear();
@@ -215,12 +235,21 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,bool verbose) {
         this->model->scenario_name = scenario_name;
         this->model->first_stage_IX = node->first_stage_IX;
         this->model->second_stage_IX = node->second_stage_IX;
+        const int w=static_cast<int>(scenario_name);
+        if (!node->skip_scenario.empty() && node->skip_scenario[w]){ // optimum of this scenario lies in this box: inherit the parent's bound and incumbent
+            std::cout<<"Scenario "<<w<<" LBD (inherited from parent): "<<node->scenario_LBDs[w]<<std::endl;
+            totalLBD += node->scenario_LBDs[w];
+            continue;
+        }
         insideAlgo inneralgo(this->model,scenario_name,INFINITY,false,this->ubd_solver);
         inneralgo.ubd_every_k_nodes=this->ubd_every_k_nodes; // pass the UBD frequency to inner algo
         inneralgo.ubd_root_only=this->ubd_root_only;
+        inneralgo.sb_node_limit=this->sb_node_limit;
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
         //double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
         double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s 
+        if (node->scenario_incumbent_x.size()<=w) node->scenario_incumbent_x.resize(w+1);
+        node->scenario_incumbent_x[w]=inneralgo.incumbent_x; // incumbent of THIS box only (empty if the inner solve found none)
         if (node->node_id==1) { // root node calculation
             node->scenario_LBDs.push_back(scenario_LBD);
         } else { // regular node
@@ -553,9 +582,13 @@ int insideAlgo::branchNodeAtIdx(int new_idx,double tolerance) {
     //     return 0;
     // }
     bool probed=false;
-    if (this->reliabilityBranching && this->activeNodes[new_idx].branchheuristic.strategy==BranchingStrategy::pseudo){
+    if (this->reliabilityBranching && this->activeNodes[new_idx].branchheuristic.strategy==BranchingStrategy::pseudo
+        && this->sb_branch_count++ < this->sb_node_limit){ // strong branching only at the beginning of the tree; afterwards pure pseudocost history
         insideAlgo::StrongBranchingScope sb_scope; // probe LBD solves go to the sb_* counters
+        bool saved_probe_all=this->probe_all;
+        this->probe_all=true; // full strong branching in the initial phase
         this->reliabilityProbe(&(this->activeNodes[new_idx]), tolerance);
+        this->probe_all=saved_probe_all;
         probed=true;
     }
     int next_idx=this->activeNodes.back().node_id+1; 
@@ -864,7 +897,11 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
         ~UBDTimer(){
             std::chrono::duration<double> elapsed=std::chrono::high_resolution_clock::now()-start;
             insideAlgo::ubd_calculation_time+=elapsed.count();
-            if (node->UBD<algo->incumbentUBD) algo->incumbentUBD=node->UBD;
+            if (node->UBD<algo->incumbentUBD){
+                algo->incumbentUBD=node->UBD;
+                if (node->UBD_solution.size()==node->first_stage_IX.size()+node->second_stage_IX.size()) algo->incumbent_x=node->UBD_solution;
+                else algo->incumbent_x.clear();
+            }
         }
     } ubd_timer(this,node);
 
@@ -957,6 +994,7 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             if (status == GRB_OPTIMAL || status == GRB_TIME_LIMIT || status == GRB_SUBOPTIMAL) {
                 double objval = grbmodel.get(GRB_DoubleAttr_ObjVal);
                 node->UBD = objval;
+                node->UBD_solution.clear();
                 // std::cout << "Optimized solution values: "<<objval<<std::endl;
                 for (int i = 0; i <node->first_stage_IX.size()+node->second_stage_IX.size(); ++i) {
                     std::string auxName = "x" + std::to_string(i);
@@ -1169,8 +1207,8 @@ double insideAlgo::solve(double tolerance) {
         if (gap >= tolerance && this->iterations >= this->max_inner_iterations){
             std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" hit the inner iteration cap ("<<this->max_inner_iterations
                      <<") without converging: returning LBD "<<this->worstLBD<<" (UBD "<<this->bestUBD<<", gap "<<gap<<")."<<std::endl;
-            
-            return this->bestUBD;
+
+            return this->worstLBD; // a valid lower bound; bestUBD could overestimate the scenario optimum and, once inherited, cut off the global optimum
         }
     }
 

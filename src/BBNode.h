@@ -29,6 +29,8 @@ class BBNode : public Node {
         BBNode()=default; // default constructor
         BBNode(const BBNode& other)=default;
         std::vector<double> scenario_LBDs; // record LBD for each scenario for this node
+        std::vector<std::vector<double>> scenario_incumbent_x; // per scenario: best feasible point (all vars) found by its inner solve on this box; empty = none
+        std::vector<char> skip_scenario; // set by branchNodeAtIdx before calculateLBD: 1 = scenario inherits the parent's LBD/incumbent (its optimum lies in this child), no inner solve
         static int node_counter;
 
 

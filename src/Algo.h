@@ -51,6 +51,8 @@ class outsideAlgo:public Algo<BBNode>{
         outsideAlgo(const outsideAlgo& other)=default;
         int ubd_every_k_nodes=1; // forwarded to every insideAlgo
         bool ubd_root_only=false; // forwarded to every insideAlgo
+        int sb_node_limit=10; // forwarded to every insideAlgo
+        bool inherit_scenario_child=true; // CZ: per scenario, the child box containing the parent's incumbent inherits the parent's scenario LBD and skips the inner solve
         std::vector<double> LBD_values_records;
         std::vector<int> LBD_calculation_records;
         std::vector<double> LBD_calculation_time_records;
@@ -97,6 +99,7 @@ class insideAlgo:public Algo<xBBNode>{
         int ubd_every_k_nodes=1; // local UBD solve at the root and at every k-th child node (1 = every node)
         bool ubd_root_only=false; // true: local UBD solve at the inner root only (with ubd_solver), never at child nodes; overrides ubd_every_k_nodes
         int ubd_node_counter=0; // children seen so far in this tree, used for the every-k-th test
+        std::vector<double> incumbent_x; // all-variable point that achieved incumbentUBD (empty if none)
         double incumbentUBD=INFINITY; // best UBD found by any calculateUBD call in this tree, kept even after its node is fathomed or branched
         int max_inner_iterations=10000; // hard cap on inner B&B iterations; on hitting it, insideAlgo::solve returns the current worst LBD
         double solve(double tolerance) override;
@@ -113,6 +116,8 @@ class insideAlgo:public Algo<xBBNode>{
         // stale as boxes shrink). probe_all=true probes every non-fixed variable (full strong branching).
         bool reliabilityBranching=true;
         bool probe_all=false;
+        int sb_node_limit=10; // full strong branching (all non-fixed vars probed) only for the first sb_node_limit branchings of each inner tree, pseudocost history only afterwards
+        int sb_branch_count=0;
         int reliability_eta=4;
         int max_probe_cands=8; // probe at most this many unreliable candidates per node (ranked by pseudocost score); ignored if probe_all
         std::vector<double> probe_scores; // NaN = variable not probed at this node
