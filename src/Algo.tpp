@@ -735,8 +735,8 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
         this->model->generateLP(&env,&cplexmodel,&c,&obj,&x);
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-4);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-6);
         cplex.setParam(IloCplex::Param::Read::Scale, 1);
         //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
         cplex.setParam(IloCplex::AggInd, false);
