@@ -65,6 +65,8 @@ class outsideAlgo:public Algo<BBNode>{
         int ubd_every_k_nodes=1; // forwarded to every insideAlgo
         bool ubd_root_only=false; // forwarded to every insideAlgo
         int sb_node_limit=10; // forwarded to every insideAlgo
+        bool override_inside_strategy=false; // true: every insideAlgo uses inside_strategy instead of model->branching_strategy (outer layer unaffected)
+        BranchingStrategy inside_strategy=BranchingStrategy::pseudo; // e.g. BranchingStrategy::relwidth skips inner strong branching/probing and branches on the largest relative width
         bool inherit_scenario_child=true; // CZ: per scenario, the child box containing the parent's incumbent inherits the parent's scenario LBD and skips the inner solve
         std::vector<double> LBD_values_records;
         std::vector<int> LBD_calculation_records;
@@ -129,6 +131,7 @@ class insideAlgo:public Algo<xBBNode>{
         // Probed variables are ranked by their FRESH probe score (the averaged pseudocost history goes
         // stale as boxes shrink). probe_all=true probes every non-fixed variable (full strong branching).
         bool reliabilityBranching=true;
+        void setInsideStrategy(BranchingStrategy s){ this->rootNode().branchheuristic.strategy=s; } // call right after construction; children copy the root's strategy
         bool probe_all=false;
         int sb_node_limit=10; // full strong branching (all non-fixed vars probed) only for the first sb_node_limit branchings of each inner tree, pseudocost history only afterwards
         int sb_branch_count=0;

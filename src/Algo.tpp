@@ -231,6 +231,7 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,bool verbose) {
         inneralgo.ubd_every_k_nodes=this->ubd_every_k_nodes; // pass the UBD frequency to inner algo
         inneralgo.ubd_root_only=this->ubd_root_only;
         inneralgo.sb_node_limit=this->sb_node_limit;
+        if (this->override_inside_strategy) inneralgo.setInsideStrategy(this->inside_strategy);
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
         //double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
         double scenario_LBD=inneralgo.solve(tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s 

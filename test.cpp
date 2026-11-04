@@ -61,6 +61,8 @@ int main(int argc, char* argv[]) {
     CZalgo.bestUBDforInfinity=true;
     CZalgo.ubd_every_k_nodes=UBD_EVERY_K_NODES;
     CZalgo.ubd_root_only=UBD_ROOT_ONLY;
+    CZalgo.override_inside_strategy=true;                       // inner solver branching heuristic (outer layer keeps the model's strategy)
+    CZalgo.inside_strategy=BranchingStrategy::pseudo;        // relwidth: no inner strong branching, branch on largest relative width; pseudo: reliability/pseudocost
     CZalgo.sb_node_limit=0;     // inner trees: strong branching only at the root (insideAlgo::solve); no probing at any branching afterwards
     CZalgo.solve(TOLERANCE);
 
