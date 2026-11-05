@@ -975,8 +975,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-4);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // set feasibility tolerance to be 1e-4 for better numerical performance, can be tuned
-            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-5);
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-6); // tightened from 1e-4 so the global UBD solve returns a near-identical incumbent across machines/Gurobi versions
+            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-6); // tightened from 1e-5
             grbmodel.set(GRB_DoubleParam_TimeLimit, 60.0);
 
             grbmodel.optimize();
