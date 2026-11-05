@@ -1125,6 +1125,12 @@ double insideAlgo::solve(double tolerance) {
     // a failed local solve (max iterations, local infeasibility) is not a proof of infeasibility: only the LBD can prove it,
     // so with no incumbent yet we carry on with bestUBD=INFINITY and let the children's Ipopt solves find one
     this->bestUBD = this->calculateUBD(&(this->rootNode()), tolerance);
+    { // [ROOTDIAG] full-precision root UBD per inner solve, to compare runs across machines/solver versions
+        std::ostringstream diag; diag.precision(17);
+        diag<<"[ROOTDIAG] scenario "<<static_cast<int>(this->scenario_name)<<" root UBD "<<this->bestUBD
+            <<" infeasible_proved "<<this->last_ubd_proved_infeasible;
+        std::cout<<diag.str()<<std::endl;
+    }
     if (this->last_ubd_proved_infeasible){ // Gurobi (global) says the root box has no feasible point: the scenario is infeasible here, skip the LBD and the whole tree
         std::cout<<"Scenario "<<static_cast<int>(this->scenario_name)<<" is infeasible at root node (Gurobi infeasible)."<<std::endl;
         return INFINITY;
@@ -1133,6 +1139,11 @@ double insideAlgo::solve(double tolerance) {
 
     this->worstLBD = this->calculateLBD(&(this->rootNode()), tolerance);
     this->rekeyRoot(); // key must follow the freshly computed root LBD
+    { // [ROOTDIAG] full-precision root LBD
+        std::ostringstream diag; diag.precision(17);
+        diag<<"[ROOTDIAG] scenario "<<static_cast<int>(this->scenario_name)<<" root LBD "<<this->worstLBD;
+        std::cout<<diag.str()<<std::endl;
+    }
     this->LBD_values_records.push_back(this->rootNode().LBD); // record LBD value for root node
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time - before_root_lbd_calculation_time); // record LBD calculation time for root node
 
