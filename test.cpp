@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
     CZalgo.override_inside_strategy=true;                       // inner solver branching heuristic (outer layer keeps the model's strategy)
     CZalgo.inside_strategy=BranchingStrategy::pseudo;        // relwidth: no inner strong branching, branch on largest relative width; pseudo: reliability/pseudocost
     CZalgo.sb_node_limit=0;     // inner trees: strong branching only at the root (insideAlgo::solve); no probing at any branching afterwards
-    CZalgo.tree_diag_iters=30;  // [TREEDIAG] print the first 30 branchings of every inner tree (0 = off) to diff cluster vs local; log gets large for long runs
     CZalgo.solve(TOLERANCE);
 
     // *************uncooment this part to get the provided_UBD after you change problem

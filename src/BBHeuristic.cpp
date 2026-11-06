@@ -1,4 +1,5 @@
 #include "BBHeuristic.h"
+#include <limits>
 BBHeuristic::BBHeuristic(std::vector<mc::Interval> initial_first_stage_IX,
                     std::vector<mc::Interval> initial_second_stage_IX,
                     BranchingStrategy strategy) {
@@ -177,7 +178,7 @@ double BBHeuristic::getPseudoCost(int idx_branched,USE_inside_weights use_inside
     double left_sum = 0.0;
     double right_sum = 0.0;
     int counter=0;
-    int memory_limit=INFINITY; // INFINITY to use all available weights, 0 for all strong branching
+    int memory_limit=std::numeric_limits<int>::max(); // INT_MAX to use all available weights, 0 for all strong branching (int=INFINITY is undefined behavior: clang -O2 gave a negative limit, the loop never ran and the pseudocost was NaN)
     if (use_inside_weights==USE_inside_weights::YES){
         for (int i=this->inside_weights[idx_branched].size()-1;i>=0&&counter<=memory_limit;i--){
             left_sum += this->inside_weights[idx_branched][i].first;
