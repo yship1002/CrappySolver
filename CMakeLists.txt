@@ -84,6 +84,8 @@ if (IS_ARM64_OSX)
         ipopt
     )
 else()
+    # Linux: the C library must match the Gurobi version of GUROBI_ROOT_DIR (e.g. -DGUROBI_LIB_NAME=gurobi130 for 13.0.x)
+    set(GUROBI_LIB_NAME gurobi130 CACHE STRING "Gurobi C library to link on Linux (gurobi120 or gurobi130)")
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE
         ilocplex
         concert
@@ -91,7 +93,7 @@ else()
         m
         pthread
         gurobi_c++
-        gurobi120
+        ${GUROBI_LIB_NAME}
         ipopt
     )
 endif()
