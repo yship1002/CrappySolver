@@ -231,6 +231,8 @@ double outsideAlgo::calculateLBD(BBNode* node,double tolerance,bool verbose) {
         inneralgo.ubd_every_k_nodes=this->ubd_every_k_nodes; // pass the UBD frequency to inner algo
         inneralgo.ubd_root_only=this->ubd_root_only;
         inneralgo.sb_node_limit=this->sb_node_limit;
+        inneralgo.tree_diag_iters=this->tree_diag_iters;
+        inneralgo.tree_diag_outer_id=node->node_id;
         if (this->override_inside_strategy) inneralgo.setInsideStrategy(this->inside_strategy);
         inneralgo.bestUBDforInfinity=this->bestUBDforInfinity; // pass the setting for bestUBDforInfinity to inner algo
         //double scenario_LBD = inneralgo.calculateUBD(&(inneralgo.activeNodes[0]),tolerance/(2*this->model->scenario_names.size())); // set inner tolerance to be eps/2s
@@ -629,6 +631,21 @@ int insideAlgo::branchNodeAtIdx(NodeIt it,double tolerance) {
 
     this->calculateLBD(&child2, tolerance);
     this->LBD_calculation_time_records.push_back(insideAlgo::lbd_calculation_time-before_LBD_time2); // record LBD calculation time for child2
+    if (this->tree_diag_count<this->tree_diag_iters){ // [TREEDIAG] one line per branching, full precision, raw child LBDs (before the parent-LBD clamp)
+        this->tree_diag_count++;
+        const bool first=(branch_idx<(int)cur.first_stage_IX.size());
+        const int vi=first? branch_idx : branch_idx-(int)cur.first_stage_IX.size();
+        const mc::Interval& pb = first? cur.first_stage_IX[vi] : cur.second_stage_IX[vi];
+        const mc::Interval& cb = first? child1.first_stage_IX[vi] : child1.second_stage_IX[vi]; // child1's upper end is the branching point
+        std::ostringstream diag; diag.precision(17);
+        diag<<"[TREEDIAG] outer "<<this->tree_diag_outer_id<<" scen "<<static_cast<int>(this->scenario_name)
+            <<" it "<<this->tree_diag_count<<" parent "<<cur.node_id<<" parentLBD "<<original_LBD
+            <<" probed "<<probed<<" var "<<branch_idx<<(first?" (1st":" (2nd")<<" stage #"<<vi<<") box ["<<pb.l()<<","<<pb.u()<<"] point "<<cb.u()
+            <<" child1LBD "<<child1.LBD<<" child2LBD "<<child2.LBD<<" active "<<this->activeNodes.size();
+        const std::vector<double>& sl=cur.branchheuristic.score_list; // scores that ranked the variables (empty for relwidth)
+        if (!sl.empty()){ diag<<" scores"; for (size_t i=0;i<sl.size()&&i<12;i++) diag<<" "<<sl[i]; }
+        std::cout<<diag.str()<<std::endl;
+    }
     // note: child.UBD==INFINITY (inherited from a parent with no incumbent) says nothing about feasibility, only the LBD does
 
     if (child1.LBD<original_LBD){

@@ -65,6 +65,7 @@ class outsideAlgo:public Algo<BBNode>{
         int ubd_every_k_nodes=1; // forwarded to every insideAlgo
         bool ubd_root_only=false; // forwarded to every insideAlgo
         int sb_node_limit=10; // forwarded to every insideAlgo
+        int tree_diag_iters=0; // [TREEDIAG] forwarded to every insideAlgo: print the first this-many branchings of each inner tree (0 = off), to compare runs across machines
         bool override_inside_strategy=false; // true: every insideAlgo uses inside_strategy instead of model->branching_strategy (outer layer unaffected)
         BranchingStrategy inside_strategy=BranchingStrategy::pseudo; // e.g. BranchingStrategy::relwidth skips inner strong branching/probing and branches on the largest relative width
         bool inherit_scenario_child=true; // CZ: per scenario, the child box containing the parent's incumbent inherits the parent's scenario LBD and skips the inner solve
@@ -135,6 +136,9 @@ class insideAlgo:public Algo<xBBNode>{
         bool probe_all=false;
         int sb_node_limit=10; // full strong branching (all non-fixed vars probed) only for the first sb_node_limit branchings of each inner tree, pseudocost history only afterwards
         int sb_branch_count=0;
+        int tree_diag_iters=0; // [TREEDIAG] print the first tree_diag_iters branchings of this inner tree (0 = off)
+        int tree_diag_count=0;
+        int tree_diag_outer_id=-1; // id of the outer node this inner tree belongs to (label only)
         int next_node_id=1; // id of the next child created by branchNodeAtIdx (root is 0)
         int reliability_eta=4;
         int max_probe_cands=8; // probe at most this many unreliable candidates per node (ranked by pseudocost score); ignored if probe_all
