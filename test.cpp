@@ -27,12 +27,12 @@ int BBNode::node_counter=0;
 
 // ============================ USER CONFIG (edit only this block) ============================
 using MODEL_TYPE = Ex722Model;   // must match the included header (Ex722Model, ProcessModel, Ex844Model, CrudeModel, CHPModel, EDUnits, EDUnits_nocp)
-constexpr int       NUM_SCENARIOS = 5;   // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
+constexpr int       NUM_SCENARIOS = 5;    // ignored for models without a scenario-count argument. max: Ex722 20, Process 40, Ex844 20, CHP 8
 constexpr UBDSolver UBD_SOLVER    = UBDSolver::GUROBI;
 constexpr bool      UBD_ROOT_ONLY = true;     // true: inner UBD solve at the root only (UBD_EVERY_K_NODES ignored); false: also every k-th child node
 constexpr int       UBD_EVERY_K_NODES = 10;   // inner Ipopt/Gurobi UBD solve at the root and every k-th child node (1 = every node)
-constexpr double    TOLERANCE     = 92;        // absolute gap
-constexpr double    PROVIDED_UBD  = -92551.4;   // known best objective for the config above
+constexpr double    TOLERANCE     = 92.5;     // absolute gap (1% of |UBD|)
+constexpr double    PROVIDED_UBD  = -92551.4;   // known best objective for the config above (Ex722 5 scenarios, original equality instance)
 // =============================================================================================
 
 int main(int argc, char* argv[]) {

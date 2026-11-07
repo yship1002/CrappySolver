@@ -737,7 +737,7 @@ double insideAlgo::calculateLBD(xBBNode* node,double tolerance,bool verbose) {
         IloCplex cplex(cplexmodel);
         cplex.setParam(IloCplex::Param::ClockType, 2);
         cplex.setParam(IloCplex::Param::Simplex::Tolerances::Optimality, 1e-6);
-        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-6);
+        cplex.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-4);
         cplex.setParam(IloCplex::Param::Read::Scale, 1);
         //cplex.setParam(IloCplex::Param::RootAlgorithm, IloCplex::Barrier);
         cplex.setParam(IloCplex::AggInd, false);
@@ -975,8 +975,8 @@ double insideAlgo::calculateUBD(xBBNode* node,double tolerance) {
             this->model->generateMINLP(&grbmodel);
             grbmodel.set(GRB_IntParam_NonConvex, 2);
             grbmodel.set(GRB_DoubleParam_OptimalityTol, 1e-4);
-            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-6); // tightened from 1e-4 so the global UBD solve returns a near-identical incumbent across machines/Gurobi versions
-            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-6); // tightened from 1e-5
+            grbmodel.set(GRB_DoubleParam_FeasibilityTol, 1e-4); // tightened from 1e-4 so the global UBD solve returns a near-identical incumbent across machines/Gurobi versions
+            grbmodel.set(GRB_DoubleParam_MIPGap, 1e-4); // tightened from 1e-5
             grbmodel.set(GRB_DoubleParam_TimeLimit, 60.0);
 
             grbmodel.optimize();
